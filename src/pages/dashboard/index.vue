@@ -20,10 +20,10 @@
         <view class="core-pulse"></view>
         
         <view class="time-display flex-col items-center z-10">
-          <text class="hours-val">336</text>
+          <text class="hours-val">{{ hoursClean }}</text>
           <text class="hours-label">已净化小时数</text>
           <view class="level-badge mt-2">
-            <text>Phase II: 额叶觉醒</text>
+            <text>{{ currentPhase }}</text>
           </view>
         </view>
       </view>
@@ -42,29 +42,107 @@
       <text class="panic-hint block mt-3 text-center">渴求来袭？点击进入 60秒 强制神经阻断</text>
     </view>
 
-    <!-- 阻断模式全屏覆盖层 (Mock) -->
-    <view class="panic-overlay" v-if="isPanicMode" @click="isPanicMode = false">
+    <!-- 阻断模式全屏覆盖层 (物理干预验证) -->
+    <view class="panic-overlay" v-if="isPanicMode">
       <view class="panic-content flex-col items-center justify-center">
         <view class="heartbeat-circle"></view>
-        <text class="overlay-title mt-4">系统接管中</text>
-        <text class="overlay-desc mt-2">立刻放下手机。做 5 个深蹲。</text>
-        <text class="overlay-timer mt-6">59s</text>
+        <text class="overlay-title mt-4">系统已强行接管</text>
+        <text class="overlay-desc mt-2 px-4 text-center">将手机放于地面。用鼻尖触碰下方按钮，\n完成俯卧撑验证，转化生理多巴胺。</text>
+        <text class="overlay-timer mt-6">{{ timeLeft }}s</text>
+        
+        <view class="pushup-counter mt-6">
+            <text class="pushup-val">{{ completedPushups }}</text>
+            <text class="pushup-target"> / {{ requiredPushups }}</text>
+        </view>
+        
+        <view class="verify-btn mt-8 flex items-center justify-center" hover-class="verify-hover" @click="doPushup">
+            <text class="verify-text">完成 1 个</text>
+        </view>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+
+const hoursClean = ref(0)
+const currentPhase = ref('Phase I: 生理挣扎')
+let timeInterval = null
+
+onMounted(() => {
+  let startTimestamp = uni.getStorageSync('neuro_start_date')
+  if (!startTimestamp) {
+    startTimestamp = Date.now() - (5 * 24 * 60 * 60 * 1000)
+    uni.setStorageSync('neuro_start_date', startTimestamp)
+  }
+  
+  const updateTimer = () => {
+    const diffMs = Date.now() - startTimestamp
+    hoursClean.value = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (hoursClean.value < 72) {
+      currentPhase.value = 'Phase I: 生理挣脱'
+    } else if (hoursClean.value < 336) {
+      currentPhase.value = 'Phase II: 额叶觉醒'
+    } else if (hoursClean.value < 1080) {
+      currentPhase.value = 'Phase III: 边缘重塑'
+    } else {
+      currentPhase.value = 'Phase IV: 神经霸体'
+    }
+  }
+  
+  updateTimer()
+  timeInterval = setInterval(updateTimer, 60000)
+})
 
 const isPanicMode = ref(false)
+const requiredPushups = ref(20)
+const completedPushups = ref(0)
+const timeLeft = ref(60)
+let panicInterval = null
 
 const triggerPanic = () => {
   isPanicMode.value = true
-  uni.vibrateLong({
-    success: () => console.log('vibrated')
-  })
+  completedPushups.value = 0
+  timeLeft.value = 60
+  
+  // 初始强烈震动
+  uni.vibrateLong()
+  
+  if (panicInterval) clearInterval(panicInterval)
+  
+  panicInterval = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--
+    }
+    // 每秒持续施加物理震动压力，加重紧迫感
+    uni.vibrateLong()
+  }, 1000)
 }
+
+const doPushup = () => {
+  if (!isPanicMode.value) return
+  
+  completedPushups.value++
+  // 点击时的短促震动反馈
+  uni.vibrateShort()
+  
+  if (completedPushups.value >= requiredPushups.value) {
+    // 验证通过，解除接管
+    isPanicMode.value = false
+    if (panicInterval) clearInterval(panicInterval)
+    uni.showToast({
+      title: '多巴胺已转化',
+      icon: 'success'
+    })
+  }
+}
+
+onUnmounted(() => {
+  if (panicInterval) clearInterval(panicInterval)
+  if (timeInterval) clearInterval(timeInterval)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -245,6 +323,30 @@ const triggerPanic = () => {
   45% { transform: scale(1.3); opacity: 1; }
 }
 .overlay-title { font-size: 24px; color: #ef4444; font-weight: bold; letter-spacing: 4px;}
-.overlay-desc { color: #fff; font-size: 16px; margin-top: 12px;}
-.overlay-timer { font-size: 64px; font-family: monospace; color: #ef4444; font-weight: 900; margin-top: 40px;}
+.overlay-desc { color: #fff; font-size: 14px; margin-top: 12px; line-height: 1.5; color: #a1a1aa;}
+.overlay-timer { font-size: 64px; font-family: monospace; color: #ef4444; font-weight: 900; margin-top: 20px;}
+
+.pushup-counter {
+  background: rgba(239, 68, 68, 0.1);
+  padding: 10px 40px;
+  border-radius: 30px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.pushup-val { font-size: 40px; font-weight: 900; color: #fff; font-family: monospace; }
+.pushup-target { font-size: 20px; color: #ef4444; font-weight: bold; font-family: monospace; }
+
+.verify-btn {
+  width: 220px;
+  height: 64px;
+  border-radius: 32px;
+  background: #ef4444;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  background-image: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  transition: all 0.1s;
+}
+.verify-hover {
+  transform: scale(0.95);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.5);
+}
+.verify-text { font-size: 18px; color: #fff; font-weight: 900; letter-spacing: 2px;}
 </style>

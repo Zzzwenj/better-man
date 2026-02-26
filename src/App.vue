@@ -1,7 +1,12 @@
 <script>
 export default {
   onLaunch: function () {
-    console.log('App Launch')
+    console.log('App Launch - 校验神经基线档案')
+    const baseline = uni.getStorageSync('neuro_baseline')
+    if (baseline) {
+      // 如果存在基线数据，直接跳转至主控舱
+      uni.switchTab({ url: '/pages/dashboard/index' })
+    }
   },
   onShow: function () {
     console.log('App Show')

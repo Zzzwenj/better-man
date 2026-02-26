@@ -45,36 +45,84 @@
       
       <view class="stat-row flex items-center justify-between mb-4">
         <view class="flex-col">
-            <text class="stat-label">前额叶皮层受体修复率</text>
+            <text class="stat-label">前额叶皮层受体修复率 (根据持续天数换算)</text>
             <view class="progress-bar mt-2">
-                <view class="progress-fill" style="width: 35%; background: #10b981;"></view>
+                <view class="progress-fill" :style="{ width: repairRate + '%', background: '#10b981' }"></view>
             </view>
         </view>
-        <text class="stat-val text-green ml-4">35%</text>
+        <text class="stat-val text-green ml-4">{{ repairRate }}%</text>
       </view>
       
       <view class="stat-row flex items-center justify-between mb-2">
         <view class="flex-col">
-            <text class="stat-label">边缘系统异常渴求频次 / 周</text>
+            <text class="stat-label">边缘系统异常渴求频次评估</text>
             <view class="progress-bar mt-2">
-                <view class="progress-fill" style="width: 60%; background: #ef4444;"></view>
+                <view class="progress-fill" :style="{ 
+                    width: cravingLevel.includes('极高') ? '80%' : cravingLevel.includes('中等') ? '40%' : '10%', 
+                    background: cravingLevel.includes('极高') ? '#ef4444' : cravingLevel.includes('中等') ? '#f59e0b' : '#10b981' 
+                }"></view>
             </view>
         </view>
-        <text class="stat-val text-red ml-4">High</text>
+        <text class="stat-val ml-4" :style="{ 
+            color: cravingLevel.includes('极高') ? '#ef4444' : cravingLevel.includes('中等') ? '#f59e0b' : '#10b981' 
+        }">{{ cravingLevel }}</text>
       </view>
     </view>
   </view>
 </template>
 
 <script setup>
-// 生成热力图的模拟活跃度层级
+import { ref, onMounted } from 'vue'
+
+const daysClean = ref(0)
+const repairRate = ref(10)
+const cravingLevel = ref('极高 (High)')
+
+onMounted(() => {
+  // 1. 获取本地持久化的重塑记录起点
+  let startTimestamp = uni.getStorageSync('neuro_start_date')
+  if (!startTimestamp) {
+    // 这是一个 Mock：如果用户还没设置，我们默认为他设置一个 5 天前的日期，便于呈现丰富图表
+    startTimestamp = Date.now() - (5 * 24 * 60 * 60 * 1000)
+    uni.setStorageSync('neuro_start_date', startTimestamp)
+  }
+  
+  const diffTime = Date.now() - startTimestamp
+  daysClean.value = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  // 2. 核心动态算法：基于坚持天数的受体修复率预估
+  // 基础受损算底分 10%，每天恢复 1.5%（这个冷酷的慢速恢复能让破戒成本变得极大）
+  let rate = 10 + (daysClean.value * 1.5)
+  repairRate.value = Math.min(Math.floor(rate), 100)
+  
+  // 3. 渴求频次多巴胺预估
+  if (daysClean.value < 7) {
+      cravingLevel.value = '极高 (High)'
+  } else if (daysClean.value < 21) {
+      cravingLevel.value = '中等 (Medium)'
+  } else {
+      cravingLevel.value = '平稳 (Low)'
+  }
+})
+
+// 生成热力图的动态数据 (点亮用户连续坚持的天数)
 const getMockLevel = (w, d) => {
-    const random = Math.random();
-    if (w === 6 && d > 3) return 'lvl-0'; // 未来的天数
-    if (random > 0.8) return 'lvl-3';
-    if (random > 0.5) return 'lvl-2';
-    if (random > 0.3) return 'lvl-1';
-    return 'lvl-0';
+    // 假设 42 天的总表格
+    const totalCellIndex = (w - 1) * 7 + (d - 1)
+    const maxCells = 42
+    
+    // 如果用户坚持了 5 天，我们在表末尾点亮 5 个格子
+    const activeStart = maxCells - daysClean.value
+    
+    if (totalCellIndex >= activeStart && totalCellIndex < maxCells) {
+        // 越高天数，格子的绿色会越有生机
+        return 'lvl-3'
+    } else if (totalCellIndex >= maxCells) {
+        return 'lvl-0'
+    }
+    
+    // 前面为坚持之前的暗色
+    return 'lvl-0'
 }
 </script>
 

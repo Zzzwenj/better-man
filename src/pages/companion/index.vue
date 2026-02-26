@@ -13,32 +13,49 @@
     
     <!-- 聊天流水区 -->
     <scroll-view scroll-y class="chat-list flex-1">
-      <view class="msg-wrapper ai mt-6">
+      <view class="msg-wrapper mt-6" v-for="(msg, index) in chatList" :key="index" :class="msg.role">
+        <!-- AI Avatar -->
+        <view class="avatar ai-avatar flex items-center justify-center" v-if="msg.role === 'ai'">
+          <text class="ai-icon">⎔</text>
+        </view>
+        
+        <view class="msg-bubble" :class="{ 'user-bubble': msg.role === 'user' }">
+          <text class="msg-text">{{ msg.content }}</text>
+        </view>
+      </view>
+      
+      <view class="msg-wrapper ai mt-6" v-if="isLoading">
         <view class="avatar ai-avatar flex items-center justify-center">
           <text class="ai-icon">⎔</text>
         </view>
         <view class="msg-bubble">
-          <text class="msg-text">检测到心率与使用间隔异常。\n探索者 #8972，你的前额叶皮层正在遭受强烈的多巴胺受体反噬。\n\n请如实反馈：你现在的渴求层级 (1-10) 是多少？</text>
+          <text class="msg-text">正在分析神经脉冲...</text>
         </view>
       </view>
       
       <!-- 高级特权引导模块 -->
-      <view class="premium-block mt-8 flex-col items-center justify-center">
+      <view class="premium-block mt-8 flex-col items-center justify-center" v-if="isPremiumLocked">
         <text class="lock-icon">🔒</text>
         <text class="premium-title mt-3">深度精神分析已锁定</text>
-        <text class="premium-desc mt-2">目前的渴求层级需要更深度的对抗话术。\n升级以获取无限次 AI 临床导师干预。</text>
+        <text class="premium-desc mt-2">免费调用额度已用尽。\n升级以获取无限次 AI 临床导师干预。</text>
         <view class="premium-btn mt-6 flex justify-center items-center" hover-class="btn-hover" @click="upgrade">
           <text class="btn-text">解锁「强制护城河」- ￥9.9 / 月</text>
         </view>
       </view>
     </scroll-view>
     
-    <!-- 底部输入区 (已锁定状态) -->
+    <!-- 底部输入区 -->
     <view class="input-area flex items-center px-4 pd-bottom">
-      <view class="input-box flex-1 flex items-center locked-input">
-        <text class="placeholder-text">获取权限后方可继续对话...</text>
-      </view>
-      <view class="btn-send disabled ml-3 flex items-center justify-center">
+      <input 
+        class="input-box flex-1" 
+        :class="{ 'locked-input': isPremiumLocked }"
+        v-model="inputValue" 
+        :placeholder="isPremiumLocked ? '获取权限后方可继续对话...' : '告诉 AI 你的感受...'" 
+        placeholder-class="placeholder-text" 
+        @confirm="sendMessage" 
+        :disabled="isPremiumLocked" 
+      />
+      <view class="btn-send ml-3 flex items-center justify-center" :class="{ 'disabled': !inputValue || isPremiumLocked }" @click="sendMessage">
         <text class="send-icon">▲</text>
       </view>
     </view>
@@ -46,6 +63,99 @@
 </template>
 
 <script setup>
+import { ref, onMounted, nextTick } from 'vue'
+
+const chatList = ref([])
+const inputValue = ref('')
+const isLoading = ref(false)
+const isPremiumLocked = ref(false) 
+
+// 🎯 请在此处填入真实的 DeepSeek 或其他兼容 OpenAI 格式的大模型 API Key
+// 若为空，系统会自动使用 [模拟回复模式]
+const API_KEY = '' 
+
+let userProfile = null
+
+onMounted(() => {
+  // 1. 获取问卷体检数据
+  const data = uni.getStorageSync('neuro_baseline')
+  if (data) {
+    userProfile = JSON.parse(data)
+  }
+  
+  // 2. 初始干预话术
+  chatList.value.push({
+    role: 'ai',
+    content: `检测到神经使用间隔异常。\n探索者，你的前额叶皮层正在遭受强烈的多巴胺反噬。\n\n请如实反馈：你现在的渴求层级 (1-10) 是多少？`
+  })
+})
+
+const sendMessage = async () => {
+  if (!inputValue.value.trim() || isLoading.value || isPremiumLocked.value) return
+  
+  const userMsg = inputValue.value
+  chatList.value.push({ role: 'user', content: userMsg })
+  inputValue.value = ''
+  isLoading.value = true
+  
+  // 达到免费对话上限，弹出付费墙
+  if (chatList.value.length > 5) {
+      isLoading.value = false
+      isPremiumLocked.value = true
+      return
+  }
+  
+  // 组装针对当前用户的 System Prompt
+  let systemPrompt = '你是一个严厉的脑神经科学干预AI导师。'
+  if (userProfile) {
+    systemPrompt += `该用户的生理画像：年龄段[${userProfile.age}]，成瘾史[${userProfile.history}]，破戒爆发频率[${userProfile.frequency}]，高危触发场景包含：[${userProfile.triggers.join(',')}]。`
+  }
+  systemPrompt += '请用冷峻、专业、直接的中文回复他，字数限制在 80 字以内，一针见血地指出他只不过是多巴胺的奴隶，并给出强烈的反制命令。坚决不要回复诸如你好之类的话。'
+
+  if (API_KEY) {
+    try {
+      // 真实的大模型 API 请求对接
+      const res = await new Promise((resolve, reject) => {
+        uni.request({
+          url: 'https://api.deepseek.com/chat/completions',
+          method: 'POST',
+          header: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${API_KEY}`
+          },
+          data: {
+            model: 'deepseek-chat',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userMsg }
+            ],
+            temperature: 0.7
+          },
+          success: (res) => resolve(res),
+          fail: (err) => reject(err)
+        })
+      })
+      
+      const aiReply = res.data?.choices?.[0]?.message?.content || 'API 调用异常，无法获取协议指令。'
+      chatList.value.push({ role: 'ai', content: aiReply })
+    } catch (e) {
+      chatList.value.push({ role: 'ai', content: '连接量子心理学数据库超时。' })
+    }
+  } else {
+    // 模拟等待
+    setTimeout(() => {
+      chatList.value.push({ 
+          role: 'ai', 
+          content: `[模拟响应] 数据显示你当前的渴求来源于 [${userProfile?.triggers?.join(',') || '外部刺激'}]。\n这并不是你真实的意愿，仅仅是边缘系统在乞求化学物质奖励。立刻放下手机去做俯卧撑。(请在源码中填入真实的 API_KEY 激活真正 AI 导师)` 
+      })
+      isLoading.value = false
+    }, 1500)
+    return
+  }
+  
+  isLoading.value = false
+}
+
 const upgrade = () => {
   uni.showModal({
     title: '开启全面护城河',
@@ -104,6 +214,10 @@ const upgrade = () => {
 .msg-wrapper {
   display: flex;
   align-items: flex-start;
+  margin-bottom: 20px;
+}
+.msg-wrapper.user {
+  flex-direction: row-reverse;
 }
 .ai-avatar {
   width: 36px;
@@ -123,6 +237,13 @@ const upgrade = () => {
   padding: 16px;
   max-width: 80%;
   backdrop-filter: blur(5px);
+}
+.user-bubble {
+  margin-left: 0;
+  margin-right: 12px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px 4px 16px 16px;
 }
 .msg-text {
   font-size: 14px;
@@ -165,13 +286,24 @@ const upgrade = () => {
   border-radius: 22px;
   padding: 0 20px;
   border: 1px solid #27272a;
+  color: #e4e4e7;
+  font-size: 14px;
 }
-.locked-input { background: rgba(24, 24, 27, 0.5); border: 1px dashed #3f3f46;}
+.locked-input { 
+    background: rgba(24, 24, 27, 0.5); 
+    border: 1px dashed #3f3f46;
+}
 .placeholder-text { color: #52525b; font-size: 13px; }
 .btn-send {
   width: 44px; height: 44px;
   border-radius: 22px;
-  background: #27272a;
+  background: #10b981;
+  transition: all 0.2s;
 }
-.send-icon { color: #52525b; font-size: 18px; }
+.btn-send.disabled {
+    background: #27272a;
+    opacity: 0.5;
+}
+.send-icon { color: #000; font-size: 18px; font-weight: bold; }
+.btn-send.disabled .send-icon { color: #52525b; font-weight: normal; }
 </style>

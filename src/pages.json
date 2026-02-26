@@ -1,6 +1,13 @@
 {
     "pages": [
         {
+            "path": "pages/onboarding/index",
+            "style": {
+                "navigationBarTitleText": "基线评估",
+                "navigationStyle": "custom"
+            }
+        },
+        {
             "path": "pages/dashboard/index",
             "style": {
                 "navigationBarTitleText": "大盘",
