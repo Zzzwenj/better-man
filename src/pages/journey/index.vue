@@ -1,136 +1,176 @@
 <template>
-  <view class="container">
+  <view class="container flex-col">
     <view class="header px-4">
-        <text class="title glow-text">重建历程</text>
+      <text class="title tracking-wider">观测图谱</text>
+      <text class="subtitle block mt-1">神经可塑性观测图谱</text>
     </view>
     
-    <view class="card mt-6">
-        <view class="card-title flex items-center">
-            <text class="icon">📅</text>
-            <text class="ml-2">本月足迹</text>
+    <!-- 热力图模块 -->
+    <view class="card-outline mt-6 mx-4">
+      <view class="flex justify-between items-center mb-4">
+        <text class="section-title">重塑突触</text>
+        <view class="flex items-center">
+            <view class="legend-dot lvl-0"></view>
+            <view class="legend-dot lvl-1 ml-1"></view>
+            <view class="legend-dot lvl-2 ml-1"></view>
+            <view class="legend-dot lvl-3 ml-1"></view>
+            <text class="legend-text ml-2">活跃度</text>
         </view>
-        <view class="mock-calendar mt-3 flex-col justify-center items-center">
-            <view class="calendar-grid">
-                <!-- Mockup dots for calendar -->
-                <view class="day-dot active"></view>
-                <view class="day-dot active"></view>
-                <view class="day-dot"></view>
-                <view class="day-dot active"></view>
-                <view class="day-dot active"></view>
-                <view class="day-dot active"></view>
-                <view class="day-dot current"></view>
-            </view>
-            <text class="text-sm mt-4">2月26日 - 今日已注入能量</text>
+      </view>
+      
+      <!-- Git 风格模拟热力图 -->
+      <view class="heatmap-grid pb-2">
+        <view class="week-col" v-for="w in 6" :key="w">
+          <view v-for="d in 7" :key="d" :class="['heat-cell', getMockLevel(w, d)]"></view>
         </view>
+      </view>
+      <text class="analysis-hint block mt-3">▶ 连续 14 天未熔断，基底神经节逐渐脱敏。</text>
     </view>
     
-    <!-- Ad Placeholder -->
-    <view class="ad-placeholder mt-4 flex items-center justify-center">
-        <text class="ad-text">| 商业内容占位 (穿山甲/优量汇) |</text>
+    <!-- 信息流原生广告占位 -->
+    <view class="native-ad-placeholder mt-4 mx-4 flex items-center">
+      <view class="ad-cover"></view>
+      <view class="ad-info ml-3 flex-1 flex-col justify-between">
+        <text class="ad-title">《多巴胺国度》：如何在这个纵欲时代找到平衡？</text>
+        <view class="flex justify-between items-center">
+            <text class="ad-tag">科学专栏 赞助</text>
+            <text class="ad-btn">→</text>
+        </view>
+      </view>
     </view>
     
-    <view class="card mt-4">
-        <view class="card-title flex items-center">
-            <text class="icon">🧠</text>
-            <text class="ml-2">神经可塑性模型分析</text>
-        </view>
-        <view class="stats flex justify-between mt-4">
-            <view class="stat-box">
-                <text class="val text-primary">+15%</text>
-                <text class="label">前额叶控制力</text>
-            </view>
-            <view class="stat-divider"></view>
-            <view class="stat-box">
-                <text class="val text-primary">-20%</text>
-                <text class="label">焦虑值预估</text>
+    <!-- 评估数据模块 -->
+    <view class="card-outline mt-4 mx-4">
+      <text class="section-title block mb-4">临床生理学预估</text>
+      
+      <view class="stat-row flex items-center justify-between mb-4">
+        <view class="flex-col">
+            <text class="stat-label">前额叶皮层受体修复率</text>
+            <view class="progress-bar mt-2">
+                <view class="progress-fill" style="width: 35%; background: #10b981;"></view>
             </view>
         </view>
+        <text class="stat-val text-green ml-4">35%</text>
+      </view>
+      
+      <view class="stat-row flex items-center justify-between mb-2">
+        <view class="flex-col">
+            <text class="stat-label">边缘系统异常渴求频次 / 周</text>
+            <view class="progress-bar mt-2">
+                <view class="progress-fill" style="width: 60%; background: #ef4444;"></view>
+            </view>
+        </view>
+        <text class="stat-val text-red ml-4">High</text>
+      </view>
     </view>
   </view>
 </template>
 
-<script>
-export default {}
+<script setup>
+// 生成热力图的模拟活跃度层级
+const getMockLevel = (w, d) => {
+    const random = Math.random();
+    if (w === 6 && d > 3) return 'lvl-0'; // 未来的天数
+    if (random > 0.8) return 'lvl-3';
+    if (random > 0.5) return 'lvl-2';
+    if (random > 0.3) return 'lvl-1';
+    return 'lvl-0';
+}
 </script>
 
 <style lang="scss" scoped>
-.container { padding: 40px 0; min-height: 100vh; background-color: #121212; }
+.container {
+  height: 100vh;
+  background-color: #09090b;
+  padding-bottom: 20px;
+}
+.header {
+  padding-top: calc(var(--status-bar-height) + 20px);
+}
 .px-4 { padding: 0 20px; }
-.mt-6 { margin-top: 24px; }
-.mt-4 { margin-top: 16px; }
+.mx-4 { margin: 0 20px; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
-.text-sm { color: #aaa; font-size: 14px;}
+.ml-3 { margin-left: 12px; }
+.ml-4 { margin-left: 16px; }
+.pb-2 { padding-bottom: 8px; }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.block { display: block; }
+.tracking-wider { letter-spacing: 4px; }
 
-.title { font-size: 28px; font-weight: 900; }
-.glow-text {
-  color: #fff;
-  text-shadow: 0 0 10px rgba(0, 230, 118, 0.4), 0 0 20px rgba(0, 230, 118, 0.2);
-  letter-spacing: 2px;
-}
+.title { font-size: 20px; font-weight: 900; color: #10b981; }
+.subtitle { font-size: 11px; color: #71717a; letter-spacing: 1px;}
+.section-title { font-size: 14px; font-weight: bold; color: #e4e4e7; font-family: monospace;}
 
-.card {
-  background-color: #1E1E1E;
-  margin: 0 20px;
-  padding: 24px;
-  border-radius: 20px;
+/* 卡片样式 */
+.card-outline {
+  background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border-radius: 16px;
+  padding: 20px;
 }
-.card-title {
-  font-size: 16px;
-  color: #E0E0E0;
-  font-weight: bold;
-}
-.icon { font-size: 18px; }
 
-.mock-calendar { height: 160px; background-color: #151515; border-radius: 12px; border: 1px solid #222;}
-.calendar-grid {
+/* 活跃度热力图控件 */
+.heatmap-grid {
     display: flex;
-    gap: 8px;
+    overflow-x: auto;
+    gap: 4px;
 }
-.day-dot {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    background-color: #2A2A2A;
+.week-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
-.day-dot.active {
-    background-color: #00E676;
-    box-shadow: 0 0 10px rgba(0, 230, 118, 0.4);
+.heat-cell, .legend-dot {
+    width: 14px; height: 14px;
+    border-radius: 3px;
 }
-.day-dot.current {
-    border: 2px solid #00E676;
-    background-color: transparent;
-}
+.lvl-0 { background-color: #18181b; border: 1px solid #27272a; }
+.lvl-1 { background-color: rgba(16, 185, 129, 0.3); }
+.lvl-2 { background-color: rgba(16, 185, 129, 0.6); }
+.lvl-3 { background-color: rgba(16, 185, 129, 1); box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
 
-.stat-box {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-}
-.stat-divider {
-    width: 1px;
-    height: 40px;
-    background-color: #333;
-}
-.val { font-size: 28px; font-weight: 900; margin-bottom: 6px; text-shadow: 0 0 15px rgba(0,230,118,0.3);}
-.label { font-size: 12px; color: #888; }
+.legend-text { font-size: 10px; color: #a1a1aa; }
+.analysis-hint { font-size: 12px; color: #10b981; margin-top: 16px; font-weight: 500;}
 
-.ad-placeholder {
-    margin: 16px 20px;
-    height: 80px;
-    background: repeating-linear-gradient(
-      45deg,
-      #1A1A1A,
-      #1A1A1A 10px,
-      #222 10px,
-      #222 20px
-    );
-    border: 1px dashed #444;
+/* 信息流广告占位 */
+.native-ad-placeholder {
+    background: #18181b;
     border-radius: 12px;
-    opacity: 0.7;
+    padding: 12px;
+    border: 1px solid #27272a;
 }
-.ad-text { color: #666; font-size: 12px; letter-spacing: 1px;}
+.ad-cover {
+    width: 70px; height: 70px;
+    background: #27272a;
+    border-radius: 8px;
+    background-image: linear-gradient(45deg, #18181b 25%, transparent 25%, transparent 75%, #18181b 75%, #18181b), 
+                      linear-gradient(45deg, #18181b 25%, transparent 25%, transparent 75%, #18181b 75%, #18181b);
+    background-size: 10px 10px;
+    background-position: 0 0, 5px 5px;
+}
+.ad-info { height: 70px; }
+.ad-title { font-size: 14px; color: #d4d4d8; font-weight: bold; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
+.ad-tag { font-size: 10px; color: #71717a; border: 1px solid #3f3f46; padding: 2px 6px; border-radius: 4px;}
+.ad-btn { color: #10b981; font-weight: bold; }
+
+/* 数据分析模块 */
+.stat-row { width: 100%; }
+.stat-label { font-size: 12px; color: #a1a1aa; }
+.progress-bar { width: 200px; height: 6px; background-color: #27272a; border-radius: 3px; overflow: hidden;}
+.progress-fill { height: 100%; border-radius: 3px; box-shadow: 0 0 10px currentColor;}
+.stat-val { font-size: 18px; font-weight: 900; font-family: monospace;}
+.text-green { color: #10b981; }
+.text-red { color: #ef4444; }
 </style>

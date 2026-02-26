@@ -1,125 +1,163 @@
 <template>
-  <view class="container">
-    <view class="header flex items-center px-4">
-      <view class="avatar flex items-center justify-center">
-          <text class="avatar-text">探</text>
+  <view class="container flex-col">
+    <!-- 顶部用户信息 -->
+    <view class="header px-4 flex items-center">
+      <view class="avatar flex justify-center items-center">
+        <text class="avatar-text">8972</text>
       </view>
-      <view class="info ml-3">
-        <text class="nickname">探索者 #8972</text>
-        <view class="status-badge flex items-center justify-center mt-1">
-            <text class="status-text">实时检测：已关闭</text>
+      <view class="user-info ml-4 flex-col justify-center">
+        <text class="username tracking-wider">探索者_8972</text>
+        <view class="status-badge flex items-center mt-2">
+            <view class="status-dot offline"></view>
+            <text class="status-text ml-1">系统干预：已停用</text>
         </view>
       </view>
     </view>
     
-    <view class="premium-wrapper px-4 mt-8">
-        <view class="premium-banner flex justify-between items-center" @click="upgradePremium" hover-class="banner-hover">
-          <view class="banner-content">
-            <text class="premium-title">⚡ 升级「核心护城河」</text>
-            <view class="mt-2"><text class="premium-subtitle">系统级防漏拦截 · AI 深度情绪干预</text></view>
-            <view class="price-tag mt-2"><text class="premium-price">限时特惠 ￥9.9 / 月</text></view>
-          </view>
-          <view class="arrow-circle flex items-center justify-center">
-              <text class="arrow">></text>
-          </view>
+    <!-- 订阅特权模幅 -->
+    <view class="premium-card mt-8 mx-4" @click="upgradePremium" hover-class="card-hover">
+        <view class="flex justify-between items-center">
+            <text class="premium-title">⚡ 强制护城河 (系统级防御)</text>
+            <view class="price-chip">
+                <text>￥9.9 / 月</text>
+            </view>
+        </view>
+        <text class="premium-desc block mt-2">开启设备底层的无障碍劫持防御。\n在理智被吞噬前，让系统接管你的设备控制权。</text>
+        <view class="premium-footer flex items-center mt-4">
+            <text class="unlock-text">立即解锁终极防御</text>
+            <text class="arrow ml-1">→</text>
         </view>
     </view>
     
-    <view class="list-container px-4 mt-8">
-        <view class="list">
-          <view class="list-item flex justify-between items-center" hover-class="item-hover">
-            <text class="item-text">深色模式 / 赛博主题</text>
-            <switch checked color="#00E676" style="transform:scale(0.8)"/>
-          </view>
-          <view class="list-item flex justify-between items-center" hover-class="item-hover">
-            <text class="item-text">底层拦截白名单</text>
-            <text class="arrow-right">></text>
-          </view>
-          <view class="list-item flex justify-between items-center" hover-class="item-hover">
-            <text class="item-text">神经重塑科普资料库</text>
-            <text class="arrow-right">></text>
-          </view>
-          <view class="list-item flex justify-between items-center" hover-class="item-hover">
-            <text class="item-text">恢复数据导出</text>
-            <text class="arrow-right">></text>
-          </view>
+    <!-- 设置列表 -->
+    <view class="settings-group mt-6 mx-4">
+        <text class="group-title block px-2 mb-2">隐私与安全阻断</text>
+        <view class="settings-list">
+            <view class="list-item flex justify-between items-center" hover-class="item-hover">
+                <view class="item-left flex items-center">
+                    <text class="item-icon">👁️</text>
+                    <text class="item-label ml-3">系统级无障碍白名单</text>
+                </view>
+                <text class="arrow-right">></text>
+            </view>
+            <view class="list-item flex justify-between items-center" hover-class="item-hover">
+                <view class="item-left flex items-center">
+                    <text class="item-icon">🥷</text>
+                    <text class="item-label ml-3">App 图标伪装 (伪装为计算器)</text>
+                </view>
+                <switch color="#10b981" style="transform: scale(0.8);" />
+            </view>
+        </view>
+    </view>
+    
+    <view class="settings-group mt-6 mx-4">
+        <text class="group-title block px-2 mb-2">数据与资料库</text>
+        <view class="settings-list">
+            <view class="list-item flex justify-between items-center" hover-class="item-hover">
+                <view class="item-left flex items-center">
+                    <text class="item-icon">🧠</text>
+                    <text class="item-label ml-3">神经可塑性模型资料库</text>
+                </view>
+                <text class="arrow-right">></text>
+            </view>
+            <view class="list-item flex justify-between items-center" hover-class="item-hover">
+                <view class="item-left flex items-center">
+                    <text class="item-icon">💾</text>
+                    <text class="item-label ml-3">本地数据抹除/导出</text>
+                </view>
+                <text class="arrow-right">></text>
+            </view>
         </view>
     </view>
   </view>
 </template>
 
-<script>
-export default {
-  methods: {
-    upgradePremium() {
-      uni.showModal({
-        title: '获取强力监管',
-        content: '开启由系统底层接管的全面拦截，为你的理智构建最后一道防火墙。',
-        confirmText: '立即支付 9.9',
-        cancelText: '再想想',
-        confirmColor: '#00E676'
-      })
-    }
-  }
+<script setup>
+const upgradePremium = () => {
+    uni.showModal({
+        title: '开启终极防御',
+        content: '只需 9.9 元/月，即可获得系统底层的强制接管权限。当你不受理智控制时，系统将成为你最后一道门槛。',
+        confirmText: '立刻开启',
+        confirmColor: '#10b981'
+    })
 }
 </script>
 
 <style lang="scss" scoped>
-.container { padding: 40px 0; min-height: 100vh; background-color: #121212;}
+.container {
+  min-height: 100vh;
+  background-color: #09090b;
+  padding-bottom: 40px;
+}
+.header {
+  padding-top: calc(var(--status-bar-height) + 30px);
+}
+.px-2 { padding: 0 8px; }
 .px-4 { padding: 0 20px; }
-.ml-3 { margin-left: 16px; }
-.mt-8 { margin-top: 32px; }
+.mx-4 { margin: 0 20px; }
 .mt-2 { margin-top: 8px; }
-.mt-1 { margin-top: 4px; }
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.mt-8 { margin-top: 32px; }
+.mb-2 { margin-bottom: 8px; }
+.ml-1 { margin-left: 4px; }
+.ml-3 { margin-left: 12px; }
+.ml-4 { margin-left: 16px; }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.items-center { align-items: center; }
+.block { display: block; }
+.tracking-wider { letter-spacing: 2px; }
 
-.avatar { 
-    width: 72px; 
-    height: 72px; 
-    border-radius: 36px; 
-    background: linear-gradient(135deg, #1A281E 0%, #0a120c 100%);
-    border: 2px solid #00E676;
-    box-shadow: 0 0 15px rgba(0, 230, 118, 0.3);
+/* 顶部用户信息 */
+.avatar {
+    width: 64px; height: 64px;
+    border-radius: 20px;
+    background: #18181b;
+    border: 1px solid #3f3f46;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
-.avatar-text { font-size: 24px; font-weight: bold; color: #00E676;}
+.avatar-text { font-family: monospace; color: #a1a1aa; font-weight: bold; }
+.username { font-size: 20px; color: #f4f4f5; font-weight: 900; }
+.status-badge { background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2);}
+.status-dot { width: 6px; height: 6px; border-radius: 3px; }
+.status-dot.offline { background-color: #ef4444; box-shadow: 0 0 5px #ef4444;}
+.status-text { font-size: 10px; color: #ef4444; font-weight: bold; font-family: monospace;}
 
-.nickname { font-size: 22px; font-weight: 900; display: block; color: white; letter-spacing: 1px;}
-.status-badge { 
-    background: rgba(255, 61, 0, 0.1); 
-    border: 1px solid rgba(255, 61, 0, 0.3);
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-flex;
+/* 订阅特权模幅 */
+.premium-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 16px;
+    padding: 24px 20px;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1);
+    transition: all 0.2s ease;
 }
-.status-text { font-size: 10px; color: #FF3D00; font-weight: bold;}
+.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px rgba(16, 185, 129, 0.15); }
+.premium-title { font-size: 16px; font-weight: 900; color: #10b981; }
+.price-chip { background: #10b981; color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
+.premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
+.premium-footer { border-top: 1px dashed rgba(16, 185, 129, 0.2); padding-top: 12px;}
+.unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
+.arrow { color: #10b981; font-weight: bold; font-size: 18px;}
 
-.premium-banner {
-  background: linear-gradient(135deg, #1f3625 0%, #101c13 100%);
-  border: 1px solid rgba(0, 230, 118, 0.4);
-  padding: 24px 20px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 230, 118, 0.15);
-  transition: all 0.3s;
-}
-.banner-hover { transform: translateY(2px); box-shadow: 0 5px 15px rgba(0, 230, 118, 0.2); }
-.premium-title { font-size: 18px; font-weight: 900; color: #00E676; display: block; text-shadow: 0 0 10px rgba(0, 230, 118, 0.3);}
-.premium-subtitle { font-size: 12px; color: #aaa; }
-.price-tag { display: inline-block; background: rgba(0,230,118,0.15); padding: 4px 10px; border-radius: 6px;}
-.premium-price { font-size: 14px; font-weight: bold; color: #00E676; }
-.arrow-circle { width: 32px; height: 32px; border-radius: 16px; background: rgba(0,230,118,0.1); color: #00E676;}
-.arrow { font-weight: bold; }
-
-.list { 
-    background-color: #1A1A1A; 
-    border-radius: 20px; 
-    padding: 8px 20px; 
-    border: 1px solid #222;
+/* 设置列表 */
+.group-title { font-size: 12px; color: #71717a; font-family: monospace; font-weight: bold;}
+.settings-list {
+    background: #18181b;
+    border-radius: 16px;
+    padding: 0 16px;
+    border: 1px solid #27272a;
 }
 .list-item {
-  padding: 20px 0;
-  border-bottom: 1px solid #252525;
+    padding: 16px 0;
+    border-bottom: 1px solid #27272a;
 }
 .list-item:last-child { border-bottom: none; }
-.item-text { color: #E0E0E0; font-size: 15px; font-weight: 500;}
-.arrow-right { color: #555; font-size: 16px;}
-.item-hover { opacity: 0.8; }
+.item-hover { opacity: 0.7; }
+.item-icon { font-size: 18px; }
+.item-label { font-size: 14px; color: #d4d4d8; font-weight: 500;}
+.arrow-right { color: #52525b; font-size: 16px; font-family: monospace;}
 </style>

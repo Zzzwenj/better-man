@@ -1,223 +1,250 @@
 <template>
-  <view class="container flex-col items-center">
-    <view class="header flex justify-between items-center w-full px-4">
-        <text class="title glow-text">觉醒空间</text>
-        <view class="user-badge flex items-center">
-            <text class="level-text">Lv.3 探索者</text>
+  <view class="container flex-col">
+    <!-- 顶部状态栏 -->
+    <view class="header flex justify-between items-center px-4">
+      <view>
+        <text class="title tracking-wider">觉醒空间</text>
+        <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
+      </view>
+      <view class="user-chip flex items-center justify-center">
+        <text class="chip-dot"></text>
+        <text class="chip-text ml-1">#8972</text>
+      </view>
+    </view>
+    
+    <!-- 核心专注区域（能量环） -->
+    <view class="core-area flex-1 flex-col justify-center items-center">
+      <view class="energy-core flex items-center justify-center relative">
+        <view class="ring outer-ring"></view>
+        <view class="ring inner-ring"></view>
+        <view class="core-pulse"></view>
+        
+        <view class="time-display flex-col items-center z-10">
+          <text class="hours-val">336</text>
+          <text class="hours-label">已净化小时数</text>
+          <view class="level-badge mt-2">
+            <text>Phase II: 额叶觉醒</text>
+          </view>
         </view>
+      </view>
+
+      <view class="ad-banner mt-8 flex justify-center items-center">
+        <text class="ad-text">► 观看 30s 神经学短片，获取 1 次『多巴胺强心针』能量</text>
+      </view>
     </view>
     
-    <!-- Dynamic Progress Circle -->
-    <view class="progress-wrapper mt-8">
-        <view class="progress-ring flex-col items-center justify-center breathing-ring">
-            <text class="days-count">14</text>
-            <text class="days-label">DAYS</text>
-        </view>
-        <!-- Particle effects or glow can be added via CSS -->
-    </view>
-    
-    <view class="status-box mt-6">
-        <text class="status-title">神经元重塑中</text>
-        <text class="status-desc">前额叶皮层正在恢复，多巴胺敏感度+12%</text>
-    </view>
-    
-    <!-- Action Area -->
-    <view class="action-row flex justify-between w-full px-5 mt-8">
-        <button class="action-btn btn-checkin" @click="handleCheckin">
-            <text>✨ 注入能量 (打卡)</text>
-        </button>
-        <button class="action-btn btn-video" @click="handleVideo">
-            <text>🔥 意志淬炼 (励志视频)</text>
-        </button>
-    </view>
-    
-    <!-- Ad Placeholder -->
-    <view class="ad-placeholder mt-6 flex items-center justify-center">
-        <text class="ad-text">| 商业内容占位 (穿山甲/优量汇) |</text>
+    <!-- 底部紧急阻断按钮 -->
+    <view class="action-area px-4 pb-8">
+      <view class="panic-btn flex justify-center items-center" hover-class="panic-hover" @click="triggerPanic">
+        <text class="panic-icon mr-2">⚠️</text>
+        <text class="panic-text">紧急干预系统</text>
+      </view>
+      <text class="panic-hint block mt-3 text-center">渴求来袭？点击进入 60秒 强制神经阻断</text>
     </view>
 
-    <view class="spacer"></view>
-    
-    <!-- Panic Button - Extreme Visual Weight -->
-    <button class="btn-panic heartbeat" @click="handlePanic" hover-class="btn-panic-hover">
-        <text class="panic-text">🆘 紧急干预拨号</text>
-    </button>
+    <!-- 阻断模式全屏覆盖层 (Mock) -->
+    <view class="panic-overlay" v-if="isPanicMode" @click="isPanicMode = false">
+      <view class="panic-content flex-col items-center justify-center">
+        <view class="heartbeat-circle"></view>
+        <text class="overlay-title mt-4">系统接管中</text>
+        <text class="overlay-desc mt-2">立刻放下手机。做 5 个深蹲。</text>
+        <text class="overlay-timer mt-6">59s</text>
+      </view>
+    </view>
   </view>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      days: 14
-    }
-  },
-  methods: {
-    handleCheckin() {
-      uni.showToast({ title: '多巴胺重置进度已推进', icon: 'success' })
-    },
-    handleVideo() {
-      uni.showToast({ title: '准备播放高燃剪辑片段...', icon: 'none' })
-    },
-    handlePanic() {
-      uni.showModal({
-        title: '你已进入安全舱',
-        content: '神经递质正在欺骗你。闭上眼，深呼吸 3 次。\n不要让 5 分钟的放纵，毁掉 14 天的重构进程。',
-        confirmText: '开启 60 秒冷静',
-        showCancel: false
-      })
-    }
-  }
+<script setup>
+import { ref } from 'vue'
+
+const isPanicMode = ref(false)
+
+const triggerPanic = () => {
+  isPanicMode.value = true
+  uni.vibrateLong({
+    success: () => console.log('vibrated')
+  })
 }
 </script>
 
 <style lang="scss" scoped>
 .container {
-  padding: 40px 0;
-  min-height: 100vh;
-  background: radial-gradient(circle at 50% 10%, #1a2a20 0%, #121212 60%);
+  height: 100vh;
+  background-color: #09090b; /* obsidian black */
+  background-image: 
+    radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+  display: flex;
+  flex-direction: column;
 }
-.w-full { width: 100%; }
 .px-4 { padding: 0 20px; }
-.px-5 { padding: 0 24px; }
-.header { margin-bottom: 20px; }
+.pb-8 { padding-bottom: 32px; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-6 { margin-top: 24px; }
+.mt-8 { margin-top: 32px; }
+.ml-1 { margin-left: 4px; }
+.mr-2 { margin-right: 8px; }
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.items-center { align-items: center; }
+.flex-1 { flex: 1; }
+.block { display: block; }
+.text-center { text-align: center; }
+.relative { position: relative; }
+.z-10 { z-index: 10; }
+.tracking-wider { letter-spacing: 4px; }
 
-.glow-text {
-  font-size: 28px;
+/* 顶部状态栏 */
+.header {
+  padding-top: calc(var(--status-bar-height) + 20px);
+}
+.title { font-size: 24px; font-weight: 900; color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+.subtitle { font-size: 11px; color: #71717a; letter-spacing: 1px;}
+.user-chip { 
+  background: rgba(255,255,255,0.05); 
+  border: 1px solid rgba(255,255,255,0.1); 
+  padding: 4px 10px; 
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: #10b981; box-shadow: 0 0 8px #10b981;}
+.chip-text { font-size: 12px; color: #a1a1aa; font-family: monospace;}
+
+/* 核心能量环 */
+.energy-core {
+  width: 280px;
+  height: 280px;
+}
+.ring {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 50%;
+  border: 1px solid transparent;
+}
+.outer-ring {
+  border-top-color: rgba(16, 185, 129, 0.3);
+  border-bottom-color: rgba(139, 92, 246, 0.3);
+  animation: spin 15s linear infinite;
+}
+.inner-ring {
+  margin: 15px;
+  border-left-color: rgba(16, 185, 129, 0.6);
+  border-right-color: rgba(16, 185, 129, 0.2);
+  animation: spin-reverse 10s linear infinite;
+}
+.core-pulse {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+  animation: pulse 4s ease-in-out infinite;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+@keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+@keyframes pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.time-display {
+  text-align: center;
+}
+.hours-val {
+  font-size: 72px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 0 10px rgba(0, 230, 118, 0.4), 0 0 20px rgba(0, 230, 118, 0.2);
-  letter-spacing: 2px;
-}
-
-.user-badge {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(0, 230, 118, 0.3);
-    padding: 6px 12px;
-    border-radius: 20px;
-}
-.level-text { font-size: 12px; color: #00E676; font-weight: bold;}
-
-.progress-wrapper { position: relative; }
-
-.progress-ring {
-  width: 260px;
-  height: 260px;
-  border-radius: 130px;
-  border: 12px solid #00E676;
-  box-shadow: 0 0 40px rgba(0, 230, 118, 0.5), inset 0 0 30px rgba(0, 230, 118, 0.2);
-  background: rgba(0, 230, 118, 0.05);
-}
-
-/* 呼吸动画 */
-@keyframes breathing {
-  0% { box-shadow: 0 0 30px rgba(0, 230, 118, 0.4), inset 0 0 20px rgba(0, 230, 118, 0.1); transform: scale(1); }
-  50% { box-shadow: 0 0 60px rgba(0, 230, 118, 0.8), inset 0 0 40px rgba(0, 230, 118, 0.3); transform: scale(1.02); }
-  100% { box-shadow: 0 0 30px rgba(0, 230, 118, 0.4), inset 0 0 20px rgba(0, 230, 118, 0.1); transform: scale(1); }
-}
-.breathing-ring {
-    animation: breathing 4s infinite ease-in-out;
-}
-
-.days-count {
-  font-size: 88px;
-  font-weight: 900;
-  color: #fff;
-  text-shadow: 0 0 15px #00E676;
+  font-family: 'Courier New', Courier, monospace;
+  text-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
   line-height: 1;
 }
-.days-label {
-  font-size: 16px;
-  color: #00E676;
-  letter-spacing: 4px;
-  margin-top: 10px;
+.hours-label {
+  font-size: 14px;
+  color: #10b981;
+  letter-spacing: 3px;
+  font-weight: bold;
 }
-
-.status-box {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px 24px;
-    border-radius: 30px;
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-.status-title { display: block; font-size: 14px; font-weight: bold; color: #00E676; margin-bottom: 4px;}
-.status-desc { display: block; font-size: 12px; color: #888; }
-
-.action-row { gap: 16px; }
-.action-btn {
-    flex: 1;
-    height: 54px;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    font-weight: bold;
-    border: none;
-    margin: 0;
-}
-.btn-checkin {
-    background: linear-gradient(135deg, #00E676 0%, #00B159 100%);
-    color: #000;
-    box-shadow: 0 8px 16px rgba(0, 230, 118, 0.3);
-}
-.btn-video {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.ad-placeholder {
-    width: 90%;
-    height: 80px;
-    background: repeating-linear-gradient(
-      45deg,
-      #1A1A1A,
-      #1A1A1A 10px,
-      #222 10px,
-      #222 20px
-    );
-    border: 1px dashed #444;
-    border-radius: 12px;
-    opacity: 0.7;
-}
-.ad-text { color: #666; font-size: 12px; letter-spacing: 1px;}
-
-.spacer { flex-grow: 1; min-height: 40px; }
-
-.btn-panic {
-  background: linear-gradient(135deg, #FF3D00 0%, #D50000 100%);
-  width: 90%;
+.level-badge {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 4px 12px;
   border-radius: 20px;
-  height: 68px;
+  font-size: 12px;
+  color: #e4e4e7;
+}
+
+/* 广告横幅 */
+.ad-banner {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin: 32px 20px 0;
+  backdrop-filter: blur(5px);
+}
+.ad-text {
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+/* 紧急阻断按钮 */
+.panic-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+  height: 60px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+  border: 1px solid #7f1d1d;
+}
+.panic-hover {
+  transform: translateY(2px) scale(0.98);
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+}
+.panic-icon { font-size: 20px; }
+.panic-text {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.panic-hint {
+  font-size: 12px;
+  color: #71717a;
+}
+
+/* 阻断模式全屏覆盖层 */
+.panic-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #000;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 30px rgba(255, 61, 0, 0.5);
-  margin-bottom: 30px;
-  border: 1px solid #FF8A80;
 }
-.panic-text {
-    color: white;
-    font-size: 20px;
-    font-weight: 900;
-    letter-spacing: 2px;
+.panic-content {
+  text-align: center;
 }
-.btn-panic-hover {
-    transform: scale(0.96);
-    box-shadow: 0 5px 15px rgba(255, 61, 0, 0.8);
+.heartbeat-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ef4444 0%, transparent 70%);
+  animation: heartbeat 1s ease-in-out infinite;
 }
-
-/* 心跳动画 */
 @keyframes heartbeat {
-  0% { transform: scale(1); }
-  10% { transform: scale(1.05); }
-  20% { transform: scale(1); }
-  30% { transform: scale(1.05); }
-  40% { transform: scale(1); }
-  100% { transform: scale(1); }
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  15% { transform: scale(1.3); opacity: 1; }
+  30% { transform: scale(1); opacity: 0.5; }
+  45% { transform: scale(1.3); opacity: 1; }
 }
-.heartbeat {
-    animation: heartbeat 3s infinite;
-}
+.overlay-title { font-size: 24px; color: #ef4444; font-weight: bold; letter-spacing: 4px;}
+.overlay-desc { color: #fff; font-size: 16px; margin-top: 12px;}
+.overlay-timer { font-size: 64px; font-family: monospace; color: #ef4444; font-weight: 900; margin-top: 40px;}
 </style>
