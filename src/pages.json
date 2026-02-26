@@ -1,0 +1,65 @@
+{
+    "pages": [
+        {
+            "path": "pages/dashboard/index",
+            "style": {
+                "navigationBarTitleText": "大盘",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/companion/index",
+            "style": {
+                "navigationBarTitleText": "AI 护盾",
+                "navigationBarBackgroundColor": "#121212",
+                "navigationBarTextStyle": "white"
+            }
+        },
+        {
+            "path": "pages/journey/index",
+            "style": {
+                "navigationBarTitleText": "历程",
+                "navigationBarBackgroundColor": "#121212",
+                "navigationBarTextStyle": "white"
+            }
+        },
+        {
+            "path": "pages/profile/index",
+            "style": {
+                "navigationBarTitleText": "自我",
+                "navigationBarBackgroundColor": "#121212",
+                "navigationBarTextStyle": "white"
+            }
+        }
+    ],
+    "globalStyle": {
+        "navigationBarTextStyle": "white",
+        "navigationBarTitleText": "Dopamine Reset",
+        "navigationBarBackgroundColor": "#121212",
+        "backgroundColor": "#121212"
+    },
+    "tabBar": {
+        "color": "#757575",
+        "selectedColor": "#00E676",
+        "borderStyle": "black",
+        "backgroundColor": "#1E1E1E",
+        "list": [
+            {
+                "pagePath": "pages/dashboard/index",
+                "text": "主控"
+            },
+            {
+                "pagePath": "pages/companion/index",
+                "text": "AI护盾"
+            },
+            {
+                "pagePath": "pages/journey/index",
+                "text": "历程"
+            },
+            {
+                "pagePath": "pages/profile/index",
+                "text": "我"
+            }
+        ]
+    }
+}
