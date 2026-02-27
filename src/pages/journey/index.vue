@@ -62,11 +62,12 @@
        <view class="badges-area">
            <text class="section-title block mb-4">神经重塑里程碑</text>
            <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
-               <view class="badge-list flex">
-                   <view class="badge-item flex-col items-center" 
-                         v-for="badge in milestoneBadges" :key="badge.day"
-                         :class="{ 'unlocked': daysClean >= badge.day, 'next-goal': daysClean < badge.day && isNextGoal(badge.day) }">
-                       
+               <view class="badge-item" 
+                     v-for="badge in milestoneBadges" :key="badge.day"
+                     :class="{ 'unlocked': daysClean >= badge.day, 'next-goal': daysClean < badge.day && isNextGoal(badge.day) }"
+                     @click="openShareCard(badge)">
+                   
+                   <view class="flex-col items-center">
                        <view class="badge-icon-wrapper">
                            <!-- 进度外环 (如果在进行中) -->
                            <svg v-if="daysClean < badge.day && isNextGoal(badge.day)" class="progress-ring" viewBox="0 0 60 60">
@@ -92,27 +93,38 @@
            </scroll-view>
        </view>
     </view>
+    
+    <!-- 全屏高光分享卡片组件 -->
+    <MilestoneShareCard :show="showShareOverlay" :milestone="selectedMilestone" @close="closeShareOverlay" />
   </scroll-view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import MilestoneShareCard from '../../components/MilestoneShareCard.vue'
 
 const daysClean = ref(0)
 const repairRate = ref(10)
 const cravingLevel = ref('极高 (High)')
 
+const showShareOverlay = ref(false)
+const selectedMilestone = ref({})
+
+// 将原先平庸的Emoji替换为赛博/科幻风格的特殊符号或几何形状
 const milestoneBadges = [
-  { day: 1, name: '初次抵抗', icon: '🔋' },
-  { day: 3, name: '生化干预', icon: '🩸' },
-  { day: 7, name: '感官脱敏', icon: '🛡️' },
-  { day: 14, name: '受体恢复', icon: '🔌' },
-  { day: 21, name: '通道重建', icon: '🧬' },
-  { day: 30, name: '额叶觉醒', icon: '👁️' },
-  { day: 60, name: '边缘重调', icon: '⚖️' },
-  { day: 90, name: '神经霸体', icon: '👑' },
-  { day: 180, name: '自我掌控', icon: '🌌' },
-  { day: 365, name: '化境重生', icon: '✨' }
+  { day: 1, name: '初次抵抗', icon: '❂' },
+  { day: 3, name: '生化干预', icon: '⚡' },
+  { day: 7, name: '感官脱敏', icon: '۞' },
+  { day: 14, name: '受体恢复', icon: '✧' },
+  { day: 21, name: '通道重建', icon: '☤' },
+  { day: 30, name: '额叶觉醒', icon: '👁' },
+  { day: 60, name: '边缘重调', icon: '☸' },
+  { day: 90, name: '神经霸体', icon: '♕' },
+  { day: 120, name: '虚空行走', icon: '♅' },
+  { day: 150, name: '潜意识净化', icon: '⚚' },
+  { day: 180, name: '自我掌控', icon: '∞' },
+  { day: 270, name: '绝对中立', icon: '⎊' },
+  { day: 365, name: '化境重生', icon: '☬' }
 ]
 
 onMounted(() => {
@@ -141,6 +153,20 @@ onMounted(() => {
       cravingLevel.value = '平稳 (Low)'
   }
 })
+
+const openShareCard = (badge) => {
+    // 只有已解锁的里程碑才允许查看高光卡片
+    if (daysClean.value >= badge.day) {
+        selectedMilestone.value = badge
+        showShareOverlay.value = true
+    } else {
+        uni.showToast({ title: '里程碑尚未激活，继续保持！', icon: 'none' })
+    }
+}
+
+const closeShareOverlay = () => {
+    showShareOverlay.value = false
+}
 
 // 计算下一个目标里程碑
 const isNextGoal = (badgeDay) => {
@@ -182,10 +208,14 @@ const getMockLevel = (w, d) => {
 </script>
 
 <style lang="scss" scoped>
+page {
+  height: 100%;
+}
+
 .container {
-  min-height: 100vh;
+  height: 100%;
   background-color: #09090b;
-  padding-bottom: 40px;
+  box-sizing: border-box;
 }
 .header {
   padding-top: calc(var(--status-bar-height) + 20px);
@@ -250,12 +280,18 @@ const getMockLevel = (w, d) => {
 /* 徽章列表 */
 .badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 16px; margin-left: -10px; padding-left: 10px; }
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.badge-list { gap: 20px; justify-content: flex-start; display: inline-flex; padding-right: 20px;}
+.badge-list { padding-right: 20px; }
 .badge-item {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
     width: 72px; /* 固定宽度以适应滚动 */
+    margin-right: 20px;
+    flex-shrink: 0; /* 极其关键：防止在横向 flex 中被压缩挤变形 */
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
     padding-top: 6px;
+    vertical-align: top;
 }
 .badge-item.unlocked {
     transform: translateY(-4px);

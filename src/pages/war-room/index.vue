@@ -27,39 +27,51 @@
 
       <view 
         v-for="msg in chatStore.messages" 
-        :key="msg._id" 
+        :key="msg._id || Math.random()" 
         class="msg-row flex mb-4"
         :class="{'justify-end': msg.user_id === currentUid}"
       >
+        <!-- 其他人发送的消息，头像在气泡左侧 -->
+        <view class="avatar other-avatar flex items-center justify-center mr-2" v-if="msg.user_id !== currentUid">
+          <text class="user-icon">{{ msg.user_id ? msg.user_id.substring(msg.user_id.length - 2).toUpperCase() : '?' }}</text>
+        </view>
+
         <view class="msg-bubble" :class="msg.user_id === currentUid ? 'my-bubble' : 'other-bubble'">
           <!-- 自定义渲染器，解析 [emo:xxx] -->
           <rich-text :nodes="renderContent(msg.content)"></rich-text>
+        </view>
+
+        <!-- 本人发送的消息，头像在气泡右侧 -->
+        <view class="avatar my-avatar flex items-center justify-center ml-2" v-if="msg.user_id === currentUid">
+          <text class="user-icon">{{ currentUid ? currentUid.substring(currentUid.length - 2).toUpperCase() : '我' }}</text>
         </view>
       </view>
       <!-- Spacer for bottom input -->
       <view class="chat-spacer"></view>
     </scroll-view>
 
-    <!-- Input Area -->
-    <view class="input-area px-4 py-3 flex items-center pb-bottom">
-      <view class="quick-emos flex items-center mr-3">
-        <text class="emo-btn" @click="sendEmo('fire')">🔥</text>
-        <text class="emo-btn" @click="sendEmo('ice')">🧊</text>
-        <text class="emo-btn" @click="sendEmo('fist')">✊</text>
-      </view>
-      
-      <input 
-        class="input-box flex-1" 
-        v-model="inputVal" 
-        placeholder="传递意志..." 
-        placeholder-class="text-gray-500"
-        @confirm="sendText"
-      />
-      
-      <view class="send-btn ml-3 flex justify-center items-center" 
-            :class="{'disabled': !inputVal.trim()}" 
-            @click="sendText">
-        <text class="send-icon">▲</text>
+    <!-- Input Area (悬浮式现代设计) -->
+    <view class="input-area flex items-center">
+      <view class="input-container flex-1 flex items-center">
+        <view class="quick-emos flex items-center mr-2">
+          <text class="emo-btn" @click="sendEmo('fire')">🔥</text>
+          <text class="emo-btn" @click="sendEmo('ice')">🧊</text>
+          <text class="emo-btn" @click="sendEmo('fist')">✊</text>
+        </view>
+        
+        <input 
+          class="input-box flex-1" 
+          v-model="inputVal" 
+          placeholder="传递意志..." 
+          placeholder-class="text-gray-500"
+          @confirm="sendText"
+        />
+        
+        <view class="btn-send flex justify-center items-center ml-2" 
+              :class="{'disabled': !inputVal.trim()}" 
+              @click="sendText">
+          <text class="send-icon">▲</text>
+        </view>
       </view>
     </view>
   </view>
@@ -184,10 +196,16 @@ const executeSend = async (content) => {
 </script>
 
 <style lang="scss" scoped>
+/* 让 page 级高度撑满，避免 100vh 导致的滚动条和底部被遮挡 */
+page {
+  height: 100%;
+}
+
 .container {
-  height: 100vh;
+  height: 100%;
   background-color: #09090b;
   display: flex;
+  box-sizing: border-box;
 }
 .px-4 { padding: 0 16px; }
 .pt-10 { padding-top: 40px; }
@@ -199,6 +217,7 @@ const executeSend = async (content) => {
 .mb-4 { margin-bottom: 16px; }
 .ml-2 { margin-left: 8px; }
 .ml-3 { margin-left: 12px; }
+.mr-2 { margin-right: 8px; }
 .mr-3 { margin-right: 12px; }
 
 .flex { display: flex; }
@@ -220,14 +239,20 @@ const executeSend = async (content) => {
 .leave-text { font-size: 13px; color: #71717a; }
 
 /* Chat Area */
-.chat-area { flex: 1; padding-top: 20px; }
+.chat-area { 
+  flex: 1; 
+  padding-top: 20px; 
+  box-sizing: border-box; 
+  padding-bottom: 100px; /* 为悬浮输入框预留空间 */
+  overflow: hidden; 
+}
 .chat-spacer { height: 20px; }
 .empty-state { opacity: 0.5; }
 
 .msg-bubble {
   padding: 12px 16px;
   border-radius: 12px;
-  max-width: 75%;
+  max-width: 65%; /* 增加头像后收缩一点气泡最大宽度以免溢出 */
   font-size: 14px;
   line-height: 1.5;
   word-break: break-all;
@@ -236,36 +261,87 @@ const executeSend = async (content) => {
   background-color: #18181b;
   border: 1px solid #27272a;
   color: #e4e4e7;
-  border-bottom-left-radius: 2px;
+  border-top-left-radius: 4px;
 }
 .my-bubble {
   background-color: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.3);
   color: #10b981;
-  border-bottom-right-radius: 2px;
+  border-top-right-radius: 4px;
 }
 
-/* Input Area */
-.input-area { background-color: #09090b; border-top: 1px solid rgba(255,255,255,0.05); }
-.emo-btn { font-size: 22px; padding: 4px; margin-right: 8px; transition: transform 0.1s;}
+/* 战区聊天头像样式 */
+.avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+}
+.other-avatar {
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(16, 185, 129, 0.1));
+  border: 1px solid rgba(8, 145, 178, 0.3);
+  box-shadow: 0 0 10px rgba(8, 145, 178, 0.1);
+}
+.my-avatar {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(8, 145, 178, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+.user-icon {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+/* 现代悬浮底部输入区 */
+.input-area {
+  flex-shrink: 0;
+  padding: 10px 16px max(16px, env(safe-area-inset-bottom)) 16px; 
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, rgba(9, 9, 11, 0.8) 20%, #09090b 100%);
+  margin-top: -80px; 
+  z-index: 20;
+  width: 100%;
+  box-sizing: border-box; /* 防止边距超出版心 */
+}
+.input-container {
+  width: 100%;
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 28px;
+  padding: 6px 6px 6px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-sizing: border-box;
+}
+.input-container:focus-within {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+  background: rgba(24, 24, 27, 0.95);
+}
+
+.emo-btn { font-size: 20px; padding: 4px; margin-right: 4px; transition: transform 0.1s;}
 .emo-btn:active { transform: scale(0.9); }
 
 .input-box {
-  background: #18181b;
+  background: transparent;
   height: 40px;
-  border-radius: 20px;
-  padding: 0 16px;
+  flex: 1;
   font-size: 14px;
   color: #fff;
+  border: none;
 }
 .text-gray-500 { color: #52525b; }
 
-.send-btn {
-  width: 40px; height: 40px; border-radius: 20px;
+.btn-send {
+  width: 38px; height: 38px; border-radius: 50%;
   background-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   transition: all 0.2s;
+  flex-shrink: 0; /* 绝对防止右侧发送按钮被挤压遮挡 */
 }
-.send-btn.disabled { background-color: #27272a; opacity: 0.5;}
+.btn-send.disabled { background-color: #27272a; opacity: 0.6; box-shadow: none;}
 .send-icon { color: #000; font-size: 16px; font-weight: 900; }
-.send-btn.disabled .send-icon { color: #71717a; }
+.btn-send.disabled .send-icon { color: #52525b; }
 </style>

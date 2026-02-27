@@ -108,7 +108,9 @@ async function sendMessage(uid, payload) {
         created_date: Date.now()
     }
 
-    await messagesCollection.add(newMsg)
+    const insertRes = await messagesCollection.add(newMsg)
+    // 修复发送消息只有一条显示的Bug: 将生成的唯一ID返回，否则前端Pinia由于去重逻辑会判定同一会话多次发出的_id相同的消息为重复消息
+    newMsg._id = insertRes.id || insertRes._id
 
     // 如果消息严重违规，直接拦截，不推送给其他人
     if (isBlocked) {

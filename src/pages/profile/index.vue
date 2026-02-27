@@ -120,10 +120,16 @@ const retakeTest = () => {
 </script>
 
 <style lang="scss" scoped>
+/* 限定外层包裹的滚动高度为主屏 100%，防止 vh 计算越界 */
+page {
+  height: 100%;
+}
+
 .container {
-  min-height: 100vh;
+  height: 100%;
   background-color: #09090b;
-  padding-bottom: 40px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 .header {
   padding-top: calc(var(--status-bar-height) + 30px);

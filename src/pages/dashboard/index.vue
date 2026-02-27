@@ -193,14 +193,20 @@ onUnmounted(() => {
 </script>
 
 <style lang="scss" scoped>
+page {
+  height: 100%;
+}
+
 .container {
-  height: 100vh;
+  height: 100%;
   background-color: #09090b; /* 极简黑曜石 */
   background-image: 
     radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 .px-4 { padding: 0 20px; }
 .pb-8 { padding-bottom: 32px; }
