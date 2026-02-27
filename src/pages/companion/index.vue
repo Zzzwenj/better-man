@@ -12,16 +12,30 @@
     </view>
     
     <!-- 聊天流水区 -->
-    <scroll-view scroll-y class="chat-list flex-1">
+    <scroll-view scroll-y class="chat-list flex-1" :scroll-top="scrollTop" scroll-with-animation>
       <view class="msg-wrapper mt-6" v-for="(msg, index) in chatList" :key="index" :class="msg.role">
-        <!-- AI Avatar -->
-        <view class="avatar ai-avatar flex items-center justify-center" v-if="msg.role === 'ai'">
-          <text class="ai-icon">⎔</text>
-        </view>
+        <!-- User Avatar & Bubble -->
+        <!-- DOM 顺序：为了使用 row-reverse 且头像靠右，我们在 DOM 中先放头像，再放气泡 -->
+        <template v-if="msg.role === 'user'">
+          <view class="avatar user-avatar flex items-center justify-center ml-3">
+            <text class="user-icon">U</text>
+          </view>
+          
+          <view class="msg-bubble user-bubble">
+            <text class="msg-text">{{ msg.content }}</text>
+          </view>
+        </template>
         
-        <view class="msg-bubble" :class="{ 'user-bubble': msg.role === 'user' }">
-          <text class="msg-text">{{ msg.content }}</text>
-        </view>
+        <!-- AI Avatar & Bubble -->
+        <template v-else>
+          <view class="avatar ai-avatar flex items-center justify-center">
+            <text class="ai-icon">⎔</text>
+          </view>
+          
+          <view class="msg-bubble">
+            <text class="msg-text">{{ msg.content }}</text>
+          </view>
+        </template>
       </view>
       
       <view class="msg-wrapper ai mt-6" v-if="isLoading">
@@ -44,19 +58,20 @@
       </view>
     </scroll-view>
     
-    <!-- 底部输入区 -->
-    <view class="input-area flex items-center px-4 pd-bottom">
-      <input 
-        class="input-box flex-1" 
-        :class="{ 'locked-input': isPremiumLocked }"
-        v-model="inputValue" 
-        :placeholder="isPremiumLocked ? '获取权限后方可继续对话...' : '告诉 AI 你的感受...'" 
-        placeholder-class="placeholder-text" 
-        @confirm="sendMessage" 
-        :disabled="isPremiumLocked" 
-      />
-      <view class="btn-send ml-3 flex items-center justify-center" :class="{ 'disabled': !inputValue || isPremiumLocked }" @click="sendMessage">
-        <text class="send-icon">▲</text>
+    <!-- 底部输入区 (现代 AI 对话框悬浮式设计) -->
+    <view class="input-area flex items-center px-4">
+      <view class="input-container flex-1 flex items-center" :class="{ 'locked-input': isPremiumLocked }">
+        <input 
+          class="input-box flex-1" 
+          v-model="inputValue" 
+          :placeholder="isPremiumLocked ? '获取权限后方可继续对话...' : '告诉 AI 你的感受...'" 
+          placeholder-class="placeholder-text" 
+          @confirm="sendMessage" 
+          :disabled="isPremiumLocked" 
+        />
+        <view class="btn-send flex items-center justify-center" :class="{ 'disabled': !inputValue || isPremiumLocked }" @click="sendMessage">
+          <text class="send-icon">▲</text>
+        </view>
       </view>
     </view>
   </view>
@@ -69,12 +84,20 @@ const chatList = ref([])
 const inputValue = ref('')
 const isLoading = ref(false)
 const isPremiumLocked = ref(false) 
+const scrollTop = ref(0) // 用于控制自动滚动到最底部
 
 // 🎯 请在此处填入真实的 DeepSeek 或其他兼容 OpenAI 格式的大模型 API Key
 // 若为空，系统会自动使用 [模拟回复模式]
 const API_KEY = '' 
 
 let userProfile = null
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    // 强制赋予一个极大值将其推到底部
+    scrollTop.value = chatList.value.length * 1000 
+  })
+}
 
 onMounted(() => {
   // 1. 获取问卷体检数据
@@ -88,6 +111,8 @@ onMounted(() => {
     role: 'ai',
     content: `检测到神经使用间隔异常。\n探索者，你的前额叶皮层正在遭受强烈的多巴胺反噬。\n\n请如实反馈：你现在的渴求层级 (1-10) 是多少？`
   })
+  
+  scrollToBottom()
 })
 
 const sendMessage = async () => {
@@ -97,6 +122,7 @@ const sendMessage = async () => {
   chatList.value.push({ role: 'user', content: userMsg })
   inputValue.value = ''
   isLoading.value = true
+  scrollToBottom()
   
   // 达到免费对话上限，弹出付费墙
   if (chatList.value.length > 5) {
@@ -138,8 +164,10 @@ const sendMessage = async () => {
       
       const aiReply = res.data?.choices?.[0]?.message?.content || 'API 调用异常，无法获取协议指令。'
       chatList.value.push({ role: 'ai', content: aiReply })
+      scrollToBottom()
     } catch (e) {
       chatList.value.push({ role: 'ai', content: '连接量子心理学数据库超时。' })
+      scrollToBottom()
     }
   } else {
     // 高级动态模拟响应库 (根据关键词匹配)
@@ -156,6 +184,7 @@ const sendMessage = async () => {
       
       chatList.value.push({ role: 'ai', content: mockReply })
       isLoading.value = false
+      scrollToBottom()
       
       // 触觉反馈模拟 AI 消息到达
       uni.vibrateShort()
@@ -177,8 +206,13 @@ const upgrade = () => {
 </script>
 
 <style lang="scss" scoped>
+/* 让 page 级高度撑满，这是 flex 纵向布局的基础 */
+page {
+  height: 100%;
+}
+
 .container {
-  height: 100vh;
+  height: 100%;
   background-color: #09090b;
   display: flex;
   flex-direction: column;
@@ -192,7 +226,6 @@ const upgrade = () => {
 .pb-safe { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
-.flex-1 { flex: 1; overflow: hidden; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .items-center { align-items: center; }
@@ -200,6 +233,7 @@ const upgrade = () => {
 
 /* 顶部导航栏 */
 .nav-bar {
+  flex-shrink: 0; /* 保证导航栏高度不被压缩 */
   padding-top: calc(var(--status-bar-height) + 16px);
   padding-bottom: 16px;
   background-color: rgba(9, 9, 11, 0.85);
@@ -219,8 +253,12 @@ const upgrade = () => {
 
 /* 聊天流水区 */
 .chat-list {
+  flex: 1; /* 占据中间所有剩余空间 */
+  overflow: hidden; /* 滑动由内部 scroll-view 自己接管 */
   padding: 0 20px;
   box-sizing: border-box;
+  /* 为底部悬浮输入框预留滚动空间 */
+  padding-bottom: 100px;
 }
 .msg-wrapper {
   display: flex;
@@ -240,10 +278,18 @@ const upgrade = () => {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(16, 185, 129, 0.1));
   border: 1px solid rgba(139, 92, 246, 0.4);
-  flex-shrink: 0;
   box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
 }
 .ai-icon { color: #8b5cf6; font-size: 18px; font-weight: bold;}
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(8, 145, 178, 0.1));
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+.user-icon { color: #10b981; font-size: 16px; font-weight: bold; font-family: monospace;}
 .msg-bubble {
   margin-left: 12px;
   background: rgba(255,255,255,0.03);
@@ -255,7 +301,7 @@ const upgrade = () => {
 }
 .user-bubble {
   margin-left: 0;
-  margin-right: 12px;
+  margin-right: 0; /* Clear right margin from earlier, will use avatar's ml-3 for gap */
   background: rgba(16, 185, 129, 0.1);
   border: 1px solid rgba(16, 185, 129, 0.3);
   border-radius: 16px 4px 16px 16px;
@@ -289,38 +335,57 @@ const upgrade = () => {
 .btn-text { color: white; font-size: 14px; font-weight: bold; letter-spacing: 1px;}
 .btn-hover { transform: scale(0.96); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);}
 
-/* 底部输入区 */
+/* 现代悬浮底部输入区 */
 .input-area {
-  padding-top: 12px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
-  background-color: #09090b;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  box-sizing: border-box;
+  flex-shrink: 0; /* 保证输入框高度不被压缩 */
+  padding: 10px 20px max(16px, env(safe-area-inset-bottom)) 20px; 
+  background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, rgba(9, 9, 11, 0.8) 20%, #09090b 100%);
+  margin-top: -80px; /* 向上偏移覆盖到聊天记录上，产生悬浮感 */
+  z-index: 20;
+}
+.input-container {
+  width: 100%;
+  background: rgba(24, 24, 27, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 28px;
+  padding: 6px 6px 6px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.input-container:focus-within {
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+  background: rgba(24, 24, 27, 0.95);
 }
 .input-box {
   height: 44px;
-  background: #18181b;
-  border-radius: 22px;
-  padding: 0 20px;
-  border: 1px solid #27272a;
+  flex: 1;
   color: #e4e4e7;
-  font-size: 14px;
+  font-size: 15px;
+  background: transparent;
+  border: none;
 }
 .locked-input { 
-    background: rgba(24, 24, 27, 0.5); 
-    border: 1px dashed #3f3f46;
+  background: rgba(24, 24, 27, 0.4); 
+  border: 1px dashed #3f3f46;
 }
-.placeholder-text { color: #52525b; font-size: 13px; }
+.placeholder-text { color: #71717a; font-size: 14px; }
+
 .btn-send {
-  width: 44px; height: 44px;
-  border-radius: 22px;
+  width: 38px; height: 38px;
+  border-radius: 50%;
   background: #10b981;
+  margin-left: 10px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
   transition: all 0.2s;
 }
+.btn-send:active { transform: scale(0.9); }
 .btn-send.disabled {
-    background: #27272a;
-    opacity: 0.5;
+  background: #27272a;
+  box-shadow: none;
+  opacity: 0.6;
 }
-.send-icon { color: #000; font-size: 18px; font-weight: bold; }
+.send-icon { color: #000; font-size: 16px; font-weight: 900; }
 .btn-send.disabled .send-icon { color: #52525b; font-weight: normal; }
 </style>
