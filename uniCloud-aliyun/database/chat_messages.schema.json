@@ -1,0 +1,45 @@
+{
+    "bsonType": "object",
+    "required": [
+        "room_id",
+        "user_id",
+        "content"
+    ],
+    "permission": {
+        "read": "auth.uid != null",
+        "create": "auth.uid != null",
+        "update": "false",
+        "delete": "false"
+    },
+    "properties": {
+        "_id": {
+            "description": "存储文档 ID（消息 ID），系统自动生成"
+        },
+        "room_id": {
+            "bsonType": "string",
+            "description": "消息归属的房间号"
+        },
+        "user_id": {
+            "bsonType": "string",
+            "description": "发送者用户 ID"
+        },
+        "content": {
+            "bsonType": "string",
+            "description": "纯文本消息内容（可包含 [emo:xxx] 表情特征）",
+            "trim": "both"
+        },
+        "type": {
+            "bsonType": "string",
+            "description": "消息类型: 'user' / 'system'",
+            "defaultValue": "user"
+        },
+        "is_blocked": {
+            "bsonType": "bool",
+            "description": "如果经过自动/人工审核发现违禁词，将其标记为 blocked 或直接拒绝入库"
+        },
+        "created_date": {
+            "bsonType": "timestamp",
+            "description": "发送时间"
+        }
+    }
+}

@@ -90,6 +90,14 @@ const currentPhase = ref('Phase I: 生理挣扎')
 let timeInterval = null
 
 onMounted(() => {
+  // --- 拦截鉴权: 检查如果未登录跳登录页 ---
+  const token = uni.getStorageSync('uni_id_token')
+  if (!token) {
+    uni.redirectTo({ url: '/pages/login/index' })
+    return
+  }
+  // ------------------------------------
+
   let startTimestamp = uni.getStorageSync('neuro_start_date')
   if (!startTimestamp) {
     startTimestamp = Date.now() - (5 * 24 * 60 * 60 * 1000)

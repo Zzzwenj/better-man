@@ -1,0 +1,39 @@
+{
+    "bsonType": "object",
+    "required": [
+        "room_id",
+        "status"
+    ],
+    "permission": {
+        "read": "true",
+        "create": "false",
+        "update": "false",
+        "delete": "false"
+    },
+    "properties": {
+        "_id": {
+            "description": "存储文档 ID（房间系统 ID），系统自动生成"
+        },
+        "room_id": {
+            "bsonType": "string",
+            "description": "房间短标识 (例如 'room_001')",
+            "trim": "both"
+        },
+        "name": {
+            "bsonType": "string",
+            "description": "房间名称 (例如 '第001战区')"
+        },
+        "status": {
+            "bsonType": "string",
+            "description": "房间状态: active / full(已满500)"
+        },
+        "member_count": {
+            "bsonType": "int",
+            "description": "当前在线或历史加入人数"
+        },
+        "created_date": {
+            "bsonType": "timestamp",
+            "description": "房间创建时间"
+        }
+    }
+}

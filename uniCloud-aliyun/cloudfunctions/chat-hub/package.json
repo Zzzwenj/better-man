@@ -1,0 +1,6 @@
+{
+    "name": "chat-hub",
+    "version": "1.0.0",
+    "description": "500-person chat room auto-grouping and messaging",
+    "main": "index.js"
+}

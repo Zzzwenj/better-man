@@ -1,9 +1,20 @@
 <script>
+// 这里因为是在 App.vue 取 store，需要确保 pinia 已挂载。推荐在 onLaunch 内侧动态引入
+import { useChatStore } from './store/chat.js'
+
 export default {
   onLaunch: function () {
     console.log('App Launch - 特工隐秘模式已激活 (伪装: 计算器)')
-    // 之前在这里有路由强制跳转到 /pages/dashboard 的逻辑，现在为了展示伪装首屏，必须去除。
-    // 我们将所有业务逻辑转移到 calculator 页面验证隐秘代码 (8972=) 后跳转。
+    
+    // 监听 uni-push 2.0 透传消息
+    uni.onPushMessage((res) => {
+        console.log("收到推送透传消息：", res)
+        if (res.type === 'receive') {
+            const chatStore = useChatStore()
+            // 将来自云端的实时消息体 push 进状态管理器
+            chatStore.pushMessage(res.data.payload)
+        }
+    })
   },
   onShow: function () {
     console.log('App Show')

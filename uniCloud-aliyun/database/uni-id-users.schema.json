@@ -1,0 +1,65 @@
+{
+    "bsonType": "object",
+    "required": [],
+    "permission": {
+        "read": "doc.uid == auth.uid || 'admin' in auth.role",
+        "create": "auth.uid != null",
+        "update": "doc.uid == auth.uid",
+        "delete": "false"
+    },
+    "properties": {
+        "_id": {
+            "description": "存储文档 ID（用户 ID），系统自动生成"
+        },
+        "username": {
+            "bsonType": "string",
+            "description": "用户名，唯一",
+            "trim": "both"
+        },
+        "password": {
+            "bsonType": "string",
+            "description": "密码，加密存储"
+        },
+        "mobile": {
+            "bsonType": "string",
+            "description": "手机号码",
+            "pattern": "^\\+?[0-9-]{3,20}$"
+        },
+        "mobile_confirmed": {
+            "bsonType": "int",
+            "description": "手机号验证状态，0 未验证 1 已验证"
+        },
+        "wx_openid": {
+            "bsonType": "object",
+            "description": "微信 openid"
+        },
+        "qq_openid": {
+            "bsonType": "object",
+            "description": "QQ openid"
+        },
+        "nickname": {
+            "bsonType": "string",
+            "description": "用户昵称"
+        },
+        "avatar": {
+            "bsonType": "string",
+            "description": "头像地址"
+        },
+        "register_date": {
+            "bsonType": "timestamp",
+            "description": "注册时间"
+        },
+        "neuro_baseline": {
+            "bsonType": "object",
+            "description": "基线体检表单数据（存入age, history, frequency, triggers等）"
+        },
+        "neuro_start_date": {
+            "bsonType": "timestamp",
+            "description": "当前净化计算起始时间"
+        },
+        "current_room_id": {
+            "bsonType": "string",
+            "description": "当前所在的 500 人聊天室分组"
+        }
+    }
+}

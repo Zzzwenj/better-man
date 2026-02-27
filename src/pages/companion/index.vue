@@ -100,6 +100,14 @@ const scrollToBottom = () => {
 }
 
 onMounted(() => {
+  // --- 拦截鉴权: 检查如果未登录跳登录页 ---
+  const token = uni.getStorageSync('uni_id_token')
+  if (!token) {
+    uni.redirectTo({ url: '/pages/login/index' })
+    return
+  }
+  // ------------------------------------
+
   // 1. 获取问卷体检数据
   const data = uni.getStorageSync('neuro_baseline')
   if (data) {

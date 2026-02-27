@@ -9,6 +9,22 @@
             }
         },
         {
+            "path": "pages/login/index",
+            "style": {
+                "navigationBarTitleText": "身份核验",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/war-room/index",
+            "style": {
+                "navigationBarTitleText": "战区通讯",
+                "navigationStyle": "custom",
+                "navigationBarBackgroundColor": "#09090b",
+                "navigationBarTextStyle": "white"
+            }
+        },
+        {
             "path": "pages/onboarding/index",
             "style": {
                 "navigationBarTitleText": "基线评估",
@@ -62,6 +78,10 @@
             {
                 "pagePath": "pages/dashboard/index",
                 "text": "主控"
+            },
+            {
+                "pagePath": "pages/war-room/index",
+                "text": "战区"
             },
             {
                 "pagePath": "pages/companion/index",
