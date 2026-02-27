@@ -1,0 +1,7 @@
+{
+    "name": "ai-shield",
+    "version": "1.0.0",
+    "description": "DeepSeek API Proxy Handler",
+    "main": "index.js",
+    "dependencies": {}
+}

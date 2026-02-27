@@ -7,7 +7,7 @@
         <text class="nav-subtitle block">临床级认知行为干预</text>
       </view>
       <view class="quota-badge flex items-center">
-        <text class="quota-text">今日免费额度: 1/1</text>
+        <text class="quota-text">脑机防护持续在线</text>
       </view>
     </view>
     
@@ -47,29 +47,20 @@
         </view>
       </view>
       
-      <!-- 高级特权引导模块 -->
-      <view class="premium-block mt-8 flex-col items-center justify-center" v-if="isPremiumLocked">
-        <text class="lock-icon">🔒</text>
-        <text class="premium-title mt-3">深度精神分析已锁定</text>
-        <text class="premium-desc mt-2">免费调用额度已用尽。\n升级以获取无限次 AI 临床导师干预。</text>
-        <view class="premium-btn mt-6 flex justify-center items-center" hover-class="btn-hover" @click="upgrade">
-          <text class="btn-text">解锁「强制护城河」- ￥9.9 / 月</text>
-        </view>
-      </view>
+
     </scroll-view>
     
     <!-- 底部输入区 (现代 AI 对话框悬浮式设计) -->
     <view class="input-area flex items-center px-4">
-      <view class="input-container flex-1 flex items-center" :class="{ 'locked-input': isPremiumLocked }">
+      <view class="input-container flex-1 flex items-center">
         <input 
           class="input-box flex-1" 
           v-model="inputValue" 
-          :placeholder="isPremiumLocked ? '获取权限后方可继续对话...' : '告诉 AI 你的感受...'" 
+          placeholder="告诉 AI 你的感受..." 
           placeholder-class="placeholder-text" 
           @confirm="sendMessage" 
-          :disabled="isPremiumLocked" 
         />
-        <view class="btn-send flex items-center justify-center" :class="{ 'disabled': !inputValue || isPremiumLocked }" @click="sendMessage">
+        <view class="btn-send flex items-center justify-center" :class="{ 'disabled': !inputValue }" @click="sendMessage">
           <text class="send-icon">▲</text>
         </view>
       </view>
@@ -83,12 +74,7 @@ import { ref, onMounted, nextTick } from 'vue'
 const chatList = ref([])
 const inputValue = ref('')
 const isLoading = ref(false)
-const isPremiumLocked = ref(false) 
 const scrollTop = ref(0) // 用于控制自动滚动到最底部
-
-// 🎯 请在此处填入真实的 DeepSeek 或其他兼容 OpenAI 格式的大模型 API Key
-// 若为空，系统会自动使用 [模拟回复模式]
-const API_KEY = '' 
 
 let userProfile = null
 
@@ -117,14 +103,14 @@ onMounted(() => {
   // 2. 初始干预话术
   chatList.value.push({
     role: 'ai',
-    content: `检测到神经使用间隔异常。\n探索者，你的前额叶皮层正在遭受强烈的多巴胺反噬。\n\n请如实反馈：你现在的渴求层级 (1-10) 是多少？`
+    content: `你好，我是你的专属成长伙伴。\n在这里，你可以放下防备，随时和我倾诉你的焦虑、困惑或是生活中的那些微小进步。\n\n今天感觉怎么样？聊聊你的想法吧。`
   })
   
   scrollToBottom()
 })
 
 const sendMessage = async () => {
-  if (!inputValue.value.trim() || isLoading.value || isPremiumLocked.value) return
+  if (!inputValue.value.trim() || isLoading.value) return
   
   const userMsg = inputValue.value
   chatList.value.push({ role: 'user', content: userMsg })
@@ -132,84 +118,48 @@ const sendMessage = async () => {
   isLoading.value = true
   scrollToBottom()
   
-  // 达到免费对话上限，弹出付费墙
-  if (chatList.value.length > 5) {
-      isLoading.value = false
-      isPremiumLocked.value = true
-      return
-  }
-  
-  // 组装针对当前用户的 System Prompt
-  let systemPrompt = '你是一个严厉的脑神经科学干预AI导师。'
+  // 组装针对当前用户的 System Prompt：动态切换“严厉教官”与“温和导师”模式
+  let systemPrompt = '你是一位专业的脑神经科学干预导师。你需要根据用户的发言内容动态调整你的语气：'
+  systemPrompt += '\n1. 【当用户表达“忍不住”、“想破戒”、“受不了了”等屈服欲望的言论时】：立刻化身为冷酷严厉的军队教官！用斩钉截铁的语气、甚至带一点呵斥，一针见血地指出他现在只是多巴胺的奴隶，被原始大脑绑架了。不要给他任何借口，下达强制性的物理打断命令（比如：立刻去洗冷水脸、做50个俯卧撑）。'
+  systemPrompt += '\n2. 【当用户表达“我很累”、“坚持了很久”、“我今天做到了”或者感到深深的挫败内疚时】：化身为温和包容的心理咨询师。接纳他的痛苦，告诉他这是神经重塑必经的阵痛，给予科学原理解释（例如受体恢复）和温暖的鼓励，并提供一个微小可行的建议。'
   if (userProfile) {
-    systemPrompt += `该用户的生理画像：年龄段[${userProfile.age}]，成瘾史[${userProfile.history}]，破戒爆发频率[${userProfile.frequency}]，高危触发场景包含：[${userProfile.triggers.join(',')}]。`
+    systemPrompt += `\n\n该用户生理画像：年龄段[${userProfile.age}]，成瘾史[${userProfile.history}]，目前的波动频率[${userProfile.frequency}]，高危触发场景包含：[${userProfile.triggers.join(',')}]。`
   }
-  systemPrompt += '请用冷峻、专业、直接的中文回复他，字数限制在 80 字以内，一针见血地指出他只不过是多巴胺的奴隶，并给出强烈的反制命令。坚决不要回复诸如你好之类的话。'
+  systemPrompt += '\n\n无论哪种模式，回复必须都是中文，字数控制在 120 字左右，不要说你好之类的废话，直击灵魂。'
 
-  if (API_KEY) {
-    try {
-      // 真实的大模型 API 请求对接
-      const res = await new Promise((resolve, reject) => {
-        uni.request({
-          url: 'https://api.deepseek.com/chat/completions',
-          method: 'POST',
-          header: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${API_KEY}`
-          },
-          data: {
-            model: 'deepseek-chat',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userMsg }
-            ],
-            temperature: 0.7
-          },
-          success: (res) => resolve(res),
-          fail: (err) => reject(err)
-        })
-      })
-      
-      const aiReply = res.data?.choices?.[0]?.message?.content || 'API 调用异常，无法获取协议指令。'
-      chatList.value.push({ role: 'ai', content: aiReply })
-      scrollToBottom()
-    } catch (e) {
-      chatList.value.push({ role: 'ai', content: '连接量子心理学数据库超时。' })
-      scrollToBottom()
-    }
-  } else {
-    // 高级动态模拟响应库 (根据关键词匹配)
-    setTimeout(() => {
-      let mockReply = ''
-      if (userMsg.includes('想') || userMsg.includes('忍不住') || userMsg.includes('破戒')) {
-          mockReply = `[临床模拟] 警告：前额叶控制力正在断开。你现在感受到的“想”，仅仅是边缘系统对高浓度多巴胺的乞求，并非你真实的意志。立刻放下手机，去洗把冷水脸！`
-      } else if (userMsg.includes('累') || userMsg.includes('坚持') || userMsg.includes('痛苦')) {
-          mockReply = `[临床模拟] 阵痛是神经拔节的必经之路。你多忍受一分钟的焦虑，你的多巴胺受体就多恢复一分敏锐度。不要向低级欲望妥协。`
-      } else {
-          mockReply = `[临床模拟] 收到你的反馈。数据分析表明你的情绪波动来源于 [${userProfile?.triggers?.join(' / ') || '未知环境刺激'}]。请保持觉察，深呼吸。`
+  // 上下文截断保护：只携带 System Prompt + 最近 6 条聊天记录，防止 Token 失控
+  const conversationHistory = chatList.value.slice(-6).map(msg => ({
+    role: msg.role === 'ai' ? 'assistant' : 'user',
+    content: msg.content
+  }))
+
+  const messagesPayload = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory
+  ]
+
+  try {
+    const { result } = await uniCloud.callFunction({
+      name: 'ai-shield',
+      data: {
+        messages: messagesPayload,
+        userMsg: userMsg
       }
-      mockReply += ` (注: 在源码加入真实 API_KEY 获取无删减全动态干预)`
-      
-      chatList.value.push({ role: 'ai', content: mockReply })
-      isLoading.value = false
-      scrollToBottom()
-      
-      // 触觉反馈模拟 AI 消息到达
-      uni.vibrateShort()
-    }, 1500)
-    return
-  }
-  
-  isLoading.value = false
-}
+    })
 
-const upgrade = () => {
-  uni.showModal({
-    title: '开启全面护城河',
-    content: '通过 9.9 元/月解锁无限次临床级 AI 心理拉扯包，为理智上锁。',
-    confirmColor: '#10b981',
-    confirmText: '立即解锁'
-  })
+    if (result.code === 0) {
+      chatList.value.push({ role: 'ai', content: result.data })
+    } else {
+      chatList.value.push({ role: 'ai', content: `[链路警报] ${result.data || result.msg}` })
+    }
+  } catch (error) {
+    console.error('Call AI Shield function error:', error)
+    chatList.value.push({ role: 'ai', content: '连接量子心理学数据库超时或发生异常。' })
+  } finally {
+    isLoading.value = false
+    scrollToBottom()
+    uni.vibrateShort()
+  }
 }
 </script>
 
@@ -321,27 +271,7 @@ page {
   letter-spacing: 0.5px;
 }
 
-/* 高级特权引导模块 */
-.premium-block {
-  margin-top: 60px;
-  padding: 30px 20px;
-  background: radial-gradient(circle at center, rgba(139,92,246,0.1) 0%, transparent 70%);
-  border-radius: 20px;
-  border: 1px dashed rgba(139, 92, 246, 0.3);
-}
-.lock-icon { font-size: 32px; filter: drop-shadow(0 0 10px rgba(139,92,246,0.5));}
-.premium-title { font-size: 18px; font-weight: bold; color: #a78bfa; }
-.premium-desc { font-size: 13px; color: #71717a; text-align: center; line-height: 1.5;}
-.premium-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  padding: 0 24px;
-  height: 44px;
-  border-radius: 22px;
-  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
-  transition: all 0.2s;
-}
-.btn-text { color: white; font-size: 14px; font-weight: bold; letter-spacing: 1px;}
-.btn-hover { transform: scale(0.96); box-shadow: 0 4px 10px rgba(139, 92, 246, 0.4);}
+
 
 /* 现代悬浮底部输入区 */
 .input-area {
@@ -374,10 +304,7 @@ page {
   background: transparent;
   border: none;
 }
-.locked-input { 
-  background: rgba(24, 24, 27, 0.4); 
-  border: 1px dashed #3f3f46;
-}
+
 .placeholder-text { color: #71717a; font-size: 14px; }
 
 .btn-send {
