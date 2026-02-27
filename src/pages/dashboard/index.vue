@@ -13,7 +13,7 @@
     </view>
     
     <!-- 核心专注区域（能量环） -->
-    <view class="core-area flex-1 flex-col justify-center items-center">
+    <view class="core-area flex-1 flex-col justify-center items-center mt-4">
       <view class="energy-core flex items-center justify-center relative">
         <view class="ring outer-ring"></view>
         <view class="ring inner-ring"></view>
@@ -28,8 +28,20 @@
         </view>
       </view>
 
-      <view class="ad-banner mt-8 flex justify-center items-center">
-        <text class="ad-text">► 观看 30s 神经学短片，获取 1 次『多巴胺强心针』能量</text>
+      <!-- 新增：具象化数据面板 -->
+      <view class="data-cards flex justify-between mt-8 px-4 w-full">
+        <view class="data-card flex-col items-center">
+          <text class="data-val">{{ hoursSaved }}h</text>
+          <text class="data-label mt-1">夺回专注力</text>
+        </view>
+        <view class="data-card flex-col items-center">
+          <text class="data-val">{{ dopamineIndex }}%</text>
+          <text class="data-label mt-1">多巴胺修复率</text>
+        </view>
+      </view>
+
+      <view class="quote-wrapper mt-6 w-full">
+        <MotivationalQuote />
       </view>
     </view>
     
@@ -47,16 +59,20 @@
       <view class="panic-content flex-col items-center justify-center">
         <view class="heartbeat-circle"></view>
         <text class="overlay-title mt-4">系统已强行接管</text>
-        <text class="overlay-desc mt-2 px-4 text-center">将手机放于地面。用鼻尖触碰下方按钮，\n完成俯卧撑验证，转化生理多巴胺。</text>
+        
+        <!-- 动态显示干预类型 -->
+        <text class="intervention-type mt-2">{{ currentIntervention.name }}</text>
+        <text class="overlay-desc mt-2 px-4 text-center">{{ currentIntervention.desc }}</text>
+        
         <text class="overlay-timer mt-6">{{ timeLeft }}s</text>
         
         <view class="pushup-counter mt-6">
-            <text class="pushup-val">{{ completedPushups }}</text>
-            <text class="pushup-target"> / {{ requiredPushups }}</text>
+            <text class="pushup-val">{{ completedActions }}</text>
+            <text class="pushup-target"> / {{ currentIntervention.target }}</text>
         </view>
         
-        <view class="verify-btn mt-8 flex items-center justify-center" hover-class="verify-hover" @click="doPushup">
-            <text class="verify-text">完成 1 个</text>
+        <view class="verify-btn mt-8 flex items-center justify-center" hover-class="verify-hover" @click="doAction">
+            <text class="verify-text">{{ currentIntervention.btnText }}</text>
         </view>
       </view>
     </view>
@@ -65,8 +81,11 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import MotivationalQuote from '../../components/MotivationalQuote.vue'
 
 const hoursClean = ref(0)
+const hoursSaved = ref(0)
+const dopamineIndex = ref(0)
 const currentPhase = ref('Phase I: 生理挣扎')
 let timeInterval = null
 
@@ -79,7 +98,16 @@ onMounted(() => {
   
   const updateTimer = () => {
     const diffMs = Date.now() - startTimestamp
-    hoursClean.value = Math.floor(diffMs / (1000 * 60 * 60))
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+    hoursClean.value = totalHours
+    
+    // 计算夺回的专注力：假设每天浪费 2 小时在成瘾行为和内耗上
+    hoursSaved.value = Math.floor((totalHours / 24) * 2)
+    
+    // 计算多巴胺修复指数 (最高 100%)
+    const days = totalHours / 24
+    let rate = 10 + (days * 1.5)
+    dopamineIndex.value = Math.min(Math.floor(rate), 100)
     
     if (hoursClean.value < 72) {
       currentPhase.value = 'Phase I: 生理挣脱'
@@ -97,15 +125,26 @@ onMounted(() => {
 })
 
 const isPanicMode = ref(false)
-const requiredPushups = ref(20)
-const completedPushups = ref(0)
+const interventions = [
+  { name: '🔥 俯卧撑极限验证', desc: '将手机放于地面，用鼻尖触碰下方按钮。\n将多巴胺转化为肌肉撕裂。', target: 20, btnText: '完成 1 个' },
+  { name: '🦵 战术深蹲验证', desc: '手持设备，每完成一次标准深蹲\n点击屏幕确认一次。', target: 30, btnText: '完成 1 次' },
+  { name: '🧊 冰水物理冷却', desc: '立刻用冷水拍打面部 5 次，\n强制唤醒前额叶理智。', target: 5, btnText: '完成 1 组冷水' },
+  { name: '🫁 4-7-8 神经呼吸', desc: '吸气 4 秒，憋气 7 秒，呼气 8 秒。\n完成完整循环极速降低心率。', target: 5, btnText: '完成 1 次循环' }
+]
+
+const currentIntervention = ref(interventions[0])
+const completedActions = ref(0)
 const timeLeft = ref(60)
 let panicInterval = null
 
 const triggerPanic = () => {
   isPanicMode.value = true
-  completedPushups.value = 0
+  completedActions.value = 0
   timeLeft.value = 60
+  
+  // 随机选择一种干预方式
+  const randomIndex = Math.floor(Math.random() * interventions.length)
+  currentIntervention.value = interventions[randomIndex]
   
   // 初始强烈震动
   uni.vibrateLong()
@@ -121,14 +160,14 @@ const triggerPanic = () => {
   }, 1000)
 }
 
-const doPushup = () => {
+const doAction = () => {
   if (!isPanicMode.value) return
   
-  completedPushups.value++
+  completedActions.value++
   // 点击时的短促震动反馈
   uni.vibrateShort()
   
-  if (completedPushups.value >= requiredPushups.value) {
+  if (completedActions.value >= currentIntervention.value.target) {
     // 验证通过，解除接管
     isPanicMode.value = false
     if (panicInterval) clearInterval(panicInterval)
@@ -148,7 +187,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .container {
   height: 100vh;
-  background-color: #09090b; /* obsidian black */
+  background-color: #09090b; /* 极简黑曜石 */
   background-image: 
     radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
@@ -256,19 +295,18 @@ onUnmounted(() => {
   color: #e4e4e7;
 }
 
-/* 广告横幅 */
-.ad-banner {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed rgba(255, 255, 255, 0.1);
-  padding: 12px 20px;
-  border-radius: 12px;
-  margin: 32px 20px 0;
-  backdrop-filter: blur(5px);
+/* 紧急阻断按钮 */
+.w-full { width: 100%; box-sizing: border-box; }
+.data-cards { gap: 16px; }
+.data-card {
+  flex: 1;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 16px;
+  padding: 16px 0;
 }
-.ad-text {
-  color: #a1a1aa;
-  font-size: 12px;
-}
+.data-val { font-size: 24px; font-weight: 900; color: #10b981; font-family: monospace; }
+.data-label { font-size: 12px; color: #71717a; }
 
 /* 紧急阻断按钮 */
 .panic-btn {
@@ -322,6 +360,7 @@ onUnmounted(() => {
   30% { transform: scale(1); opacity: 0.5; }
   45% { transform: scale(1.3); opacity: 1; }
 }
+.intervention-type { font-size: 20px; color: #fff; font-weight: bold; margin-top: 12px; letter-spacing: 2px;}
 .overlay-title { font-size: 24px; color: #ef4444; font-weight: bold; letter-spacing: 4px;}
 .overlay-desc { color: #fff; font-size: 14px; margin-top: 12px; line-height: 1.5; color: #a1a1aa;}
 .overlay-timer { font-size: 64px; font-family: monospace; color: #ef4444; font-weight: 900; margin-top: 20px;}

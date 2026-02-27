@@ -1,6 +1,14 @@
 {
     "pages": [
         {
+            "path": "pages/calculator/index",
+            "style": {
+                "navigationBarTitleText": "",
+                "navigationStyle": "custom",
+                "disableScroll": true
+            }
+        },
+        {
             "path": "pages/onboarding/index",
             "style": {
                 "navigationBarTitleText": "基线评估",

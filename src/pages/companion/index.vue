@@ -142,13 +142,23 @@ const sendMessage = async () => {
       chatList.value.push({ role: 'ai', content: '连接量子心理学数据库超时。' })
     }
   } else {
-    // 模拟等待
+    // 高级动态模拟响应库 (根据关键词匹配)
     setTimeout(() => {
-      chatList.value.push({ 
-          role: 'ai', 
-          content: `[模拟响应] 数据显示你当前的渴求来源于 [${userProfile?.triggers?.join(',') || '外部刺激'}]。\n这并不是你真实的意愿，仅仅是边缘系统在乞求化学物质奖励。立刻放下手机去做俯卧撑。(请在源码中填入真实的 API_KEY 激活真正 AI 导师)` 
-      })
+      let mockReply = ''
+      if (userMsg.includes('想') || userMsg.includes('忍不住') || userMsg.includes('破戒')) {
+          mockReply = `[临床模拟] 警告：前额叶控制力正在断开。你现在感受到的“想”，仅仅是边缘系统对高浓度多巴胺的乞求，并非你真实的意志。立刻放下手机，去洗把冷水脸！`
+      } else if (userMsg.includes('累') || userMsg.includes('坚持') || userMsg.includes('痛苦')) {
+          mockReply = `[临床模拟] 阵痛是神经拔节的必经之路。你多忍受一分钟的焦虑，你的多巴胺受体就多恢复一分敏锐度。不要向低级欲望妥协。`
+      } else {
+          mockReply = `[临床模拟] 收到你的反馈。数据分析表明你的情绪波动来源于 [${userProfile?.triggers?.join(' / ') || '未知环境刺激'}]。请保持觉察，深呼吸。`
+      }
+      mockReply += ` (注: 在源码加入真实 API_KEY 获取无删减全动态干预)`
+      
+      chatList.value.push({ role: 'ai', content: mockReply })
       isLoading.value = false
+      
+      // 触觉反馈模拟 AI 消息到达
+      uni.vibrateShort()
     }, 1500)
     return
   }
@@ -179,10 +189,10 @@ const upgrade = () => {
 .mt-6 { margin-top: 24px; }
 .mt-8 { margin-top: 32px; }
 .ml-3 { margin-left: 12px; }
-.pd-bottom { padding-bottom: 30px; }
+.pb-safe { padding-bottom: constant(safe-area-inset-bottom); padding-bottom: env(safe-area-inset-bottom); }
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
-.flex-1 { flex: 1; }
+.flex-1 { flex: 1; overflow: hidden; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .items-center { align-items: center; }
@@ -210,14 +220,19 @@ const upgrade = () => {
 /* 聊天流水区 */
 .chat-list {
   padding: 0 20px;
+  box-sizing: border-box;
 }
 .msg-wrapper {
   display: flex;
   align-items: flex-start;
   margin-bottom: 20px;
+  width: 100%;
 }
 .msg-wrapper.user {
   flex-direction: row-reverse;
+}
+.avatar {
+  flex-shrink: 0; /* 防止头像被挤压变形 */
 }
 .ai-avatar {
   width: 36px;
@@ -277,8 +292,10 @@ const upgrade = () => {
 /* 底部输入区 */
 .input-area {
   padding-top: 12px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   background-color: #09090b;
   border-top: 1px solid rgba(255,255,255,0.05);
+  box-sizing: border-box;
 }
 .input-box {
   height: 44px;

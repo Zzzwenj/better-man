@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <scroll-view scroll-y class="container flex-col">
     <view class="header px-4">
       <text class="title tracking-wider">观测图谱</text>
       <text class="subtitle block mt-1">神经可塑性观测图谱</text>
@@ -25,18 +25,6 @@
         </view>
       </view>
       <text class="analysis-hint block mt-3">▶ 连续 14 天未熔断，基底神经节逐渐脱敏。</text>
-    </view>
-    
-    <!-- 信息流原生广告占位 -->
-    <view class="native-ad-placeholder mt-4 mx-4 flex items-center">
-      <view class="ad-cover"></view>
-      <view class="ad-info ml-3 flex-1 flex-col justify-between">
-        <text class="ad-title">《多巴胺国度》：如何在这个纵欲时代找到平衡？</text>
-        <view class="flex justify-between items-center">
-            <text class="ad-tag">科学专栏 赞助</text>
-            <text class="ad-btn">→</text>
-        </view>
-      </view>
     </view>
     
     <!-- 评估数据模块 -->
@@ -68,7 +56,43 @@
         }">{{ cravingLevel }}</text>
       </view>
     </view>
-  </view>
+    
+    <!-- 里程碑 -->
+    <view class="benefits-container mx-4 mt-6">
+       <view class="badges-area">
+           <text class="section-title block mb-4">神经重塑里程碑</text>
+           <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
+               <view class="badge-list flex">
+                   <view class="badge-item flex-col items-center" 
+                         v-for="badge in milestoneBadges" :key="badge.day"
+                         :class="{ 'unlocked': daysClean >= badge.day, 'next-goal': daysClean < badge.day && isNextGoal(badge.day) }">
+                       
+                       <view class="badge-icon-wrapper">
+                           <!-- 进度外环 (如果在进行中) -->
+                           <svg v-if="daysClean < badge.day && isNextGoal(badge.day)" class="progress-ring" viewBox="0 0 60 60">
+                               <circle class="ring-bg" cx="30" cy="30" r="28" />
+                               <circle class="ring-fill" cx="30" cy="30" r="28" :stroke-dasharray="175" :stroke-dashoffset="175 - (175 * getGoalProgress(badge.day))" />
+                           </svg>
+                           
+                           <view class="badge-icon" :style="{ filter: daysClean >= badge.day ? 'none' : 'grayscale(100%) opacity(30%)' }">{{ badge.icon }}</view>
+                           
+                           <!-- 解锁发光特效 -->
+                           <view class="glow-effect" v-if="daysClean >= badge.day"></view>
+                       </view>
+                       
+                       <text class="badge-day">{{ badge.day }} 天</text>
+                       <text class="badge-name">{{ badge.name }}</text>
+                       
+                       <!-- 进度文字提示 -->
+                       <text class="badge-progress" v-if="daysClean < badge.day && isNextGoal(badge.day)">
+                           {{ daysClean }} / {{ badge.day }}
+                       </text>
+                   </view>
+               </view>
+           </scroll-view>
+       </view>
+    </view>
+  </scroll-view>
 </template>
 
 <script setup>
@@ -77,6 +101,19 @@ import { ref, onMounted } from 'vue'
 const daysClean = ref(0)
 const repairRate = ref(10)
 const cravingLevel = ref('极高 (High)')
+
+const milestoneBadges = [
+  { day: 1, name: '初次抵抗', icon: '🔋' },
+  { day: 3, name: '生化干预', icon: '🩸' },
+  { day: 7, name: '感官脱敏', icon: '🛡️' },
+  { day: 14, name: '受体恢复', icon: '🔌' },
+  { day: 21, name: '通道重建', icon: '🧬' },
+  { day: 30, name: '额叶觉醒', icon: '👁️' },
+  { day: 60, name: '边缘重调', icon: '⚖️' },
+  { day: 90, name: '神经霸体', icon: '👑' },
+  { day: 180, name: '自我掌控', icon: '🌌' },
+  { day: 365, name: '化境重生', icon: '✨' }
+]
 
 onMounted(() => {
   // 1. 获取本地持久化的重塑记录起点
@@ -105,6 +142,24 @@ onMounted(() => {
   }
 })
 
+// 计算下一个目标里程碑
+const isNextGoal = (badgeDay) => {
+    const nextBadge = milestoneBadges.find(b => b.day > daysClean.value)
+    return nextBadge && nextBadge.day === badgeDay
+}
+
+// 计算当前正在进行的里程碑进度百分比 (0-1)
+const getGoalProgress = (badgeDay) => {
+    // 找到上一个解锁的里程碑天数
+    const unlockedBadges = milestoneBadges.filter(b => b.day <= daysClean.value)
+    const prevDay = unlockedBadges.length > 0 ? unlockedBadges[unlockedBadges.length - 1].day : 0
+    
+    const totalRequired = badgeDay - prevDay
+    const currentProgress = daysClean.value - prevDay
+    
+    return currentProgress / totalRequired
+}
+
 // 生成热力图的动态数据 (点亮用户连续坚持的天数)
 const getMockLevel = (w, d) => {
     // 假设 42 天的总表格
@@ -128,9 +183,9 @@ const getMockLevel = (w, d) => {
 
 <style lang="scss" scoped>
 .container {
-  height: 100vh;
+  min-height: 100vh;
   background-color: #09090b;
-  padding-bottom: 20px;
+  padding-bottom: 40px;
 }
 .header {
   padding-top: calc(var(--status-bar-height) + 20px);
@@ -192,26 +247,91 @@ const getMockLevel = (w, d) => {
 .legend-text { font-size: 10px; color: #a1a1aa; }
 .analysis-hint { font-size: 12px; color: #10b981; margin-top: 16px; font-weight: 500;}
 
-/* 信息流广告占位 */
-.native-ad-placeholder {
-    background: #18181b;
-    border-radius: 12px;
-    padding: 12px;
-    border: 1px solid #27272a;
+/* 徽章列表 */
+.badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 16px; margin-left: -10px; padding-left: 10px; }
+::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.badge-list { gap: 20px; justify-content: flex-start; display: inline-flex; padding-right: 20px;}
+.badge-item {
+    width: 72px; /* 固定宽度以适应滚动 */
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    padding-top: 6px;
 }
-.ad-cover {
-    width: 70px; height: 70px;
-    background: #27272a;
-    border-radius: 8px;
-    background-image: linear-gradient(45deg, #18181b 25%, transparent 25%, transparent 75%, #18181b 75%, #18181b), 
-                      linear-gradient(45deg, #18181b 25%, transparent 25%, transparent 75%, #18181b 75%, #18181b);
-    background-size: 10px 10px;
-    background-position: 0 0, 5px 5px;
+.badge-item.unlocked {
+    transform: translateY(-4px);
 }
-.ad-info { height: 70px; }
-.ad-title { font-size: 14px; color: #d4d4d8; font-weight: bold; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;}
-.ad-tag { font-size: 10px; color: #71717a; border: 1px solid #3f3f46; padding: 2px 6px; border-radius: 4px;}
-.ad-btn { color: #10b981; font-weight: bold; }
+.badge-item.next-goal {
+    transform: scale(1.05);
+}
+
+.badge-icon-wrapper {
+    position: relative;
+    width: 60px; height: 60px;
+    display: flex; justify-content: center; align-items: center;
+    margin-bottom: 8px;
+}
+
+.badge-icon {
+    width: 52px; height: 52px;
+    background: linear-gradient(145deg, #18181b, #27272a); 
+    border: 1px solid #3f3f46;
+    border-radius: 26px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.05);
+    z-index: 2;
+    transition: all 0.5s ease;
+}
+
+.badge-item.unlocked .badge-icon {
+    border-color: #10b981;
+    background: linear-gradient(145deg, #064e3b, #047857);
+    color: #fff;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 10px rgba(16, 185, 129, 0.8);
+}
+
+.glow-effect {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    animation: slow-pulse 3s infinite alternate;
+}
+
+.progress-ring {
+    position: absolute;
+    top: 0; left: 0;
+    width: 60px; height: 60px;
+    transform: rotate(-90deg);
+    z-index: 3;
+}
+.ring-bg {
+    fill: none;
+    stroke: #27272a;
+    stroke-width: 2;
+}
+.ring-fill {
+    fill: none;
+    stroke: #10b981;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease-out;
+}
+
+.badge-day { font-size: 11px; color: #10b981; font-weight: 900; font-family: monospace; }
+.badge-name { font-size: 12px; color: #e4e4e7; font-weight: bold; margin-top: 4px; letter-spacing: 1px;}
+.badge-progress { font-size: 9px; color: #a1a1aa; font-family: monospace; margin-top: 4px; background: #27272a; padding: 2px 6px; border-radius: 8px;}
+
+.badge-item:not(.unlocked):not(.next-goal) .badge-day { color: #52525b; }
+.badge-item:not(.unlocked):not(.next-goal) .badge-name { color: #52525b; }
+
+@keyframes slow-pulse {
+    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
+    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
+}
 
 /* 数据分析模块 */
 .stat-row { width: 100%; }

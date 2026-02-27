@@ -6,10 +6,10 @@
         <text class="avatar-text">8972</text>
       </view>
       <view class="user-info ml-4 flex-col justify-center">
-        <text class="username tracking-wider">探索者_8972</text>
+        <text class="username tracking-wider">{{ userName }}</text>
         <view class="status-badge flex items-center mt-2">
             <view class="status-dot offline"></view>
-            <text class="status-text ml-1">系统干预：已停用</text>
+            <text class="status-text ml-1">{{ userDesc }}</text>
         </view>
       </view>
     </view>
@@ -60,6 +60,13 @@
                 </view>
                 <text class="arrow-right">></text>
             </view>
+            <view class="list-item flex justify-between items-center" hover-class="item-hover" @click="retakeTest">
+                <view class="item-left flex items-center">
+                    <text class="item-icon">🔄</text>
+                    <text class="item-label ml-3">重新进行基线物理评估</text>
+                </view>
+                <text class="arrow-right">></text>
+            </view>
             <view class="list-item flex justify-between items-center" hover-class="item-hover">
                 <view class="item-left flex items-center">
                     <text class="item-icon">💾</text>
@@ -73,12 +80,41 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
+
+const userName = ref('探索者_8972')
+const userDesc = ref('系统干预：已停用')
+
+onMounted(() => {
+    const data = uni.getStorageSync('neuro_baseline')
+    if (data) {
+        const profile = JSON.parse(data)
+        userName.value = '探索者_' + (profile.age || '未知')
+        userDesc.value = '成瘾史: ' + (profile.history || '未知')
+    }
+})
+
 const upgradePremium = () => {
     uni.showModal({
         title: '开启终极防御',
         content: '只需 9.9 元/月，即可获得系统底层的强制接管权限。当你不受理智控制时，系统将成为你最后一道门槛。',
         confirmText: '立刻开启',
         confirmColor: '#10b981'
+    })
+}
+
+const retakeTest = () => {
+    uni.showModal({
+        title: '重置神经基线',
+        content: '这将清除你当前的生理评估画像，并重新进入科学基线体检流。',
+        confirmText: '确认重置',
+        confirmColor: '#ef4444',
+        success: (res) => {
+            if (res.confirm) {
+                uni.removeStorageSync('neuro_baseline')
+                uni.redirectTo({ url: '/pages/onboarding/index' })
+            }
+        }
     })
 }
 </script>

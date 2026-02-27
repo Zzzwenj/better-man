@@ -1,12 +1,9 @@
 <script>
 export default {
   onLaunch: function () {
-    console.log('App Launch - 校验神经基线档案')
-    const baseline = uni.getStorageSync('neuro_baseline')
-    if (baseline) {
-      // 如果存在基线数据，直接跳转至主控舱
-      uni.switchTab({ url: '/pages/dashboard/index' })
-    }
+    console.log('App Launch - 特工隐秘模式已激活 (伪装: 计算器)')
+    // 之前在这里有路由强制跳转到 /pages/dashboard 的逻辑，现在为了展示伪装首屏，必须去除。
+    // 我们将所有业务逻辑转移到 calculator 页面验证隐秘代码 (8972=) 后跳转。
   },
   onShow: function () {
     console.log('App Show')
