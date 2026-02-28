@@ -1,18 +1,18 @@
 {
     "pages": [
         {
+            "path": "pages/login/index",
+            "style": {
+                "navigationBarTitleText": "身份核验",
+                "navigationStyle": "custom"
+            }
+        },
+        {
             "path": "pages/calculator/index",
             "style": {
                 "navigationBarTitleText": "",
                 "navigationStyle": "custom",
                 "disableScroll": true
-            }
-        },
-        {
-            "path": "pages/login/index",
-            "style": {
-                "navigationBarTitleText": "身份核验",
-                "navigationStyle": "custom"
             }
         },
         {

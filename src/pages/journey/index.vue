@@ -38,7 +38,7 @@
                 <view class="progress-fill" :style="{ width: repairRate + '%', background: '#10b981' }"></view>
             </view>
         </view>
-        <text class="stat-val text-green ml-4">{{ repairRate }}%</text>
+        <text class="stat-val text-green text-right ml-4">{{ repairRate }}%</text>
       </view>
       
       <view class="stat-row flex items-center justify-between mb-2">
@@ -46,13 +46,13 @@
             <text class="stat-label">边缘系统异常渴求频次评估</text>
             <view class="progress-bar mt-2">
                 <view class="progress-fill" :style="{ 
-                    width: cravingLevel.includes('极高') ? '80%' : cravingLevel.includes('中等') ? '40%' : '10%', 
-                    background: cravingLevel.includes('极高') ? '#ef4444' : cravingLevel.includes('中等') ? '#f59e0b' : '#10b981' 
+                    width: cravingLevel === '极高' ? '80%' : cravingLevel === '中等' ? '40%' : '10%', 
+                    background: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#10b981' 
                 }"></view>
             </view>
         </view>
-        <text class="stat-val ml-4" :style="{ 
-            color: cravingLevel.includes('极高') ? '#ef4444' : cravingLevel.includes('中等') ? '#f59e0b' : '#10b981' 
+        <text class="stat-val text-right ml-4" :style="{ 
+            color: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#10b981' 
         }">{{ cravingLevel }}</text>
       </view>
     </view>
@@ -146,11 +146,11 @@ onMounted(() => {
   
   // 3. 渴求频次多巴胺预估
   if (daysClean.value < 7) {
-      cravingLevel.value = '极高 (High)'
+      cravingLevel.value = '极高'
   } else if (daysClean.value < 21) {
-      cravingLevel.value = '中等 (Medium)'
+      cravingLevel.value = '中等'
   } else {
-      cravingLevel.value = '平稳 (Low)'
+      cravingLevel.value = '平稳'
   }
 })
 
@@ -374,7 +374,8 @@ page {
 .stat-label { font-size: 12px; color: #a1a1aa; }
 .progress-bar { width: 200px; height: 6px; background-color: #27272a; border-radius: 3px; overflow: hidden;}
 .progress-fill { height: 100%; border-radius: 3px; box-shadow: 0 0 10px currentColor;}
-.stat-val { font-size: 18px; font-weight: 900; font-family: monospace;}
+.stat-val { font-size: 18px; font-weight: 900; font-family: monospace; width: 60px; flex-shrink: 0;}
+.text-right { text-align: right; }
 .text-green { color: #10b981; }
 .text-red { color: #ef4444; }
 </style>

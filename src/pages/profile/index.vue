@@ -1,20 +1,15 @@
 <template>
   <view class="container flex-col">
-    <!-- 顶部用户信息 -->
-    <view class="header px-4 flex items-center">
-      <view class="avatar flex justify-center items-center">
-        <text class="avatar-text">8972</text>
-      </view>
-      <view class="user-info ml-4 flex-col justify-center">
-        <text class="username tracking-wider">{{ userName }}</text>
-        <view class="status-badge flex items-center mt-2">
-            <view class="status-dot offline"></view>
-            <text class="status-text ml-1">{{ userDesc }}</text>
-        </view>
-      </view>
-    </view>
+    <ProfileUserCard 
+      :userName="userName" 
+      :userDesc="userDesc" 
+      :avatar="userAvatar"
+      :signature="userSignature"
+      @updateProfile="onUpdateProfile" 
+      @modalStateChange="onModalStateChange"
+    />
     
-    <!-- 订阅特权模幅 -->
+    <!-- 2. 订阅特权模幅 (保留，因其具有业务强相关性) -->
     <view class="premium-card mt-8 mx-4" @click="upgradePremium" hover-class="card-hover">
         <view class="flex justify-between items-center">
             <text class="premium-title">⚡ 强制护城河 (系统级防御)</text>
@@ -29,71 +24,89 @@
         </view>
     </view>
     
-    <!-- 设置列表 -->
-    <view class="settings-group mt-6 mx-4">
-        <text class="group-title block px-2 mb-2">隐私与安全阻断</text>
-        <view class="settings-list">
-            <view class="list-item flex justify-between items-center" hover-class="item-hover">
-                <view class="item-left flex items-center">
-                    <text class="item-icon">👁️</text>
-                    <text class="item-label ml-3">系统级无障碍白名单</text>
-                </view>
-                <text class="arrow-right">></text>
-            </view>
-            <view class="list-item flex justify-between items-center" hover-class="item-hover">
-                <view class="item-left flex items-center">
-                    <text class="item-icon">🥷</text>
-                    <text class="item-label ml-3">App 图标伪装 (伪装为计算器)</text>
-                </view>
-                <switch color="#10b981" style="transform: scale(0.8);" />
-            </view>
-        </view>
-    </view>
+    <!-- 3. 设置列表区 (已组件化) -->
+    <ProfileSettingsList 
+      title="隐私与安全阻断" 
+      :list="securityList" 
+      :hideNative="isModalOpen"
+      @itemClick="handleSettingClick" 
+    />
     
-    <view class="settings-group mt-6 mx-4">
-        <text class="group-title block px-2 mb-2">数据与资料库</text>
-        <view class="settings-list">
-            <view class="list-item flex justify-between items-center" hover-class="item-hover">
-                <view class="item-left flex items-center">
-                    <text class="item-icon">🧠</text>
-                    <text class="item-label ml-3">神经可塑性模型资料库</text>
-                </view>
-                <text class="arrow-right">></text>
-            </view>
-            <view class="list-item flex justify-between items-center" hover-class="item-hover" @click="retakeTest">
-                <view class="item-left flex items-center">
-                    <text class="item-icon">🔄</text>
-                    <text class="item-label ml-3">重新进行基线物理评估</text>
-                </view>
-                <text class="arrow-right">></text>
-            </view>
-            <view class="list-item flex justify-between items-center" hover-class="item-hover">
-                <view class="item-left flex items-center">
-                    <text class="item-icon">💾</text>
-                    <text class="item-label ml-3">本地数据抹除/导出</text>
-                </view>
-                <text class="arrow-right">></text>
-            </view>
-        </view>
-    </view>
+    <ProfileSettingsList 
+      title="数据与资料库" 
+      :list="databaseList" 
+      :hideNative="isModalOpen"
+      @itemClick="handleSettingClick" 
+    />
+
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import ProfileUserCard from '../../components/ProfileUserCard.vue'
+import ProfileSettingsList from '../../components/ProfileSettingsList.vue'
 
+// --- 用户状态 ---
 const userName = ref('探索者_8972')
 const userDesc = ref('系统干预：已停用')
+const userAvatar = ref('')
+const userSignature = ref('')
+const isModalOpen = ref(false)
+let localProfileData = {}
 
+// --- 设置列表配置表 ---
+const securityList = ref([
+  { id: 'whitelist', icon: '👁️', label: '系统级无障碍白名单', type: 'arrow' },
+  { id: 'disguise', icon: '🥷', label: 'App 图标伪装 (伪装为计算器)', type: 'switch', value: false }
+])
+
+const databaseList = ref([
+  { id: 'neuroModel', icon: '🧠', label: '神经可塑性模型资料库', type: 'arrow' },
+  { id: 'retake', icon: '🔄', label: '重新进行基线物理评估', type: 'arrow' },
+  { id: 'wipe', icon: '💾', label: '本地数据抹除/导出', type: 'arrow' }
+])
+
+// --- 初始化钩子 ---
 onMounted(() => {
+    // 拦截鉴权
+    const token = uni.getStorageSync('uni_id_token')
+    if (!token) {
+      uni.redirectTo({ url: '/pages/login/index' })
+      return
+    }
+
     const data = uni.getStorageSync('neuro_baseline')
     if (data) {
-        const profile = JSON.parse(data)
-        userName.value = '探索者_' + (profile.age || '未知')
-        userDesc.value = '成瘾史: ' + (profile.history || '未知')
+        localProfileData = JSON.parse(data)
+        // 优先使用用户自定义昵称，否则使用年龄段 fallback
+        userName.value = localProfileData.nickname || ('探索者_' + (localProfileData.age || '未知'))
+        userAvatar.value = localProfileData.avatar || ''
+        userSignature.value = localProfileData.signature || ''
+        userDesc.value = '成瘾史: ' + (localProfileData.history || '未知')
     }
 })
 
+// --- 交互事件回传响应 ---
+
+// 修改用户名与资料
+const onUpdateProfile = ({ newName, newAvatar, newSignature }) => {
+  userName.value = newName
+  userAvatar.value = newAvatar
+  userSignature.value = newSignature
+  
+  // 同步更新缓存
+  localProfileData.nickname = newName
+  localProfileData.avatar = newAvatar
+  localProfileData.signature = newSignature
+  uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
+}
+
+const onModalStateChange = (state) => {
+  isModalOpen.value = state
+}
+
+// 点击解锁特权
 const upgradePremium = () => {
     uni.showModal({
         title: '开启终极防御',
@@ -103,6 +116,25 @@ const upgradePremium = () => {
     })
 }
 
+// 统一处理所有通用设置行的点击分发
+const handleSettingClick = (originItem) => {
+  const { id } = originItem
+
+  if (id === 'whitelist' || id === 'neuroModel' || id === 'wipe') {
+    // 尚未开通的模块，统一提示，绝不出现“死按钮”
+    uni.showToast({ title: '区域未解锁，等待基站信号', icon: 'none' })
+  } else if (id === 'disguise') {
+    // Switch Toggle 处理
+    const newValue = originItem.value
+    // 修改原数组状态
+    securityList.value.find(item => item.id === 'disguise').value = newValue
+    uni.showToast({ title: newValue ? '伪装协议已加载' : '伪装协议已撤销', icon: 'none' })
+  } else if (id === 'retake') {
+    retakeTest()
+  }
+}
+
+// 重新评测
 const retakeTest = () => {
     uni.showModal({
         title: '重置神经基线',
@@ -120,7 +152,6 @@ const retakeTest = () => {
 </script>
 
 <style lang="scss" scoped>
-/* 限定外层包裹的滚动高度为主屏 100%，防止 vh 计算越界 */
 page {
   height: 100%;
 }
@@ -130,43 +161,19 @@ page {
   background-color: #09090b;
   box-sizing: border-box;
   overflow-y: auto;
+  padding-bottom: 40px;
 }
-.header {
-  padding-top: calc(var(--status-bar-height) + 30px);
-}
-.px-2 { padding: 0 8px; }
-.px-4 { padding: 0 20px; }
-.mx-4 { margin: 0 20px; }
+
+.mx-4 { margin: 10px 20px; }
 .mt-2 { margin-top: 8px; }
 .mt-4 { margin-top: 16px; }
-.mt-6 { margin-top: 24px; }
-.mt-8 { margin-top: 32px; }
-.mb-2 { margin-bottom: 8px; }
+// .mt-8 { margin-top: 32px; }
 .ml-1 { margin-left: 4px; }
-.ml-3 { margin-left: 12px; }
-.ml-4 { margin-left: 16px; }
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
 .justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
 .items-center { align-items: center; }
 .block { display: block; }
-.tracking-wider { letter-spacing: 2px; }
-
-/* 顶部用户信息 */
-.avatar {
-    width: 64px; height: 64px;
-    border-radius: 20px;
-    background: #18181b;
-    border: 1px solid #3f3f46;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-.avatar-text { font-family: monospace; color: #a1a1aa; font-weight: bold; }
-.username { font-size: 20px; color: #f4f4f5; font-weight: 900; }
-.status-badge { background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2);}
-.status-dot { width: 6px; height: 6px; border-radius: 3px; }
-.status-dot.offline { background-color: #ef4444; box-shadow: 0 0 5px #ef4444;}
-.status-text { font-size: 10px; color: #ef4444; font-weight: bold; font-family: monospace;}
 
 /* 订阅特权模幅 */
 .premium-card {
@@ -184,22 +191,4 @@ page {
 .premium-footer { border-top: 1px dashed rgba(16, 185, 129, 0.2); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
 .arrow { color: #10b981; font-weight: bold; font-size: 18px;}
-
-/* 设置列表 */
-.group-title { font-size: 12px; color: #71717a; font-family: monospace; font-weight: bold;}
-.settings-list {
-    background: #18181b;
-    border-radius: 16px;
-    padding: 0 16px;
-    border: 1px solid #27272a;
-}
-.list-item {
-    padding: 16px 0;
-    border-bottom: 1px solid #27272a;
-}
-.list-item:last-child { border-bottom: none; }
-.item-hover { opacity: 0.7; }
-.item-icon { font-size: 18px; }
-.item-label { font-size: 14px; color: #d4d4d8; font-weight: 500;}
-.arrow-right { color: #52525b; font-size: 16px; font-family: monospace;}
 </style>

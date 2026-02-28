@@ -121,8 +121,15 @@ const storeFakeTokenAndRedirect = () => {
     uni.setStorageSync('uni_id_token_expired', Date.now() + 7200000)
     uni.showToast({ title: '接入成功', icon: 'success' })
     setTimeout(() => {
-        // 重定向回主图
-        uni.switchTab({ url: '/pages/dashboard/index' })
+        // 核心修改点：判断受教基线库是否录入
+        const baseline = uni.getStorageSync('neuro_baseline')
+        if (!baseline) {
+            // 未做过评测，进入强制 Onboarding 评测流
+            uni.redirectTo({ url: '/pages/onboarding/index' })
+        } else {
+            // 已有协议，回到大盘
+            uni.switchTab({ url: '/pages/dashboard/index' })
+        }
     }, 1000)
 }
 </script>
