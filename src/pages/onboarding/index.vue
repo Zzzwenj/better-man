@@ -1,5 +1,5 @@
 <template>
-  <view class="onboarding-container flex-col">
+  <view class="onboarding-container flex-col" :style="themeStore.themeCssVars">
     <!-- Header Process -->
     <view class="process-header flex items-center justify-between px-6 pt-6">
       <text class="process-step">步骤 {{ currentStep + 1 }} / {{ steps.length }}</text>
@@ -48,7 +48,9 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useThemeStore } from '../../store/theme.js'
 
+const themeStore = useThemeStore()
 const currentStep = ref(0)
 const answers = ref({
   gender: '',
@@ -216,9 +218,9 @@ const nextStep = () => {
 .text-center { text-align: center; }
 
 /* Header Progress */
-.process-step { font-family: monospace; color: #00e5ff; font-size: 14px; font-weight: bold;}
+.process-step { font-family: monospace; color: var(--theme-primary); font-size: 14px; font-weight: bold;}
 .progress-bar { height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
-.progress-fill { height: 100%; background: linear-gradient(90deg, #0072FF 0%, #00C6FF 100%); box-shadow: 0 0 12px rgba(0, 198, 255, 0.4); transition: width 0.3s ease; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--theme-primary-grad-end) 0%, var(--theme-primary-grad-start) 100%); box-shadow: 0 0 12px var(--theme-shadow-primary); transition: width 0.3s ease; }
 
 /* Content Animations */
 .content {
@@ -231,8 +233,8 @@ const nextStep = () => {
 
 @keyframes glitch {
   0%, 100% { text-shadow: 0 0 15px rgba(255,255,255,0.1); transform: none; }
-  10% { text-shadow: -2px 0 #00e5ff, 2px 0 #8b5cf6; }
-  20% { text-shadow: 2px 0 #00e5ff, -2px 0 #8b5cf6; }
+  10% { text-shadow: -2px 0 var(--theme-primary), 2px 0 var(--theme-secondary); }
+  20% { text-shadow: 2px 0 var(--theme-primary), -2px 0 var(--theme-secondary); }
 }
 
 /* Content */
@@ -265,13 +267,13 @@ const nextStep = () => {
 .option-hover { background: rgba(255, 255, 255, 0.05); }
 .option-card.selected {
   background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(0, 198, 255, 0.3);
+  border-color: var(--theme-shadow-primary);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
   transform: scale(1.02);
 }
 .option-card.selected::before {
-  background: linear-gradient(180deg, #00C6FF 0%, #0072FF 100%);
-  box-shadow: 0 0 15px rgba(0, 198, 255, 0.5);
+  background: linear-gradient(180deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
+  box-shadow: 0 0 15px var(--theme-shadow-primary);
 }
 
 .option-label { font-size: 15px; color: #e4e4e7; font-weight: 500; }
@@ -282,8 +284,8 @@ const nextStep = () => {
   display: flex; align-items: center; justify-content: center;
   transition: all 0.3s;
 }
-.option-card.selected .checkbox { border-color: #00C6FF; }
-.checkbox-inner { width: 10px; height: 10px; background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); border-radius: 2px; box-shadow: 0 0 8px rgba(0, 198, 255, 0.4); }
+.option-card.selected .checkbox { border-color: var(--theme-primary); }
+.checkbox-inner { width: 10px; height: 10px; background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%); border-radius: 2px; box-shadow: 0 0 8px var(--theme-shadow-primary); }
 
 /* Footer */
 .btn-prev {
@@ -303,9 +305,9 @@ const nextStep = () => {
   align-items: center;
   justify-content: center;
   height: 56px;
-  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
   border-radius: 28px;
-  box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
+  box-shadow: 0 8px 24px var(--theme-shadow-primary);
   transition: all 0.3s;
 }
 .btn-next.disabled {
@@ -314,6 +316,6 @@ const nextStep = () => {
   opacity: 0.5;
 }
 .btn-text { color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px; text-align: center; width: 100%;}
-.btn-hover:not(.disabled) { transform: translateY(2px) scale(0.98); box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4); }
+.btn-hover:not(.disabled) { transform: translateY(2px) scale(0.98); box-shadow: 0 4px 12px var(--theme-shadow-primary); }
 .disclaimer { font-size: 11px; color: #52525b; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
 </style>

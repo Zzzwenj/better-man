@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <view class="container flex-col" :style="themeStore.themeCssVars">
     <ProfileUserCard 
       :userName="userName" 
       :userDesc="userDesc" 
@@ -35,19 +35,33 @@
     <ProfileSettingsList 
       title="数据与资料库" 
       :list="databaseList" 
-      :hideNative="isModalOpen"
+      :hideNative="isModalOpen || showThemeSheet"
       @itemClick="handleSettingClick" 
     />
     
     <CustomTabBar :current="3" />
+    
+    <!-- 全局主题色选择弹窗 -->
+    <ThemeActionSheet 
+      :show="showThemeSheet" 
+      :themes="themeStore.themes" 
+      :currentTheme="themeStore.currentTheme"
+      @close="showThemeSheet = false"
+      @select="onThemeSelect"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useThemeStore } from '../../store/theme.js'
 import ProfileUserCard from '../../components/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/ProfileSettingsList.vue'
 import CustomTabBar from '../../components/CustomTabBar.vue'
+import ThemeActionSheet from '../../components/ThemeActionSheet.vue'
+
+const themeStore = useThemeStore()
+const showThemeSheet = ref(false)
 
 // --- 用户状态 ---
 const userName = ref('探索者_8972')
@@ -59,6 +73,7 @@ let localProfileData = {}
 
 // --- 设置列表配置表 ---
 const securityList = ref([
+  { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
   { id: 'whitelist', icon: '👁️', label: '系统级无障碍白名单', type: 'arrow' },
   { id: 'disguise', icon: '🥷', label: 'App 图标伪装 (伪装为计算器)', type: 'switch', value: false }
 ])
@@ -116,7 +131,7 @@ const upgradePremium = () => {
         title: '开启终极防御',
         content: '只需 9.9 元/月，即可获得系统底层的强制接管权限。当你不受理智控制时，系统将成为你最后一道门槛。',
         confirmText: '立刻开启',
-        confirmColor: '#00e5ff'
+        confirmColor: themeStore.activeThemeData.primary
     })
 }
 
@@ -124,7 +139,9 @@ const upgradePremium = () => {
 const handleSettingClick = (originItem) => {
   const { id } = originItem
 
-  if (id === 'whitelist' || id === 'neuroModel' || id === 'wipe') {
+  if (id === 'theme') {
+    showThemeSheet.value = true
+  } else if (id === 'whitelist' || id === 'neuroModel' || id === 'wipe') {
     // 尚未开通的模块，统一提示，绝不出现“死按钮”
     uni.showToast({ title: '区域未解锁，等待基站信号', icon: 'none' })
   } else if (id === 'disguise') {
@@ -152,6 +169,10 @@ const retakeTest = () => {
             }
         }
     })
+}
+
+const onThemeSelect = (themeId) => {
+  themeStore.setTheme(themeId)
 }
 </script>
 
@@ -192,11 +213,11 @@ page {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     transition: all 0.2s ease;
 }
-.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px rgba(0, 229, 255, 0.15); }
-.premium-title { font-size: 16px; font-weight: 900; color: #00e5ff; }
-.price-chip { background: #00e5ff; color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
+.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px var(--theme-shadow-primary); }
+.premium-title { font-size: 16px; font-weight: 900; color: var(--theme-primary); }
+.price-chip { background: var(--theme-primary); color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
 .premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
-.premium-footer { border-top: 1px dashed rgba(0, 229, 255, 0.2); padding-top: 12px;}
+.premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
-.arrow { color: #00e5ff; font-weight: bold; font-size: 18px;}
+.arrow { color: var(--theme-primary); font-weight: bold; font-size: 18px;}
 </style>

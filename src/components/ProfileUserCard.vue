@@ -209,7 +209,7 @@ const saveProfile = () => {
 .modal-avatar .avatar-img { border-radius: 22px; }
 .edit-badge {
   position: absolute; right: -5px; bottom: -5px;
-  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); border-radius: 12px;
+  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%); border-radius: 12px;
   width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
   font-size: 10px; box-shadow: 0 0 10px rgba(0, 114, 255, 0.5);
@@ -225,10 +225,10 @@ const saveProfile = () => {
   height: 44px; padding: 0 12px;
   color: #fff; font-size: 16px;
 }
-.input-field:focus { border-color: #00C6FF; box-shadow: 0 0 8px rgba(0, 198, 255, 0.2); }
+.input-field:focus { border-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary); }
 
 .btn { height: 44px; border-radius: 22px; font-size: 14px; font-weight: bold; transition: all 0.2s;}
 .btn:active { transform: scale(0.95); }
 .btn-cancel { background: #27272a; color: #e4e4e7; }
-.btn-save { background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); color: #fff; box-shadow: 0 5px 15px rgba(0, 114, 255, 0.3);}
+.btn-save { background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%); color: #fff; box-shadow: 0 5px 15px var(--theme-shadow-primary);}
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <view class="container flex-col" :style="themeStore.themeCssVars">
     <view class="nav-bar px-4">
       <view class="nav-content flex items-center justify-between">
         <!-- 占位区保证居中：返回键 -->
@@ -86,7 +86,9 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { useThemeStore } from '../../store/theme.js'
 
+const themeStore = useThemeStore()
 const chatList = ref([])
 const inputValue = ref('')
 const isLoading = ref(false)
@@ -292,12 +294,12 @@ page {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(0, 198, 255, 0.2), rgba(8, 145, 178, 0.1));
-  border: 1px solid rgba(0, 198, 255, 0.4);
-  box-shadow: 0 0 15px rgba(0, 198, 255, 0.2);
+  background: linear-gradient(135deg, var(--theme-bg-highlight), rgba(8, 145, 178, 0.1));
+  border: 1px solid var(--theme-shadow-primary);
+  box-shadow: 0 0 15px var(--theme-bg-highlight);
 }
 .avatar-img { width: 100%; height: 100%; border-radius: 12px; }
-.user-icon { color: #00C6FF; font-size: 16px; font-weight: bold; font-family: monospace;}
+.user-icon { color: var(--theme-primary); font-size: 16px; font-weight: bold; font-family: monospace;}
 .msg-bubble {
   margin-left: 12px;
   background: rgba(255,255,255,0.03);
@@ -342,8 +344,8 @@ page {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .input-container:focus-within {
-  border-color: rgba(0, 198, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 198, 255, 0.1);
+  border-color: var(--theme-shadow-primary);
+  box-shadow: 0 8px 32px var(--theme-bg-highlight);
   background: rgba(24, 24, 27, 0.95);
 }
 .input-box {
@@ -360,9 +362,9 @@ page {
 .btn-send {
   width: 38px; height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
   margin-left: 10px;
-  box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
+  box-shadow: 0 4px 12px var(--theme-shadow-primary);
   transition: all 0.2s;
 }
 .btn-send:active { transform: scale(0.9); }

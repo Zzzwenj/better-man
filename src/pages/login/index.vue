@@ -1,5 +1,5 @@
 <template>
-  <view class="login-container flex-col">
+  <view class="login-container flex-col" :style="themeStore.themeCssVars">
     <view class="header pt-10 px-6">
       <text class="title block">{{ modeTitle }}</text>
       <text class="subtitle block mt-2">Dopamine Reset 档案库接入</text>
@@ -72,7 +72,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useThemeStore } from '../../store/theme.js'
 
+const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'
 
 const form = reactive({
@@ -288,7 +290,7 @@ const devLogin = () => {
     uni.showModal({
         title: 'ROOT 权限确认',
         content: '跳过所有鉴权限制，以开发者身份进入系统？',
-        confirmColor: '#00e5ff',
+        confirmColor: themeStore.activeThemeData.primary,
         success: (res) => {
             if (res.confirm) {
                 storeFakeTokenAndRedirect()
@@ -339,7 +341,7 @@ const storeFakeTokenAndRedirect = () => {
 .opacity-10:active { opacity: 0.8; }
 .pb-bottom { padding-bottom: max(30px, env(safe-area-inset-bottom)); }
 
-.title { font-size: 28px; font-weight: 900; color: #fafafa; letter-spacing: 2px; text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);}
+.title { font-size: 28px; font-weight: 900; color: #fafafa; letter-spacing: 2px; text-shadow: 0 0 20px var(--theme-shadow-primary);}
 .subtitle { font-size: 14px; color: #a1a1aa; letter-spacing: 1px;}
 .label { font-size: 13px; color: #a1a1aa; font-family: monospace;}
 
@@ -359,12 +361,12 @@ const storeFakeTokenAndRedirect = () => {
 .text-sm { font-size: 14px; }
 
 .btn-code {
-  background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3);
+  background: var(--theme-bg-highlight); border: 1px solid var(--theme-shadow-primary);
   padding: 6px 12px; border-radius: 6px;
   white-space: nowrap;
 }
 .btn-code.disabled { background: rgba(255,255,255,0.05); border-color: transparent;}
-.btn-code-text { font-size: 12px; color: #00e5ff; font-weight: bold;}
+.btn-code-text { font-size: 12px; color: var(--theme-primary); font-weight: bold;}
 .btn-code.disabled .btn-code-text { color: #6b7280; }
 
 .captcha-box {
@@ -377,7 +379,7 @@ const storeFakeTokenAndRedirect = () => {
 }
 .captcha-text {
   font-size: 18px;
-  color: #10b981;
+  color: var(--theme-primary);
   font-weight: 900;
   letter-spacing: 3px;
   font-family: monospace;
@@ -386,9 +388,9 @@ const storeFakeTokenAndRedirect = () => {
 
 .btn-login {
   height: 56px;
-  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
   border-radius: 28px;
-  box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
+  box-shadow: 0 8px 24px var(--theme-shadow-primary);
 }
 .btn-text { color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px;}
 

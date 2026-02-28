@@ -123,7 +123,7 @@ const onClick = () => {
 .badge-progress { 
     font-size: 9px; color: #a1a1aa; font-family: monospace; 
     margin-top: 6px; background: rgba(39, 39, 42, 0.8); 
-    border: 1px solid rgba(0, 198, 255, 0.2);
+    border: 1px solid var(--theme-shadow-primary);
     padding: 2px 6px; border-radius: 8px;
 }
 
@@ -139,16 +139,16 @@ const onClick = () => {
     transform: scale(1.05);
 }
 .status-progress .badge-icon {
-    border-color: rgba(0, 198, 255, 0.3);
+    border-color: var(--theme-shadow-primary);
     background: linear-gradient(145deg, #18181b, #0f172a); 
-    box-shadow: 0 0 15px rgba(0, 198, 255, 0.1), inset 0 0 8px rgba(0, 198, 255, 0.05);
+    box-shadow: 0 0 15px var(--theme-shadow-primary), inset 0 0 8px var(--theme-bg-highlight);
 }
 .status-progress .icon-text {
-    color: rgba(0, 198, 255, 0.6);
-    text-shadow: 0 0 8px rgba(0, 198, 255, 0.3);
+    color: var(--theme-primary);
+    text-shadow: 0 0 8px var(--theme-shadow-primary);
     animation: icon-pulse 2s infinite alternate;
 }
-.status-progress .badge-day { color: #00C6FF; opacity: 0.8; }
+.status-progress .badge-day { color: var(--theme-primary); opacity: 0.8; }
 .status-progress .badge-name { color: #e4e4e7; opacity: 0.9; }
 
 /* SVG 进度条环绕机制 */
@@ -163,17 +163,16 @@ const onClick = () => {
 .ring-bg { fill: none; stroke: rgba(39, 39, 42, 0.5); stroke-width: 2; }
 .ring-fill {
     fill: none;
-    stroke: url(#cyan-gradient); /* 我们将用纯色替代，因为跨端SVG支持有限 */
-    stroke: #00C6FF;
+    stroke: var(--theme-primary);
     stroke-width: 2.5;
     stroke-linecap: round;
     transition: stroke-dashoffset 1.5s cubic-bezier(0.25, 1, 0.5, 1);
-    filter: drop-shadow(0 0 4px rgba(0, 198, 255, 0.5));
+    filter: drop-shadow(0 0 4px var(--theme-shadow-primary));
 }
 
 @keyframes ring-breathe {
     0% { transform: rotate(-90deg) scale(0.98); opacity: 0.8; }
-    100% { transform: rotate(-90deg) scale(1.02); opacity: 1; filter: drop-shadow(0 0 6px rgba(0,198,255,0.8)); }
+    100% { transform: rotate(-90deg) scale(1.02); opacity: 1; filter: drop-shadow(0 0 6px var(--theme-primary)); }
 }
 @keyframes icon-pulse {
     0% { opacity: 0.6; transform: scale(0.95); }
@@ -188,19 +187,19 @@ const onClick = () => {
     animation: float-super 4s ease-in-out infinite;
 }
 .status-unlocked .badge-icon {
-    border-color: #00e5ff;
+    border-color: var(--theme-primary);
     /* 强烈的玻璃高光切割感 */
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 58, 138, 0.8) 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, var(--theme-shadow-primary) 100%);
     box-shadow: 
         0 10px 20px rgba(0, 0, 0, 0.8), /* 底部深阴影拔高体积感 */
-        0 0 20px rgba(0, 198, 255, 0.3), /* 中层颜色辐射 */
+        0 0 20px var(--theme-shadow-primary), /* 中层颜色辐射 */
         inset 0 2px 2px rgba(255, 255, 255, 0.3), /* 顶部玻璃高光 */
-        inset 0 -4px 10px rgba(0, 198, 255, 0.5); /* 底部内反射光 */
+        inset 0 -4px 10px var(--theme-shadow-primary); /* 底部内反射光 */
     color: #fff;
 }
 .status-unlocked .icon-text {
     color: #fff;
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px #00e5ff;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px var(--theme-primary);
 }
 /* 解锁后的外溢流光特效 */
 .glow-effect {
@@ -208,13 +207,13 @@ const onClick = () => {
     top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 60px; height: 60px;
-    background: radial-gradient(circle, rgba(0, 229, 255, 0.6) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--theme-bg-highlight) 0%, transparent 70%);
     border-radius: 50%;
     z-index: 1;
     animation: slow-glow 3s infinite alternate;
     mix-blend-mode: screen; /* 赛博朋克融合光核心属性 */
 }
-.status-unlocked .badge-day { color: #00e5ff; text-shadow: 0 0 8px rgba(0, 229, 255, 0.4); }
+.status-unlocked .badge-day { color: var(--theme-primary); text-shadow: 0 0 8px var(--theme-shadow-primary); }
 .status-unlocked .badge-name { color: #f4f4f5; text-shadow: 0 0 4px rgba(255, 255, 255, 0.2); }
 
 @keyframes float-super {
@@ -231,6 +230,6 @@ const onClick = () => {
 }
 .is-clickable:active .badge-icon {
     transform: scale(0.92);
-    box-shadow: 0 0 10px rgba(0, 198, 255, 0.8);
+    box-shadow: 0 0 10px var(--theme-shadow-primary);
 }
 </style>

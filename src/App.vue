@@ -1,29 +1,34 @@
-<script>
-// 这里因为是在 App.vue 取 store，需要确保 pinia 已挂载。推荐在 onLaunch 内侧动态引入
-import { useChatStore } from './store/chat.js'
+<template>
+  <view class="app-theme-wrapper" :style="themeStore.themeCssVars">
+    <router-view></router-view>
+  </view>
+</template>
 
-export default {
-  onLaunch: function () {
-    console.log('App Launch - 特工隐秘模式已激活 (伪装: 计算器)')
-    
-    // 监听 uni-push 2.0 透传消息
-    uni.onPushMessage((res) => {
-        console.log("收到推送透传消息：", res)
-        if (res.type === 'receive') {
-            const chatStore = useChatStore()
-            // 将来自云端的实时消息体 push 进状态管理器
-            chatStore.pushMessage(res.data.payload)
-        }
-    })
-  },
-  onShow: function () {
-    console.log('App Show')
-  },
-  onHide: function () {
-    console.log('App Hide')
-  }
-}
+<script setup>
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
+import { useChatStore } from './store/chat.js'
+import { useThemeStore } from './store/theme.js'
+
+const themeStore = useThemeStore()
+
+onLaunch(() => {
+  console.log('App Launch - 特工隐秘模式已激活 (伪装: 计算器)')
+  
+  // 监听 uni-push 2.0 透传消息
+  uni.onPushMessage((res) => {
+      console.log("收到推送透传消息：", res)
+      if (res.type === 'receive') {
+          const chatStore = useChatStore()
+          // 将来自云端的实时消息体 push 进状态管理器
+          chatStore.pushMessage(res.data.payload)
+      }
+  })
+})
+
+onShow(() => { console.log('App Show') })
+onHide(() => { console.log('App Hide') })
 </script>
+
 
 <style lang="scss">
 /* 全局样式表 — 重置浏览器默认边距 */
@@ -46,8 +51,20 @@ view {
   box-sizing: border-box;
 }
 
-.text-primary { color: #00E676; } /* 霓虹绿，用于正向、成功、天数 */
-.text-danger { color: #FF3D00; }  /* 霓虹红，用于急救、警报 */
+.app-theme-wrapper {
+  min-height: 100vh;
+  width: 100vw;
+  /* 初始化 Fallback 变量 */
+  --theme-primary: #00e5ff;
+  --theme-primary-grad-start: #00C6FF;
+  --theme-primary-grad-end: #0072FF;
+  --theme-secondary: #8b5cf6;
+  --theme-bg-highlight: rgba(0, 229, 255, 0.05);
+  --theme-shadow-primary: rgba(0, 229, 255, 0.4);
+}
+
+.text-primary { color: var(--theme-primary, #00E676); } 
+.text-danger { color: #ef4444; }  /* 霓虹红，用于急救、警报不变 */
 .bg-surface { background-color: #1E1E1E; }
 .bg-dark { background-color: #121212; }
 

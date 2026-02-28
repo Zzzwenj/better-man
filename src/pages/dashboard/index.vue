@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <view class="container flex-col" :style="themeStore.themeCssVars">
     <!-- 顶部状态栏 -->
     <view class="header flex justify-between items-center">
       <view>
@@ -101,6 +101,9 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import MotivationalQuote from '../../components/MotivationalQuote.vue'
 import CustomTabBar from '../../components/CustomTabBar.vue'
+import { useThemeStore } from '../../store/theme.js'
+
+const themeStore = useThemeStore()
 
 // FAB 拖拽逻辑原生理代
 const sysInfo = uni.getSystemInfoSync()
@@ -236,7 +239,7 @@ page {
   overflow-x: hidden;
   background-color: #09090b; /* 极简黑曜石 */
   background-image: 
-    radial-gradient(circle at 50% 30%, rgba(0, 229, 255, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 50% 30%, var(--theme-bg-highlight) 0%, transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
   display: flex;
   flex-direction: column;
@@ -281,7 +284,7 @@ page {
   box-sizing: border-box;
   width: 100%;
 }
-.title { font-size: 24px; font-weight: 900; color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.title { font-size: 24px; font-weight: 900; color: var(--theme-primary); text-shadow: 0 0 15px var(--theme-shadow-primary); }
 .subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px;}
 .user-chip { 
   background: rgba(255,255,255,0.05); 
@@ -290,7 +293,7 @@ page {
   border-radius: 12px;
   backdrop-filter: blur(10px);
 }
-.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: #00e5ff; box-shadow: 0 0 8px #00e5ff;}
+.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary);}
 .chip-text { font-size: 12px; color: #e4e4e7; font-family: monospace;}
 
 .energy-core {
@@ -304,14 +307,14 @@ page {
   border: 1px solid transparent;
 }
 .outer-ring {
-  border-top-color: rgba(0, 198, 255, 0.3);
+  border-top-color: var(--theme-shadow-primary);
   border-bottom-color: rgba(139, 92, 246, 0.3);
   animation: spin 15s linear infinite;
 }
 .inner-ring {
   margin: 15px;
-  border-left-color: rgba(0, 198, 255, 0.6);
-  border-right-color: rgba(0, 198, 255, 0.2);
+  border-left-color: var(--theme-shadow-primary);
+  border-right-color: var(--theme-bg-highlight);
   animation: spin-reverse 10s linear infinite;
 }
 .core-pulse {
@@ -319,7 +322,7 @@ page {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--theme-bg-highlight) 0%, transparent 70%);
   animation: pulse 4s ease-in-out infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -337,12 +340,12 @@ page {
   font-weight: 900;
   color: #fff;
   font-family: 'Courier New', Courier, monospace;
-  text-shadow: 0 0 30px rgba(0, 229, 255, 0.6);
+  text-shadow: 0 0 30px var(--theme-shadow-primary);
   line-height: 1;
 }
 .hours-label {
   font-size: 14px;
-  color: #00C6FF;
+  color: var(--theme-primary);
   letter-spacing: 3px;
   font-weight: bold;
 }
@@ -370,7 +373,7 @@ page {
   padding: 16px 0;
   transition: all 0.3s ease;
 }
-.data-val { font-size: 24px; font-weight: 900; color: #fafafa; font-family: monospace; text-shadow: 0 0 15px rgba(0,198,255,0.4); }
+.data-val { font-size: 24px; font-weight: 900; color: #fafafa; font-family: monospace; text-shadow: 0 0 15px var(--theme-shadow-primary); }
 .data-label { font-size: 12px; color: #a1a1aa; letter-spacing: 1px;}
 
 /* 紧急阻断按钮 */

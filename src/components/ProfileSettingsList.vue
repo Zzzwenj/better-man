@@ -13,7 +13,7 @@
         </view>
         
         <view v-if="item.type === 'switch'">
-          <switch v-show="!hideNative" :checked="item.value" color="#00C6FF" style="transform: scale(0.8);" @change="(e) => onSwitchChange(e, item)" />
+          <switch v-show="!hideNative" :checked="item.value" color="var(--theme-primary)" style="transform: scale(0.8);" @change="(e) => onSwitchChange(e, item)" />
         </view>
         <text v-else class="arrow-right">></text>
       </view>

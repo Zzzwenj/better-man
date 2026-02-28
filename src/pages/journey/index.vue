@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <view class="container flex-col" :style="themeStore.themeCssVars">
     <view class="header flex justify-between items-center">
       <view class="room-info flex-col">
           <text class="title tracking-wider">观测图谱</text>
@@ -37,7 +37,7 @@
         <view class="flex-col">
             <text class="stat-label">前额叶皮层受体修复率 (根据持续天数换算)</text>
             <view class="progress-bar mt-2">
-                <view class="progress-fill" :style="{ width: repairRate + '%', background: 'linear-gradient(90deg, #00C6FF 0%, #0072FF 100%)' }"></view>
+                <view class="progress-fill" :style="{ width: repairRate + '%', background: 'linear-gradient(90deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%)' }"></view>
             </view>
         </view>
         <text class="stat-val text-cyan text-right ml-4">{{ repairRate }}%</text>
@@ -49,12 +49,12 @@
             <view class="progress-bar mt-2">
                 <view class="progress-fill" :style="{ 
                     width: cravingLevel === '极高' ? '80%' : cravingLevel === '中等' ? '40%' : '10%', 
-                    background: cravingLevel === '极高' ? 'linear-gradient(90deg, #F43F5E, #9F1239)' : cravingLevel === '中等' ? 'linear-gradient(90deg, #F59E0B, #B45309)' : 'linear-gradient(90deg, #00C6FF, #0072FF)' 
+                    background: cravingLevel === '极高' ? 'linear-gradient(90deg, #F43F5E, #9F1239)' : cravingLevel === '中等' ? 'linear-gradient(90deg, #F59E0B, #B45309)' : 'linear-gradient(90deg, var(--theme-primary-grad-start), var(--theme-primary-grad-end))' 
                 }"></view>
             </view>
         </view>
         <text class="stat-val text-right ml-4" :style="{ 
-            color: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#00C6FF' 
+            color: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : 'var(--theme-primary)' 
         }">{{ cravingLevel }}</text>
       </view>
     </view>
@@ -90,7 +90,9 @@ import { ref, onMounted } from 'vue'
 import MilestoneShareCard from '../../components/MilestoneShareCard.vue'
 import CustomTabBar from '../../components/CustomTabBar.vue'
 import NeuroBadge from '../../components/NeuroBadge.vue'
+import { useThemeStore } from '../../store/theme.js'
 
+const themeStore = useThemeStore()
 const daysClean = ref(0)
 const repairRate = ref(10)
 const cravingLevel = ref('极高 (High)')
@@ -256,7 +258,7 @@ page {
 .block { display: block; }
 .tracking-wider { letter-spacing: 4px; }
 
-.title { font-size: 24px; font-weight: 900; color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.title { font-size: 24px; font-weight: 900; color: var(--theme-primary); text-shadow: 0 0 15px var(--theme-shadow-primary); }
 .subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px;}
 .section-title { font-size: 14px; font-weight: bold; color: #e4e4e7; font-family: monospace;}
 
@@ -284,12 +286,12 @@ page {
     border-radius: 3px;
 }
 .lvl-0 { background-color: #18181b; border: 1px solid #27272a; }
-.lvl-1 { background-color: rgba(0, 198, 255, 0.2); }
-.lvl-2 { background-color: rgba(0, 198, 255, 0.5); }
-.lvl-3 { background-color: rgba(0, 198, 255, 1); box-shadow: 0 0 8px rgba(0, 198, 255, 0.6); }
+.lvl-1 { background-color: var(--theme-bg-highlight); }
+.lvl-2 { background-color: var(--theme-shadow-primary); }
+.lvl-3 { background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary); }
 
 .legend-text { font-size: 10px; color: #a1a1aa; }
-.analysis-hint { font-size: 12px; color: #00C6FF; margin-top: 16px; font-weight: 500;}
+.analysis-hint { font-size: 12px; color: var(--theme-primary); margin-top: 16px; font-weight: 500;}
 
 /* 徽章列表 */
 .badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 16px; margin-left: -10px; padding-left: 10px; }
@@ -305,6 +307,6 @@ page {
 .progress-fill { height: 100%; border-radius: 3px; box-shadow: 0 0 10px currentColor;}
 .stat-val { font-size: 18px; font-weight: 900; font-family: monospace; width: 60px; flex-shrink: 0;}
 .text-right { text-align: right; }
-.text-cyan { color: #00C6FF; }
+.text-cyan { color: var(--theme-primary); }
 .text-red { color: #ef4444; }
 </style>

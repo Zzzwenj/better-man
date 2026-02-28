@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col">
+  <view class="container flex-col" :style="themeStore.themeCssVars">
     <!-- Header: Status -->
     <view class="header flex justify-between items-center">
       <view class="room-info flex-col">
@@ -10,6 +10,11 @@
         <view class="dot-live"></view>
         <text class="online-text ml-1">500 在线</text>
       </view>
+    </view>
+
+    <!-- Global Resonance Matrix (代替排行榜) -->
+    <view class="px-4 mt-4">
+      <GlobalResonance />
     </view>
 
     <!-- Chat Area -->
@@ -82,6 +87,10 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
 import { onHide } from '@dcloudio/uni-app'
 import { useChatStore } from '../../store/chat.js'
 import CustomTabBar from '../../components/CustomTabBar.vue'
+import GlobalResonance from '../../components/GlobalResonance.vue'
+import { useThemeStore } from '../../store/theme.js'
+
+const themeStore = useThemeStore()
 
 const chatStore = useChatStore()
 const inputVal = ref('')
@@ -274,18 +283,18 @@ page {
   box-sizing: border-box;
   width: 100%;
 }
-.room-title { font-size: 24px; font-weight: 900; color: #00e5ff; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.room-title { font-size: 24px; font-weight: 900; color: var(--theme-primary); letter-spacing: 2px; text-shadow: 0 0 15px var(--theme-shadow-primary); }
 .room-subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px; }
 .header-right { gap: 8px; }
 .online-chip {
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 255, 0.15);
+  background: var(--theme-bg-highlight);
+  border: 1px solid var(--theme-shadow-primary);
   padding: 3px 8px;
   border-radius: 10px;
 }
-.dot-live { width: 6px; height: 6px; background-color: #00e5ff; border-radius: 50%; box-shadow: 0 0 5px #00e5ff; animation: blink 2s infinite; }
+.dot-live { width: 6px; height: 6px; background-color: var(--theme-primary); border-radius: 50%; box-shadow: 0 0 5px var(--theme-primary); animation: blink 2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.online-text { font-size: 10px; color: #00e5ff; font-family: monospace; }
+.online-text { font-size: 10px; color: var(--theme-primary); font-family: monospace; }
 .leave-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -395,8 +404,8 @@ page {
 
 .btn-send {
   width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
-  box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
+  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
+  box-shadow: 0 4px 12px var(--theme-shadow-primary);
   transition: all 0.2s;
   flex-shrink: 0; /* 绝对防止右侧发送按钮被挤压遮挡 */
 }

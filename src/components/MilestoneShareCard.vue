@@ -110,15 +110,15 @@ const mockSave = () => {
 .cyber-corner-tl {
     position: absolute; top: 0; left: 0;
     width: 40px; height: 40px;
-    border-top: 3px solid #00e5ff;
-    border-left: 3px solid #00e5ff;
+    border-top: 3px solid var(--theme-primary);
+    border-left: 3px solid var(--theme-primary);
     border-top-left-radius: 12px;
 }
 .cyber-corner-br {
     position: absolute; bottom: 0; right: 0;
     width: 40px; height: 40px;
-    border-bottom: 3px solid #00e5ff;
-    border-right: 3px solid #00e5ff;
+    border-bottom: 3px solid var(--theme-primary);
+    border-right: 3px solid var(--theme-primary);
     border-bottom-right-radius: 12px;
 }
 
@@ -194,7 +194,7 @@ const mockSave = () => {
 
 .core-icon {
     font-size: 50px;
-    color: #00e5ff;
+    color: var(--theme-primary);
     z-index: 10;
     top: 50%;
     left: 50%;
@@ -205,7 +205,7 @@ const mockSave = () => {
 }
 
 .milestone-name { font-size: 24px; color: #f4f4f5; font-weight: 900; letter-spacing: 2px; }
-.milestone-day { font-size: 14px; color: #00e5ff; font-family: monospace; font-weight: bold; }
+.milestone-day { font-size: 14px; color: var(--theme-primary); font-family: monospace; font-weight: bold; }
 
 .divider { height: 1px; background: linear-gradient(to right, transparent, #3f3f46, transparent); }
 
@@ -221,7 +221,7 @@ const mockSave = () => {
     width: 240px;
     height: 50px;
     border-radius: 25px;
-    background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+    background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
     box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
     transition: all 0.2s;
 }

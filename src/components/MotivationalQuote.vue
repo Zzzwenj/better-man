@@ -53,8 +53,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .quote-card {
-  background: rgba(0, 229, 255, 0.05);
-  border: 1px solid rgba(0, 229, 255, 0.15);
+  background: var(--theme-bg-highlight);
+  border: 1px solid var(--theme-shadow-primary);
   border-radius: 16px;
   padding: 20px;
   position: relative;
@@ -64,7 +64,7 @@ onMounted(() => {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at top right, rgba(0, 229, 255, 0.05) 0%, transparent 60%);
+    background: radial-gradient(circle at top right, var(--theme-bg-highlight) 0%, transparent 60%);
     pointer-events: none;
   }
 }
@@ -78,9 +78,9 @@ onMounted(() => {
 .justify-end { justify-content: flex-end; }
 .items-center { align-items: center; }
 
-.quote-icon { font-size: 24px; filter: drop-shadow(0 0 5px rgba(0, 229, 255,0.5)); }
-.quote-title { font-size: 11px; color: #00e5ff; font-weight: bold; letter-spacing: 1px; font-family: monospace; }
-.quote-content { border-left: 2px solid rgba(0, 229, 255, 0.4); padding-left: 10px; margin-left: 2px; }
+.quote-icon { font-size: 24px; filter: drop-shadow(0 0 5px var(--theme-shadow-primary)); }
+.quote-title { font-size: 11px; color: var(--theme-primary); font-weight: bold; letter-spacing: 1px; font-family: monospace; }
+.quote-content { border-left: 2px solid var(--theme-shadow-primary); padding-left: 10px; margin-left: 2px; }
 .quote-text { font-size: 13px; color: #e4e4e7; line-height: 1.5; font-style: italic; }
 .quote-author { font-size: 10px; color: #71717a; text-align: right; font-family: monospace; }
 
@@ -92,7 +92,7 @@ onMounted(() => {
   transition: all 0.2s;
   cursor: pointer;
 }
-.refresh-hover { background: rgba(0, 229, 255, 0.2); border-color: rgba(0, 229, 255, 0.4); }
-.refresh-icon { font-size: 12px; color: #00e5ff; font-weight: bold; }
+.refresh-hover { background: var(--theme-bg-highlight); border-color: var(--theme-shadow-primary); }
+.refresh-icon { font-size: 12px; color: var(--theme-primary); font-weight: bold; }
 .refresh-text { font-size: 10px; color: #a1a1aa; }
 </style>
