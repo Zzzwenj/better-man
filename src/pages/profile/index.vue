@@ -73,15 +73,15 @@ let localProfileData = {}
 
 // --- 设置列表配置表 ---
 const securityList = ref([
+  { id: 'appLock', icon: '[SEC]', label: '启动锁 (面容/指纹核验)', type: 'switch', value: false },
   { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
   { id: 'whitelist', icon: '👁️', label: '系统级无障碍白名单', type: 'arrow' },
-  { id: 'disguise', icon: '🥷', label: 'App 图标伪装 (伪装为计算器)', type: 'switch', value: false }
+  { id: 'disguise', icon: '🥷', label: 'App 图标隐匿伪装', type: 'switch', value: false }
 ])
 
 const databaseList = ref([
-  { id: 'neuroModel', icon: '🧠', label: '神经可塑性模型资料库', type: 'arrow' },
-  { id: 'retake', icon: '🔄', label: '重新进行基线物理评估', type: 'arrow' },
-  { id: 'wipe', icon: '💾', label: '本地数据抹除/导出', type: 'arrow' }
+  { id: 'logs', icon: '[LOG]', label: '拦截与阻断日志表', type: 'arrow' },
+  { id: 'wipe', icon: '[DEL]', label: '执行终端数据焚毁', type: 'arrow' }
 ])
 
 // --- 初始化钩子 ---
@@ -98,27 +98,90 @@ onMounted(() => {
     const data = uni.getStorageSync('neuro_baseline')
     if (data) {
         localProfileData = JSON.parse(data)
-        // 优先使用用户自定义昵称，否则使用年龄段 fallback
         userName.value = localProfileData.nickname || ('探索者_' + (localProfileData.age || '未知'))
         userAvatar.value = localProfileData.avatar || ''
         userSignature.value = localProfileData.signature || ''
         userDesc.value = '成瘾史: ' + (localProfileData.history || '未知')
     }
+    
+    // 静默在后台重新握手拉取最新资料
+    fetchCloudProfile()
 })
+
+const fetchCloudProfile = async () => {
+    const token = uni.getStorageSync('uni_id_token')
+    if (!token) return
+    
+    try {
+        const res = await uniCloud.callFunction({
+            name: 'user-center',
+            data: { action: 'getUserProfile', token }
+        })
+        
+        if (res.result.code === 0 && res.result.data) {
+            const cloudUser = res.result.data
+            if (cloudUser.nickname) userName.value = cloudUser.nickname
+            if (cloudUser.avatar) userAvatar.value = cloudUser.avatar
+            if (cloudUser.signature) userSignature.value = cloudUser.signature
+            
+            localProfileData.nickname = cloudUser.nickname || localProfileData.nickname
+            localProfileData.avatar = cloudUser.avatar || localProfileData.avatar
+            localProfileData.signature = cloudUser.signature || localProfileData.signature
+            uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
+        }
+    } catch (err) {
+        console.error('云端中枢档案同步失败', err)
+    }
+}
 
 // --- 交互事件回传响应 ---
 
-// 修改用户名与资料
-const onUpdateProfile = ({ newName, newAvatar, newSignature }) => {
-  userName.value = newName
-  userAvatar.value = newAvatar
-  userSignature.value = newSignature
+const onUpdateProfile = async ({ newName, newAvatar, newSignature }) => {
+  const token = uni.getStorageSync('uni_id_token')
+  uni.showLoading({ title: '连接总控覆写...' })
   
-  // 同步更新缓存
-  localProfileData.nickname = newName
-  localProfileData.avatar = newAvatar
-  localProfileData.signature = newSignature
-  uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
+  try {
+      const res = await uniCloud.callFunction({
+        name: 'user-center',
+        data: {
+          action: 'updateProfile',
+          token,
+          payload: {
+            nickname: newName,
+            avatar: newAvatar,
+            signature: newSignature
+          }
+        }
+      })
+      
+      uni.hideLoading()
+      
+      if (res.result.code === 0) {
+          userName.value = newName
+          userAvatar.value = newAvatar
+          userSignature.value = newSignature
+          
+          localProfileData.nickname = newName
+          localProfileData.avatar = newAvatar
+          localProfileData.signature = newSignature
+          uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
+          
+          uni.showToast({ title: '档案已合法覆写', icon: 'success' })
+      } else {
+          uni.showModal({
+              title: '系统级阻断',
+              content: res.result.msg,
+              showCancel: false,
+              confirmText: '明确',
+              confirmColor: '#ef4444'
+          })
+          fetchCloudProfile() // 回滚
+      }
+  } catch(err) {
+      uni.hideLoading()
+      console.error('覆写异常', err)
+      uni.showToast({ title: '总控终端未连接', icon: 'none' })
+  }
 }
 
 const onModalStateChange = (state) => {
@@ -144,31 +207,32 @@ const handleSettingClick = (originItem) => {
   } else if (id === 'whitelist' || id === 'neuroModel' || id === 'wipe') {
     // 尚未开通的模块，统一提示，绝不出现“死按钮”
     uni.showToast({ title: '区域未解锁，等待基站信号', icon: 'none' })
-  } else if (id === 'disguise') {
+  } else if (id === 'logs') {
+    uni.showToast({ title: '日志网络节点未接通', icon: 'none' })
+  } else if (id === 'appLock' || id === 'disguise') {
     // Switch Toggle 处理
     const newValue = originItem.value
     // 修改原数组状态
-    securityList.value.find(item => item.id === 'disguise').value = newValue
-    uni.showToast({ title: newValue ? '伪装协议已加载' : '伪装协议已撤销', icon: 'none' })
-  } else if (id === 'retake') {
-    retakeTest()
-  }
-}
-
-// 重新评测
-const retakeTest = () => {
+    const target = securityList.value.find(item => item.id === id)
+    if (target) {
+        target.value = newValue
+        uni.showToast({ title: newValue ? '底层协议已注入' : '底层协议已撤销', icon: 'none' })
+    }
+  } else if (id === 'wipe') {
+    // 本地数据焚毁
     uni.showModal({
-        title: '重置神经基线',
-        content: '这将清除你当前的生理评估画像，并重新进入科学基线体检流。',
-        confirmText: '确认重置',
+        title: '警告：自毁协议',
+        content: '这将抹除本地所有神经连接痕迹，断开总服务器，并将你强制踢回登录舱。',
+        confirmText: '确认焚毁',
         confirmColor: '#ef4444',
         success: (res) => {
             if (res.confirm) {
-                uni.removeStorageSync('neuro_baseline')
-                uni.redirectTo({ url: '/pages/onboarding/index' })
+                uni.clearStorageSync()
+                uni.reLaunch({ url: '/pages/login/index' })
             }
         }
     })
+  }
 }
 
 const onThemeSelect = (themeId) => {

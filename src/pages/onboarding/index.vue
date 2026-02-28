@@ -178,15 +178,34 @@ const nextStep = () => {
   if (!isLastStep.value) {
     currentStep.value++
   } else {
-    // 问卷完成，持久化数据
+    // 问卷完成，持久化数据到本地与云端
     uni.showLoading({ title: '生成神经协议...' })
-    setTimeout(() => {
-      uni.setStorageSync('neuro_baseline', JSON.stringify(answers.value))
-      uni.hideLoading()
-      uni.switchTab({
-        url: '/pages/dashboard/index'
-      })
-    }, 1500)
+    
+    const baselineData = answers.value
+    uni.setStorageSync('neuro_baseline', JSON.stringify(baselineData))
+    
+    const token = uni.getStorageSync('uni_id_token')
+    
+    // 如果已有 token，则同步到云端
+    if (token) {
+        uniCloud.callFunction({
+            name: 'user-center',
+            data: {
+                action: 'syncBaseline',
+                token,
+                payload: { neuro_baseline: baselineData }
+            }
+        }).catch(err => {
+            console.error('基线未成功上传至云台', err)
+        }).finally(() => {
+            uni.hideLoading()
+            uni.switchTab({ url: '/pages/dashboard/index' })
+        })
+    } else {
+        // 无 token （一般不应该发生，因为进入 onboarding 必定是有 token 才放进来的，或是还没写鉴权拦截）
+        uni.hideLoading()
+        uni.switchTab({ url: '/pages/dashboard/index' })
+    }
   }
 }
 </script>
