@@ -1,0 +1,12 @@
+{
+    "name": "uni-id-cf",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "dependencies": {
+        "nodemailer": "^6.9.13",
+        "crypto-js": "^4.2.0"
+    },
+    "author": "",
+    "license": "ISC"
+}
