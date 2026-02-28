@@ -103,22 +103,22 @@ const mockSave = () => {
     border-radius: 12px;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(16, 185, 129, 0.1);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(0, 229, 255, 0.1);
 }
 
 /* 装饰角落 */
 .cyber-corner-tl {
     position: absolute; top: 0; left: 0;
     width: 40px; height: 40px;
-    border-top: 3px solid #10b981;
-    border-left: 3px solid #10b981;
+    border-top: 3px solid #00e5ff;
+    border-left: 3px solid #00e5ff;
     border-top-left-radius: 12px;
 }
 .cyber-corner-br {
     position: absolute; bottom: 0; right: 0;
     width: 40px; height: 40px;
-    border-bottom: 3px solid #10b981;
-    border-right: 3px solid #10b981;
+    border-bottom: 3px solid #00e5ff;
+    border-right: 3px solid #00e5ff;
     border-bottom-right-radius: 12px;
 }
 
@@ -127,7 +127,7 @@ const mockSave = () => {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 100px;
-    background: linear-gradient(to bottom, transparent, rgba(16, 185, 129, 0.05), transparent);
+    background: linear-gradient(to bottom, transparent, rgba(0, 229, 255, 0.05), transparent);
     animation: scan 4s linear infinite;
     pointer-events: none;
 }
@@ -160,7 +160,7 @@ const mockSave = () => {
 .w-full { width: 100%; box-sizing: border-box; }
 
 .tracking-wider { letter-spacing: 4px; }
-.app-brand { font-size: 20px; font-weight: 900; color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+.app-brand { font-size: 20px; font-weight: 900; color: #fafafa; text-shadow: 0 0 15px rgba(0, 198, 255, 0.5); }
 .sub-brand { font-size: 10px; color: #71717a; letter-spacing: 2px; }
 
 /* 中心高光图标 */
@@ -178,14 +178,14 @@ const mockSave = () => {
 }
 .out-ring {
     width: 120px; height: 120px;
-    border-top-color: rgba(16, 185, 129, 0.5);
-    border-bottom-color: rgba(16, 185, 129, 0.2);
+    border-top-color: rgba(0, 229, 255, 0.5);
+    border-bottom-color: rgba(0, 229, 255, 0.2);
     animation: spin 8s linear infinite;
 }
 .in-ring {
     width: 90px; height: 90px;
-    border-left-color: rgba(16, 185, 129, 0.4);
-    border-right-color: rgba(16, 185, 129, 0.1);
+    border-left-color: rgba(0, 229, 255, 0.4);
+    border-right-color: rgba(0, 229, 255, 0.1);
     animation: spin-reverse 6s linear infinite;
 }
 
@@ -194,18 +194,18 @@ const mockSave = () => {
 
 .core-icon {
     font-size: 50px;
-    color: #10b981;
+    color: #00e5ff;
     z-index: 10;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
 .text-glow {
-    text-shadow: 0 0 20px rgba(16, 185, 129, 0.8), 0 0 40px rgba(16, 185, 129, 0.4);
+    text-shadow: 0 0 20px rgba(0, 198, 255, 0.6), 0 0 40px rgba(0, 114, 255, 0.3);
 }
 
 .milestone-name { font-size: 24px; color: #f4f4f5; font-weight: 900; letter-spacing: 2px; }
-.milestone-day { font-size: 14px; color: #10b981; font-family: monospace; font-weight: bold; }
+.milestone-day { font-size: 14px; color: #00e5ff; font-family: monospace; font-weight: bold; }
 
 .divider { height: 1px; background: linear-gradient(to right, transparent, #3f3f46, transparent); }
 
@@ -216,24 +216,24 @@ const mockSave = () => {
 .qr-mock { width: 36px; height: 36px; border: 1px dashed #52525b; border-radius: 4px; }
 .qr-dot { width: 10px; height: 10px; background-color: #52525b; border-radius: 2px; }
 
-/* 底部操作按钮 */
 .save-btn {
     margin-top: 30px;
     width: 240px;
     height: 50px;
     border-radius: 25px;
-    background: rgba(16, 185, 129, 0.15);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+    box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
     transition: all 0.2s;
 }
 .btn-hover {
-    background: rgba(16, 185, 129, 0.3);
     transform: scale(0.97);
+    box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
 }
 .save-text {
     font-size: 14px;
-    color: #10b981;
+    color: #fff;
     font-weight: bold;
+    letter-spacing: 1px;
 }
 .save-icon { font-size: 16px; }
 </style>

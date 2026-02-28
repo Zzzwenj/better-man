@@ -1,7 +1,7 @@
 <template>
   <view class="container flex-col">
     <!-- 顶部状态栏 -->
-    <view class="header flex justify-between items-center px-4">
+    <view class="header flex justify-between items-center">
       <view>
         <text class="title tracking-wider">觉醒空间</text>
         <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
@@ -40,7 +40,7 @@
         </view>
       </view>
 
-      <view class="quote-wrapper mt-6 w-full">
+      <view class="quote-wrapper mt-4 px-4">
         <MotivationalQuote />
       </view>
     </view>
@@ -76,12 +76,41 @@
         </view>
       </view>
     </view>
+
+    <!-- 平台级原生原生防卡顿悬浮球 -->
+    <movable-area class="fab-area">
+      <movable-view 
+        class="ai-fab flex items-center justify-center" 
+        :x="fabX" 
+        :y="fabY" 
+        direction="all"
+        :out-of-bounds="false"
+        @click="onFabClick"
+      >
+        <view class="ai-fab-glow"></view>
+        <text class="ai-fab-icon">⎔</text>
+      </movable-view>
+    </movable-area>
+
+    <!-- 全局接管的自定义波动特效导航栏 -->
+    <CustomTabBar :current="0" />
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import MotivationalQuote from '../../components/MotivationalQuote.vue'
+import CustomTabBar from '../../components/CustomTabBar.vue'
+
+// FAB 拖拽逻辑原生理代
+const sysInfo = uni.getSystemInfoSync()
+const fabX = ref(sysInfo.windowWidth - 80)
+const fabY = ref(sysInfo.windowHeight - 120)
+
+const onFabClick = () => {
+  uni.vibrateShort()
+  uni.navigateTo({ url: '/pages/companion/index' })
+}
 
 const hoursClean = ref(0)
 const hoursSaved = ref(0)
@@ -90,6 +119,9 @@ const currentPhase = ref('Phase I: 生理挣扎')
 let timeInterval = null
 
 onMounted(() => {
+  // 隐藏原生劣质 TabBar
+  uni.hideTabBar()
+  
   // --- 拦截鉴权: 检查如果未登录跳登录页 ---
   const token = uni.getStorageSync('uni_id_token')
   if (!token) {
@@ -190,6 +222,7 @@ onUnmounted(() => {
   if (panicInterval) clearInterval(panicInterval)
   if (timeInterval) clearInterval(timeInterval)
 })
+
 </script>
 
 <style lang="scss" scoped>
@@ -199,17 +232,20 @@ page {
 
 .container {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   background-color: #09090b; /* 极简黑曜石 */
   background-image: 
-    radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 50% 30%, rgba(0, 229, 255, 0.05) 0%, transparent 60%),
     radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
   overflow-y: auto;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom)); /* 适配悬浮底栏 */
 }
 .px-4 { padding: 0 20px; }
-.pb-8 { padding-bottom: 32px; }
+.pb-8 { padding-bottom: 32px; padding-top: 20px;}
 .mt-1 { margin-top: 4px; }
 .mt-2 { margin-top: 8px; }
 .mt-3 { margin-top: 12px; }
@@ -230,12 +266,23 @@ page {
 .z-10 { z-index: 10; }
 .tracking-wider { letter-spacing: 4px; }
 
+.tracking-wider { letter-spacing: 4px; }
+
 /* 顶部状态栏 */
 .header {
-  padding-top: calc(var(--status-bar-height) + 20px);
+  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+  width: 100%;
 }
-.title { font-size: 24px; font-weight: 900; color: #10b981; text-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-.subtitle { font-size: 11px; color: #71717a; letter-spacing: 1px;}
+.title { font-size: 24px; font-weight: 900; color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px;}
 .user-chip { 
   background: rgba(255,255,255,0.05); 
   border: 1px solid rgba(255,255,255,0.1); 
@@ -243,10 +290,9 @@ page {
   border-radius: 12px;
   backdrop-filter: blur(10px);
 }
-.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: #10b981; box-shadow: 0 0 8px #10b981;}
-.chip-text { font-size: 12px; color: #a1a1aa; font-family: monospace;}
+.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: #00e5ff; box-shadow: 0 0 8px #00e5ff;}
+.chip-text { font-size: 12px; color: #e4e4e7; font-family: monospace;}
 
-/* 核心能量环 */
 .energy-core {
   width: 280px;
   height: 280px;
@@ -258,14 +304,14 @@ page {
   border: 1px solid transparent;
 }
 .outer-ring {
-  border-top-color: rgba(16, 185, 129, 0.3);
+  border-top-color: rgba(0, 198, 255, 0.3);
   border-bottom-color: rgba(139, 92, 246, 0.3);
   animation: spin 15s linear infinite;
 }
 .inner-ring {
   margin: 15px;
-  border-left-color: rgba(16, 185, 129, 0.6);
-  border-right-color: rgba(16, 185, 129, 0.2);
+  border-left-color: rgba(0, 198, 255, 0.6);
+  border-right-color: rgba(0, 198, 255, 0.2);
   animation: spin-reverse 10s linear infinite;
 }
 .core-pulse {
@@ -273,7 +319,7 @@ page {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.1) 0%, transparent 70%);
   animation: pulse 4s ease-in-out infinite;
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -291,18 +337,18 @@ page {
   font-weight: 900;
   color: #fff;
   font-family: 'Courier New', Courier, monospace;
-  text-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
+  text-shadow: 0 0 30px rgba(0, 229, 255, 0.6);
   line-height: 1;
 }
 .hours-label {
   font-size: 14px;
-  color: #10b981;
+  color: #00C6FF;
   letter-spacing: 3px;
   font-weight: bold;
 }
 .level-badge {
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(79, 70, 229, 0.2));
+  border: 1px solid rgba(139, 92, 246, 0.4);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
@@ -314,13 +360,18 @@ page {
 .data-cards { gap: 16px; }
 .data-card {
   flex: 1;
-  background: rgba(16, 185, 129, 0.05);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background: rgba(255, 255, 255, 0.03); /* 高端玻璃态代替刺眼的纯色 */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05); /* 细微的光学边缘 */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   border-radius: 16px;
   padding: 16px 0;
+  transition: all 0.3s ease;
 }
-.data-val { font-size: 24px; font-weight: 900; color: #10b981; font-family: monospace; }
-.data-label { font-size: 12px; color: #71717a; }
+.data-val { font-size: 24px; font-weight: 900; color: #fafafa; font-family: monospace; text-shadow: 0 0 15px rgba(0,198,255,0.4); }
+.data-label { font-size: 12px; color: #a1a1aa; letter-spacing: 1px;}
 
 /* 紧急阻断按钮 */
 .panic-btn {
@@ -402,4 +453,44 @@ page {
   box-shadow: 0 5px 15px rgba(239, 68, 68, 0.5);
 }
 .verify-text { font-size: 18px; color: #fff; font-weight: 900; letter-spacing: 2px;}
+
+/* 悬浮版 AI 护盾入口 */
+.fab-area {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 999;
+  pointer-events: none;
+}
+.ai-fab {
+  pointer-events: auto;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+}
+.ai-fab:active {
+  transform: scale(0.9);
+}
+.ai-fab-glow {
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
+  animation: fab-pulse 2s infinite;
+}
+.ai-fab-icon {
+  font-size: 28px;
+  color: #fff;
+  font-weight: bold;
+  z-index: 2;
+  text-shadow: 0 0 10px rgba(255,255,255,0.8);
+}
+@keyframes fab-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
 </style>

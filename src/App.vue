@@ -26,11 +26,20 @@ export default {
 </script>
 
 <style lang="scss">
-/* 全局样式表 */
+/* 全局样式表 — 重置浏览器默认边距 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
 page {
   background-color: #121212;
   color: #E0E0E0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
 view {

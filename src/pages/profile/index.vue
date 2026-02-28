@@ -10,7 +10,7 @@
     />
     
     <!-- 2. 订阅特权模幅 (保留，因其具有业务强相关性) -->
-    <view class="premium-card mt-8 mx-4" @click="upgradePremium" hover-class="card-hover">
+    <view class="premium-card mx-4" @click="upgradePremium" hover-class="card-hover">
         <view class="flex justify-between items-center">
             <text class="premium-title">⚡ 强制护城河 (系统级防御)</text>
             <view class="price-chip">
@@ -38,7 +38,8 @@
       :hideNative="isModalOpen"
       @itemClick="handleSettingClick" 
     />
-
+    
+    <CustomTabBar :current="3" />
   </view>
 </template>
 
@@ -46,6 +47,7 @@
 import { ref, onMounted } from 'vue'
 import ProfileUserCard from '../../components/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/ProfileSettingsList.vue'
+import CustomTabBar from '../../components/CustomTabBar.vue'
 
 // --- 用户状态 ---
 const userName = ref('探索者_8972')
@@ -69,6 +71,8 @@ const databaseList = ref([
 
 // --- 初始化钩子 ---
 onMounted(() => {
+    uni.hideTabBar()
+    
     // 拦截鉴权
     const token = uni.getStorageSync('uni_id_token')
     if (!token) {
@@ -112,7 +116,7 @@ const upgradePremium = () => {
         title: '开启终极防御',
         content: '只需 9.9 元/月，即可获得系统底层的强制接管权限。当你不受理智控制时，系统将成为你最后一道门槛。',
         confirmText: '立刻开启',
-        confirmColor: '#10b981'
+        confirmColor: '#00e5ff'
     })
 }
 
@@ -158,16 +162,18 @@ page {
 
 .container {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   background-color: #09090b;
   box-sizing: border-box;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
   overflow-y: auto;
-  padding-bottom: 40px;
 }
 
-.mx-4 { margin: 10px 20px; }
+.mx-4 { margin: 0 20px; }
 .mt-2 { margin-top: 8px; }
 .mt-4 { margin-top: 16px; }
-// .mt-8 { margin-top: 32px; }
+.mt-8 { margin-top: 32px; }
 .ml-1 { margin-left: 4px; }
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
@@ -177,18 +183,20 @@ page {
 
 /* 订阅特权模幅 */
 .premium-card {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
-    border: 1px solid rgba(16, 185, 129, 0.3);
+    margin-top: 24px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
     padding: 24px 20px;
-    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     transition: all 0.2s ease;
 }
-.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px rgba(16, 185, 129, 0.15); }
-.premium-title { font-size: 16px; font-weight: 900; color: #10b981; }
-.price-chip { background: #10b981; color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
+.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px rgba(0, 229, 255, 0.15); }
+.premium-title { font-size: 16px; font-weight: 900; color: #00e5ff; }
+.price-chip { background: #00e5ff; color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
 .premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
-.premium-footer { border-top: 1px dashed rgba(16, 185, 129, 0.2); padding-top: 12px;}
+.premium-footer { border-top: 1px dashed rgba(0, 229, 255, 0.2); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
-.arrow { color: #10b981; font-weight: bold; font-size: 18px;}
+.arrow { color: #00e5ff; font-weight: bold; font-size: 18px;}
 </style>

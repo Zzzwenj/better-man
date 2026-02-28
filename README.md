@@ -49,7 +49,7 @@
 - **系统中心抽离与工程化 (Component-Based Profile)**: 重建了原本代码面条化的 `Profile` 主页 
   - **强内聚解耦**: 将头部卡片独立为组件 `<ProfileUserCard>`, 将底部的设置数组列表也解耦为了 `<ProfileSettingsList>`。主页面体积直降 70%，并对未开发功能挂载响应式提示防止“死按钮”。
 - **档案重塑能力 (Avatar & Bios Override)**: 
-- **原生图库读取**: 头像位置不再是静态死图，点击开启原生相册选择 `chooseImage` 授权机制。
+  - **原生图库读取**: 头像位置不再是静态死图，点击开启原生相册选择 `chooseImage` 授权机制。
   - **个性宣言输入**: 用户能够定制化录入不超过 20 字的专属“戒断信条”，这些数据不仅会通过组件传值机制双向流转响应回主页，更将作为最新的节点合并不覆盖地覆盖回本地 Storage (`neuro_baseline`) 中永久提亮。
 - **越权遮挡层防刺穿 (Native Stacking Fix)**: 针对小程序平台普遍存在的原生 `switch` 按钮击穿弹窗的问题，我们放弃了“吃力不讨好”的遮罩隐藏法。通过调整 DOM 兄弟节点结构使其脱离父类的 Opacity 层叠上下文控制，以瞬发式的 0 过渡动画呈现弹窗，彻底且干净地避免了原生开关穿透界面的灾难 Bug，保障了严肃医疗界面的视觉严谨度。
 
@@ -63,3 +63,11 @@
   - **[短信宝基站接入]**: 剥离了高门槛的阿里云/腾讯云通信，转而使用 `uniCloud.httpclient` 底层模块轻量级挂载 [短信宝] 的下发接口。
   - **[MD5 密码加固]**: 针对短信宝接口引入了 `crypto-js`，将明文密码转化为标准的 LowerCase MD5 密文进行云端握手，彻底避免了由于特殊字符（例如感叹号）造成的 URL 编码截断与报错（Error 30）。
   - **[闭环云原生鉴权]**: 云函数层支持多维度校验，用户注册时会将发放的 6 位安全指令与时间戳落盘于云数据库 (`uni-verify-codes`)。密码统一进行不可逆的 SHA256 加盐混淆 (`hashPassword`) 存储于 `uni-id-users` 库，并下发 Token 保持与旧版测试体系的向下兼容。
+
+## 阶段 9：神经元徽章系统重构与赛博级 UI 强化 (Badge System Overhaul)
+- **独立组件抽离 (Component Extraction)**: 彻底解耦了 `journey` 页面中臃肿的内联徽章渲染代码，抽象出高内聚的 `NeuroBadge.vue` 组件，使主观测页面的逻辑大幅度精简。
+- **三态视觉引擎 (Tri-State Visual Engine)**: 废弃了廉价的 Unicode 字符与静态边框，为徽章引入了严谨的三段式状态机：
+  - **沉睡态 (Locked)**: 暗黑生铁质感加 100% 灰度蒙版，呈现未激活的压抑感。
+  - **充能态 (Progress)**: 引入 SVG 级物理环形进度条 (`stroke-dashoffset` 算法精确还原进度)，赋予徽章心跳般的微弱光环呼吸动效。
+  - **爆发态 (Unlocked)**: 强烈的微孔玻璃折射高光、深空蓝紫发光背景与赛博弥散光圈 (Glow Effect) 层叠发力，并附带平滑的缓动悬浮 (Float Animation) 为用户提供强烈的心理奖励。
+- **自定义导航拦截 (Bottom Navigation Overlay)**: 在所有核心舱室（Dashboard, Journey, Companion, Profile）全面普及了悬浮态 `CustomTabBar`，根除了原生 TabBar 的死板样式，确保了整端 "Rewire" 的沉浸式心流体感。

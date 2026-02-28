@@ -1,16 +1,14 @@
 <template>
   <view class="container flex-col">
     <!-- Header: Status -->
-    <view class="header px-4 pt-10 pb-4 flex justify-between items-center">
+    <view class="header flex justify-between items-center">
       <view class="room-info flex-col">
         <text class="room-title">第 {{ displayRoomNum || '???' }} 战区</text>
-        <view class="online-status flex items-center mt-1">
-          <view class="dot-live"></view>
-          <text class="online-text ml-2">500 神经节点在线</text>
-        </view>
+        <text class="room-subtitle mt-1">战区通讯频道</text>
       </view>
-      <view class="action-btn">
-        <text class="leave-text" @click="goBack">撤出</text>
+      <view class="online-chip flex items-center">
+        <view class="dot-live"></view>
+        <text class="online-text ml-1">500 在线</text>
       </view>
     </view>
 
@@ -43,7 +41,8 @@
 
         <!-- 本人发送的消息，头像在气泡右侧 -->
         <view class="avatar my-avatar flex items-center justify-center ml-2" v-if="msg.user_id === currentUid">
-          <text class="user-icon">{{ currentUid ? currentUid.substring(currentUid.length - 2).toUpperCase() : '我' }}</text>
+          <image v-if="userAvatar" :src="userAvatar" class="avatar-img" mode="aspectFill"></image>
+          <text v-else class="user-icon">{{ avatarInitial }}</text>
         </view>
       </view>
       <!-- Spacer for bottom input -->
@@ -74,26 +73,47 @@
         </view>
       </view>
     </view>
+    <CustomTabBar :current="1" />
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
+import { onHide } from '@dcloudio/uni-app'
 import { useChatStore } from '../../store/chat.js'
+import CustomTabBar from '../../components/CustomTabBar.vue'
 
 const chatStore = useChatStore()
 const inputVal = ref('')
 const scrollTop = ref(0)
 const currentUid = ref('')
+const userAvatar = ref('')
+const avatarInitial = ref('我')
 
 // 获取云端数据
 onMounted(async () => {
+  uni.hideTabBar()
+  
   const token = uni.getStorageSync('uni_id_token')
   if (!token) {
     uni.redirectTo({ url: '/pages/login/index' })
     return
   }
   currentUid.value = token.split('_').pop()
+  
+  const data = uni.getStorageSync('neuro_baseline')
+  if (data) {
+    const profile = JSON.parse(data)
+    userAvatar.value = profile.avatar || ''
+    if (profile.nickname) {
+       const str = String(profile.nickname)
+       avatarInitial.value = str.includes('_') ? str.split('_').pop().substring(0,2) : str.substring(str.length - 2)
+    } else {
+        avatarInitial.value = currentUid.value ? currentUid.value.substring(currentUid.value.length - 2).toUpperCase() : '我'
+    }
+  } else {
+      avatarInitial.value = currentUid.value ? currentUid.value.substring(currentUid.value.length - 2).toUpperCase() : '我'
+  }
 
   uni.showLoading({ title: '搜索战区标定...' })
   try {
@@ -121,6 +141,15 @@ onMounted(async () => {
   } finally {
     uni.hideLoading()
   }
+})
+
+// 防止跳转到其他 tab 时 loading 仍然滞留
+onHide(() => {
+  uni.hideLoading()
+})
+
+onUnmounted(() => {
+  uni.hideLoading()
 })
 
 // 自动滚到底部机制
@@ -203,11 +232,13 @@ page {
 
 .container {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   background-color: #09090b;
   display: flex;
   box-sizing: border-box;
 }
-.px-4 { padding: 0 16px; }
+.px-4 { padding: 0 20px; }
 .pt-10 { padding-top: 40px; }
 .pb-4 { padding-bottom: 16px; }
 .py-3 { padding: 12px 16px; }
@@ -231,12 +262,39 @@ page {
 .text-center { text-align: center; }
 
 /* Header */
-.header { border-bottom: 1px solid rgba(255,255,255,0.05); }
-.room-title { font-size: 18px; font-weight: 900; color: #f4f4f5; letter-spacing: 2px;}
-.dot-live { width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; box-shadow: 0 0 5px #10b981; animation: blink 2s infinite; }
+.header { 
+  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+  width: 100%;
+}
+.room-title { font-size: 24px; font-weight: 900; color: #00e5ff; letter-spacing: 2px; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.room-subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px; }
+.header-right { gap: 8px; }
+.online-chip {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+.dot-live { width: 6px; height: 6px; background-color: #00e5ff; border-radius: 50%; box-shadow: 0 0 5px #00e5ff; animation: blink 2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.online-text { font-size: 11px; color: #10b981; font-family: monospace; }
-.leave-text { font-size: 13px; color: #71717a; }
+.online-text { font-size: 10px; color: #00e5ff; font-family: monospace; }
+.leave-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  border-radius: 10px;
+  transition: all 0.2s;
+}
+.leave-hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
+.leave-text { font-size: 12px; color: #a1a1aa; font-weight: 500; }
 
 /* Chat Area */
 .chat-area { 
@@ -264,9 +322,9 @@ page {
   border-top-left-radius: 4px;
 }
 .my-bubble {
-  background-color: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: #10b981;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
   border-top-right-radius: 4px;
 }
 
@@ -278,15 +336,16 @@ page {
   border-radius: 12px;
 }
 .other-avatar {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(16, 185, 129, 0.1));
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(0, 229, 255, 0.1));
   border: 1px solid rgba(8, 145, 178, 0.3);
   box-shadow: 0 0 10px rgba(8, 145, 178, 0.1);
 }
 .my-avatar {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(8, 145, 178, 0.1));
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(0, 198, 255, 0.1));
+  border: 1px solid rgba(0, 198, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 198, 255, 0.1);
 }
+.avatar-img { width: 100%; height: 100%; border-radius: 12px; }
 .user-icon {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
@@ -297,7 +356,7 @@ page {
 /* 现代悬浮底部输入区 */
 .input-area {
   flex-shrink: 0;
-  padding: 10px 16px max(16px, env(safe-area-inset-bottom)) 16px; 
+  padding: 10px 16px calc(66px + env(safe-area-inset-bottom)) 16px; 
   background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, rgba(9, 9, 11, 0.8) 20%, #09090b 100%);
   margin-top: -80px; 
   z-index: 20;
@@ -316,8 +375,8 @@ page {
   box-sizing: border-box;
 }
 .input-container:focus-within {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 229, 255, 0.1);
   background: rgba(24, 24, 27, 0.95);
 }
 
@@ -336,12 +395,12 @@ page {
 
 .btn-send {
   width: 38px; height: 38px; border-radius: 50%;
-  background-color: #10b981;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
+  box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
   transition: all 0.2s;
   flex-shrink: 0; /* 绝对防止右侧发送按钮被挤压遮挡 */
 }
-.btn-send.disabled { background-color: #27272a; opacity: 0.6; box-shadow: none;}
-.send-icon { color: #000; font-size: 16px; font-weight: 900; }
+.btn-send.disabled { background: #27272a; opacity: 0.6; box-shadow: none;}
+.send-icon { color: #fff; font-size: 16px; font-weight: 900; }
 .btn-send.disabled .send-icon { color: #52525b; }
 </style>

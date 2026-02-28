@@ -19,9 +19,7 @@
             "path": "pages/war-room/index",
             "style": {
                 "navigationBarTitleText": "战区通讯",
-                "navigationStyle": "custom",
-                "navigationBarBackgroundColor": "#09090b",
-                "navigationBarTextStyle": "white"
+                "navigationStyle": "custom"
             }
         },
         {
@@ -34,7 +32,7 @@
         {
             "path": "pages/dashboard/index",
             "style": {
-                "navigationBarTitleText": "大盘",
+                "navigationBarTitleText": "主控空间",
                 "navigationStyle": "custom"
             }
         },
@@ -43,57 +41,60 @@
             "style": {
                 "navigationBarTitleText": "AI 护盾",
                 "navigationBarBackgroundColor": "#121212",
-                "navigationBarTextStyle": "white"
+                "navigationBarTextStyle": "white",
+                "navigationStyle": "custom"
             }
         },
         {
             "path": "pages/journey/index",
             "style": {
-                "navigationBarTitleText": "历程",
-                "navigationBarBackgroundColor": "#121212",
-                "navigationBarTextStyle": "white"
+                "navigationBarTitleText": "突触历程",
+                "navigationStyle": "custom"
             }
         },
         {
             "path": "pages/profile/index",
             "style": {
-                "navigationBarTitleText": "自我",
-                "navigationBarBackgroundColor": "#121212",
-                "navigationBarTextStyle": "white"
+                "navigationBarTitleText": "系统自检",
+                "navigationStyle": "custom"
             }
         }
     ],
     "globalStyle": {
         "navigationBarTextStyle": "white",
-        "navigationBarTitleText": "Dopamine Reset",
-        "navigationBarBackgroundColor": "#121212",
-        "backgroundColor": "#121212"
+        "navigationBarTitleText": "REWIRE AI",
+        "navigationBarBackgroundColor": "#09090b",
+        "backgroundColor": "#09090b"
     },
     "tabBar": {
-        "color": "#757575",
-        "selectedColor": "#00E676",
+        "color": "#71717a",
+        "selectedColor": "#00e5ff",
         "borderStyle": "black",
-        "backgroundColor": "#1E1E1E",
+        "backgroundColor": "#09090b",
         "list": [
             {
                 "pagePath": "pages/dashboard/index",
-                "text": "主控"
+                "text": "主控",
+                "iconPath": "static/icons/tab_home.svg",
+                "selectedIconPath": "static/icons/tab_home_active.svg"
             },
             {
                 "pagePath": "pages/war-room/index",
-                "text": "战区"
-            },
-            {
-                "pagePath": "pages/companion/index",
-                "text": "AI护盾"
+                "text": "战区",
+                "iconPath": "static/icons/tab_war.svg",
+                "selectedIconPath": "static/icons/tab_war_active.svg"
             },
             {
                 "pagePath": "pages/journey/index",
-                "text": "历程"
+                "text": "图谱",
+                "iconPath": "static/icons/tab_journey.svg",
+                "selectedIconPath": "static/icons/tab_journey_active.svg"
             },
             {
                 "pagePath": "pages/profile/index",
-                "text": "我"
+                "text": "系统",
+                "iconPath": "static/icons/tab_profile.svg",
+                "selectedIconPath": "static/icons/tab_profile_active.svg"
             }
         ]
     }

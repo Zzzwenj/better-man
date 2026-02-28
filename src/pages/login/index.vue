@@ -288,7 +288,7 @@ const devLogin = () => {
     uni.showModal({
         title: 'ROOT 权限确认',
         content: '跳过所有鉴权限制，以开发者身份进入系统？',
-        confirmColor: '#10b981',
+        confirmColor: '#00e5ff',
         success: (res) => {
             if (res.confirm) {
                 storeFakeTokenAndRedirect()
@@ -339,7 +339,7 @@ const storeFakeTokenAndRedirect = () => {
 .opacity-10:active { opacity: 0.8; }
 .pb-bottom { padding-bottom: max(30px, env(safe-area-inset-bottom)); }
 
-.title { font-size: 28px; font-weight: 900; color: #10b981; letter-spacing: 2px;}
+.title { font-size: 28px; font-weight: 900; color: #fafafa; letter-spacing: 2px; text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);}
 .subtitle { font-size: 14px; color: #a1a1aa; letter-spacing: 1px;}
 .label { font-size: 13px; color: #a1a1aa; font-family: monospace;}
 
@@ -359,12 +359,12 @@ const storeFakeTokenAndRedirect = () => {
 .text-sm { font-size: 14px; }
 
 .btn-code {
-  background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3);
   padding: 6px 12px; border-radius: 6px;
   white-space: nowrap;
 }
 .btn-code.disabled { background: rgba(255,255,255,0.05); border-color: transparent;}
-.btn-code-text { font-size: 12px; color: #10b981; font-weight: bold;}
+.btn-code-text { font-size: 12px; color: #00e5ff; font-weight: bold;}
 .btn-code.disabled .btn-code-text { color: #6b7280; }
 
 .captcha-box {
@@ -386,11 +386,11 @@ const storeFakeTokenAndRedirect = () => {
 
 .btn-login {
   height: 56px;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
   border-radius: 28px;
-  box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 114, 255, 0.3);
 }
-.btn-text { color: #000; font-size: 16px; font-weight: 900; letter-spacing: 2px;}
+.btn-text { color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px;}
 
 .btn-hover { transform: scale(0.96); opacity: 0.9;}
 

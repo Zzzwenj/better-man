@@ -1,6 +1,6 @@
 <template>
   <view>
-  <view class="header px-4 flex items-center" @click="openEditModal" hover-class="header-hover">
+  <view class="header flex items-center" @click="openEditModal" hover-class="header-hover">
     <!-- 头像区 -->
     <view class="avatar flex justify-center items-center">
       <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill"></image>
@@ -142,9 +142,17 @@ const saveProfile = () => {
 
 /* 头部卡片本身 */
 .header {
-  padding-top: calc(var(--status-bar-height) + 30px);
-  padding-bottom: 10px;
+  padding: calc(var(--status-bar-height) + 30px) 20px 16px 20px;
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   transition: opacity 0.2s;
+  box-sizing: border-box;
+  width: 100%;
 }
 .header-hover { opacity: 0.7; }
 
@@ -188,7 +196,7 @@ const saveProfile = () => {
   100% { transform: scale(1); opacity: 1; }
 }
 
-.modal-title { font-size: 18px; font-weight: bold; color: #10b981; text-align: center; }
+.modal-title { font-size: 18px; font-weight: bold; color: #fafafa; text-align: center; text-shadow: 0 0 10px rgba(0, 198, 255, 0.3); }
 
 .modal-avatar-area { position: relative; }
 .modal-avatar { 
@@ -201,11 +209,11 @@ const saveProfile = () => {
 .modal-avatar .avatar-img { border-radius: 22px; }
 .edit-badge {
   position: absolute; right: -5px; bottom: -5px;
-  background: #10b981; border-radius: 12px;
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); border-radius: 12px;
   width: 24px; height: 24px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 10px; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-  color: #000;
+  font-size: 10px; box-shadow: 0 0 10px rgba(0, 114, 255, 0.5);
+  color: #fff;
 }
 .modal-avatar-hint { font-size: 11px; color: #71717a; font-family: monospace; }
 
@@ -217,10 +225,10 @@ const saveProfile = () => {
   height: 44px; padding: 0 12px;
   color: #fff; font-size: 16px;
 }
-.input-field:focus { border-color: #10b981; }
+.input-field:focus { border-color: #00C6FF; box-shadow: 0 0 8px rgba(0, 198, 255, 0.2); }
 
 .btn { height: 44px; border-radius: 22px; font-size: 14px; font-weight: bold; transition: all 0.2s;}
 .btn:active { transform: scale(0.95); }
 .btn-cancel { background: #27272a; color: #e4e4e7; }
-.btn-save { background: #10b981; color: #000; box-shadow: 0 5px 15px rgba(16, 185, 129, 0.2);}
+.btn-save { background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); color: #fff; box-shadow: 0 5px 15px rgba(0, 114, 255, 0.3);}
 </style>

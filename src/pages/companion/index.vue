@@ -1,13 +1,27 @@
 <template>
   <view class="container flex-col">
-    <!-- 顶部导航栏 -->
-    <view class="nav-bar flex justify-between items-center px-4">
-      <view>
-        <text class="nav-title">REWIRE AI</text>
-        <text class="nav-subtitle block">临床级认知行为干预</text>
-      </view>
-      <view class="quota-badge flex items-center">
-        <text class="quota-text">脑机防护持续在线</text>
+    <view class="nav-bar px-4">
+      <view class="nav-content flex items-center justify-between">
+        <!-- 占位区保证居中：返回键 -->
+        <view style="width: 80px; display: flex;">
+          <view class="back-btn flex justify-center items-center" hover-class="back-hover" @click="goBack">
+            <text class="back-icon">❮</text>
+          </view>
+        </view>
+
+        <!-- 标题区 -->
+        <view class="flex-1 flex-col items-center justify-center">
+          <text class="nav-title">REWIRE AI</text>
+          <text class="nav-subtitle block mt-1 text-center">临床级认知行为干预</text>
+        </view>
+
+        <!-- 右侧对等空位放置在线状态 -->
+        <view style="width: 80px; display: flex; justify-content: flex-end; padding-right: 12px;">
+          <view class="quota-badge flex items-center">
+            <view class="status-dot mr-1"></view>
+            <text class="quota-text">在线</text>
+          </view>
+        </view>
       </view>
     </view>
     
@@ -18,7 +32,8 @@
         <!-- DOM 顺序：为了使用 row-reverse 且头像靠右，我们在 DOM 中先放头像，再放气泡 -->
         <template v-if="msg.role === 'user'">
           <view class="avatar user-avatar flex items-center justify-center ml-3">
-            <text class="user-icon">U</text>
+            <image v-if="userAvatar" :src="userAvatar" class="avatar-img" mode="aspectFill"></image>
+            <text v-else class="user-icon">{{ avatarInitial }}</text>
           </view>
           
           <view class="msg-bubble user-bubble">
@@ -70,6 +85,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 
 const chatList = ref([])
 const inputValue = ref('')
@@ -77,12 +93,26 @@ const isLoading = ref(false)
 const scrollTop = ref(0) // 用于控制自动滚动到最底部
 
 let userProfile = null
+const userAvatar = ref('')
+const avatarInitial = ref('U')
 
 const scrollToBottom = () => {
   nextTick(() => {
     // 强制赋予一个极大值将其推到底部
     scrollTop.value = chatList.value.length * 1000 
   })
+}
+
+const loadProfile = () => {
+  const data = uni.getStorageSync('neuro_baseline')
+  if (data) {
+    userProfile = JSON.parse(data)
+    userAvatar.value = userProfile.avatar || ''
+    if (userProfile.nickname) {
+       const str = String(userProfile.nickname)
+       avatarInitial.value = str.includes('_') ? str.split('_').pop().substring(0,2) : str.substring(str.length - 2)
+    }
+  }
 }
 
 onMounted(() => {
@@ -94,12 +124,8 @@ onMounted(() => {
   }
   // ------------------------------------
 
-  // 1. 获取问卷体检数据
-  const data = uni.getStorageSync('neuro_baseline')
-  if (data) {
-    userProfile = JSON.parse(data)
-  }
-  
+  loadProfile()
+
   // 2. 初始干预话术
   chatList.value.push({
     role: 'ai',
@@ -108,6 +134,15 @@ onMounted(() => {
   
   scrollToBottom()
 })
+
+onShow(() => {
+  // 每次页面展示时重新读取最新的基线数据（因为可能从资料页修改归来）
+  loadProfile()
+})
+
+const goBack = () => {
+  uni.navigateBack()
+}
 
 const sendMessage = async () => {
   if (!inputValue.value.trim() || isLoading.value) return
@@ -188,26 +223,40 @@ page {
 .justify-center { justify-content: center; }
 .items-center { align-items: center; }
 .block { display: block; }
+.relative { position: relative; }
+.absolute { position: absolute; }
 
 /* 顶部导航栏 */
 .nav-bar {
-  flex-shrink: 0; /* 保证导航栏高度不被压缩 */
-  padding-top: calc(var(--status-bar-height) + 16px);
-  padding-bottom: 16px;
+  flex-shrink: 0; 
+  padding-top: calc(var(--status-bar-height) + 10px);
+  padding-bottom: 12px;
   background-color: rgba(9, 9, 11, 0.85);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   z-index: 10;
 }
+.nav-content {
+  min-height: 44px;
+  width: 100%;
+}
+.back-btn { width: 32px; height: 32px; background: rgba(255,255,255,0.05); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;}
+.back-hover { background: rgba(255,255,255,0.15); }
+.back-icon { color: #8b5cf6; font-size: 16px; font-weight: bold; }
 .nav-title { font-size: 18px; font-weight: 900; color: #8b5cf6; letter-spacing: 2px; }
 .nav-subtitle { font-size: 11px; color: #71717a; margin-top: 2px;}
+
+.status-dot { width: 4px; height: 4px; border-radius: 50%; background-color: #8b5cf6; box-shadow: 0 0 6px #8b5cf6; animation: blink 2s infinite; }
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
 .quota-badge {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  padding: 4px 10px;
-  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 3px 6px;
+  border-radius: 8px;
+  flex-shrink: 0; 
 }
-.quota-text { font-size: 10px; color: #ef4444; font-weight: bold; }
+.quota-text { font-size: 9px; color: #8b5cf6; font-weight: bold; font-family: monospace;}
 
 /* 聊天流水区 */
 .chat-list {
@@ -234,7 +283,7 @@ page {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(16, 185, 129, 0.1));
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(0, 229, 255, 0.1));
   border: 1px solid rgba(139, 92, 246, 0.4);
   box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
 }
@@ -243,11 +292,12 @@ page {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(8, 145, 178, 0.1));
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+  background: linear-gradient(135deg, rgba(0, 198, 255, 0.2), rgba(8, 145, 178, 0.1));
+  border: 1px solid rgba(0, 198, 255, 0.4);
+  box-shadow: 0 0 15px rgba(0, 198, 255, 0.2);
 }
-.user-icon { color: #10b981; font-size: 16px; font-weight: bold; font-family: monospace;}
+.avatar-img { width: 100%; height: 100%; border-radius: 12px; }
+.user-icon { color: #00C6FF; font-size: 16px; font-weight: bold; font-family: monospace;}
 .msg-bubble {
   margin-left: 12px;
   background: rgba(255,255,255,0.03);
@@ -259,9 +309,9 @@ page {
 }
 .user-bubble {
   margin-left: 0;
-  margin-right: 0; /* Clear right margin from earlier, will use avatar's ml-3 for gap */
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  margin-right: 0; 
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px 4px 16px 16px;
 }
 .msg-text {
@@ -292,8 +342,8 @@ page {
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 .input-container:focus-within {
-  border-color: rgba(16, 185, 129, 0.4);
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.1);
+  border-color: rgba(0, 198, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 198, 255, 0.1);
   background: rgba(24, 24, 27, 0.95);
 }
 .input-box {
@@ -310,9 +360,9 @@ page {
 .btn-send {
   width: 38px; height: 38px;
   border-radius: 50%;
-  background: #10b981;
+  background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%);
   margin-left: 10px;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 114, 255, 0.4);
   transition: all 0.2s;
 }
 .btn-send:active { transform: scale(0.9); }
@@ -321,6 +371,6 @@ page {
   box-shadow: none;
   opacity: 0.6;
 }
-.send-icon { color: #000; font-size: 16px; font-weight: 900; }
+.send-icon { color: #fff; font-size: 16px; font-weight: 900; }
 .btn-send.disabled .send-icon { color: #52525b; font-weight: normal; }
 </style>

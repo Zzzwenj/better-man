@@ -1,8 +1,10 @@
 <template>
-  <scroll-view scroll-y class="container flex-col">
-    <view class="header px-4">
-      <text class="title tracking-wider">观测图谱</text>
-      <text class="subtitle block mt-1">神经可塑性观测图谱</text>
+  <view class="container flex-col">
+    <view class="header flex justify-between items-center">
+      <view class="room-info flex-col">
+          <text class="title tracking-wider">观测图谱</text>
+          <text class="subtitle block mt-1">神经可塑性观测图谱</text>
+      </view>
     </view>
     
     <!-- 热力图模块 -->
@@ -35,10 +37,10 @@
         <view class="flex-col">
             <text class="stat-label">前额叶皮层受体修复率 (根据持续天数换算)</text>
             <view class="progress-bar mt-2">
-                <view class="progress-fill" :style="{ width: repairRate + '%', background: '#10b981' }"></view>
+                <view class="progress-fill" :style="{ width: repairRate + '%', background: 'linear-gradient(90deg, #00C6FF 0%, #0072FF 100%)' }"></view>
             </view>
         </view>
-        <text class="stat-val text-green text-right ml-4">{{ repairRate }}%</text>
+        <text class="stat-val text-cyan text-right ml-4">{{ repairRate }}%</text>
       </view>
       
       <view class="stat-row flex items-center justify-between mb-2">
@@ -47,12 +49,12 @@
             <view class="progress-bar mt-2">
                 <view class="progress-fill" :style="{ 
                     width: cravingLevel === '极高' ? '80%' : cravingLevel === '中等' ? '40%' : '10%', 
-                    background: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#10b981' 
+                    background: cravingLevel === '极高' ? 'linear-gradient(90deg, #F43F5E, #9F1239)' : cravingLevel === '中等' ? 'linear-gradient(90deg, #F59E0B, #B45309)' : 'linear-gradient(90deg, #00C6FF, #0072FF)' 
                 }"></view>
             </view>
         </view>
         <text class="stat-val text-right ml-4" :style="{ 
-            color: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#10b981' 
+            color: cravingLevel === '极高' ? '#ef4444' : cravingLevel === '中等' ? '#f59e0b' : '#00C6FF' 
         }">{{ cravingLevel }}</text>
       </view>
     </view>
@@ -62,46 +64,32 @@
        <view class="badges-area">
            <text class="section-title block mb-4">神经重塑里程碑</text>
            <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
-               <view class="badge-item" 
-                     v-for="badge in milestoneBadges" :key="badge.day"
-                     :class="{ 'unlocked': daysClean >= badge.day, 'next-goal': daysClean < badge.day && isNextGoal(badge.day) }"
-                     @click="openShareCard(badge)">
-                   
-                   <view class="flex-col items-center">
-                       <view class="badge-icon-wrapper">
-                           <!-- 进度外环 (如果在进行中) -->
-                           <svg v-if="daysClean < badge.day && isNextGoal(badge.day)" class="progress-ring" viewBox="0 0 60 60">
-                               <circle class="ring-bg" cx="30" cy="30" r="28" />
-                               <circle class="ring-fill" cx="30" cy="30" r="28" :stroke-dasharray="175" :stroke-dashoffset="175 - (175 * getGoalProgress(badge.day))" />
-                           </svg>
-                           
-                           <view class="badge-icon" :style="{ filter: daysClean >= badge.day ? 'none' : 'grayscale(100%) opacity(30%)' }">{{ badge.icon }}</view>
-                           
-                           <!-- 解锁发光特效 -->
-                           <view class="glow-effect" v-if="daysClean >= badge.day"></view>
-                       </view>
-                       
-                       <text class="badge-day">{{ badge.day }} 天</text>
-                       <text class="badge-name">{{ badge.name }}</text>
-                       
-                       <!-- 进度文字提示 -->
-                       <text class="badge-progress" v-if="daysClean < badge.day && isNextGoal(badge.day)">
-                           {{ daysClean }} / {{ badge.day }}
-                       </text>
-                   </view>
-               </view>
+               <!-- 使用被抽离的独立徽章组件 -->
+               <NeuroBadge 
+                 v-for="badge in milestoneBadges" 
+                 :key="badge.day"
+                 :badge="badge"
+                 :status="getBadgeStatus(badge.day)"
+                 :progress="getGoalProgress(badge.day)"
+                 :currentDays="daysClean"
+                 @clickBadge="handleBadgeClick"
+               />
            </scroll-view>
        </view>
     </view>
     
     <!-- 全屏高光分享卡片组件 -->
     <MilestoneShareCard :show="showShareOverlay" :milestone="selectedMilestone" @close="closeShareOverlay" />
-  </scroll-view>
+    
+    <CustomTabBar :current="2" />
+  </view>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import MilestoneShareCard from '../../components/MilestoneShareCard.vue'
+import CustomTabBar from '../../components/CustomTabBar.vue'
+import NeuroBadge from '../../components/NeuroBadge.vue'
 
 const daysClean = ref(0)
 const repairRate = ref(10)
@@ -128,6 +116,8 @@ const milestoneBadges = [
 ]
 
 onMounted(() => {
+  uni.hideTabBar()
+
   // 1. 获取本地持久化的重塑记录起点
   let startTimestamp = uni.getStorageSync('neuro_start_date')
   if (!startTimestamp) {
@@ -154,14 +144,25 @@ onMounted(() => {
   }
 })
 
-const openShareCard = (badge) => {
+const handleBadgeClick = (badge, status) => {
     // 只有已解锁的里程碑才允许查看高光卡片
-    if (daysClean.value >= badge.day) {
+    if (status === 'unlocked') {
         selectedMilestone.value = badge
         showShareOverlay.value = true
     } else {
-        uni.showToast({ title: '里程碑尚未激活，继续保持！', icon: 'none' })
+        const statusMap = {
+          'locked': '里程碑处于沉睡态，等待激活',
+          'progress': '正在充能中，请坚持！'
+        }
+        uni.showToast({ title: statusMap[status] || '尚未激活', icon: 'none' })
     }
+}
+
+// 动态判断徽章状态给子组件
+const getBadgeStatus = (badgeDay) => {
+    if (daysClean.value >= badgeDay) return 'unlocked'
+    if (isNextGoal(badgeDay)) return 'progress'
+    return 'locked'
 }
 
 const closeShareOverlay = () => {
@@ -214,11 +215,24 @@ page {
 
 .container {
   height: 100%;
+  width: 100%;
+  overflow-x: hidden;
   background-color: #09090b;
   box-sizing: border-box;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  overflow-y: auto;
 }
 .header {
-  padding-top: calc(var(--status-bar-height) + 20px);
+  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  box-sizing: border-box;
+  width: 100%;
 }
 .px-4 { padding: 0 20px; }
 .mx-4 { margin: 0 20px; }
@@ -242,8 +256,8 @@ page {
 .block { display: block; }
 .tracking-wider { letter-spacing: 4px; }
 
-.title { font-size: 20px; font-weight: 900; color: #10b981; }
-.subtitle { font-size: 11px; color: #71717a; letter-spacing: 1px;}
+.title { font-size: 24px; font-weight: 900; color: #00e5ff; text-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
+.subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px;}
 .section-title { font-size: 14px; font-weight: bold; color: #e4e4e7; font-family: monospace;}
 
 /* 卡片样式 */
@@ -270,112 +284,27 @@ page {
     border-radius: 3px;
 }
 .lvl-0 { background-color: #18181b; border: 1px solid #27272a; }
-.lvl-1 { background-color: rgba(16, 185, 129, 0.3); }
-.lvl-2 { background-color: rgba(16, 185, 129, 0.6); }
-.lvl-3 { background-color: rgba(16, 185, 129, 1); box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+.lvl-1 { background-color: rgba(0, 198, 255, 0.2); }
+.lvl-2 { background-color: rgba(0, 198, 255, 0.5); }
+.lvl-3 { background-color: rgba(0, 198, 255, 1); box-shadow: 0 0 8px rgba(0, 198, 255, 0.6); }
 
 .legend-text { font-size: 10px; color: #a1a1aa; }
-.analysis-hint { font-size: 12px; color: #10b981; margin-top: 16px; font-weight: 500;}
+.analysis-hint { font-size: 12px; color: #00C6FF; margin-top: 16px; font-weight: 500;}
 
 /* 徽章列表 */
 .badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 16px; margin-left: -10px; padding-left: 10px; }
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* 徽章列表容器 */
+.badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 30px; margin-left: -10px; padding-left: 10px; }
+::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .badge-list { padding-right: 20px; }
-.badge-item {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    width: 72px; /* 固定宽度以适应滚动 */
-    margin-right: 20px;
-    flex-shrink: 0; /* 极其关键：防止在横向 flex 中被压缩挤变形 */
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    position: relative;
-    padding-top: 6px;
-    vertical-align: top;
-}
-.badge-item.unlocked {
-    transform: translateY(-4px);
-}
-.badge-item.next-goal {
-    transform: scale(1.05);
-}
-
-.badge-icon-wrapper {
-    position: relative;
-    width: 60px; height: 60px;
-    display: flex; justify-content: center; align-items: center;
-    margin-bottom: 8px;
-}
-
-.badge-icon {
-    width: 52px; height: 52px;
-    background: linear-gradient(145deg, #18181b, #27272a); 
-    border: 1px solid #3f3f46;
-    border-radius: 26px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 24px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.6), inset 0 2px 4px rgba(255,255,255,0.05);
-    z-index: 2;
-    transition: all 0.5s ease;
-}
-
-.badge-item.unlocked .badge-icon {
-    border-color: #10b981;
-    background: linear-gradient(145deg, #064e3b, #047857);
-    color: #fff;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 10px rgba(16, 185, 129, 0.8);
-}
-
-.glow-effect {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 60px; height: 60px;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.6) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: 1;
-    animation: slow-pulse 3s infinite alternate;
-}
-
-.progress-ring {
-    position: absolute;
-    top: 0; left: 0;
-    width: 60px; height: 60px;
-    transform: rotate(-90deg);
-    z-index: 3;
-}
-.ring-bg {
-    fill: none;
-    stroke: #27272a;
-    stroke-width: 2;
-}
-.ring-fill {
-    fill: none;
-    stroke: #10b981;
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s ease-out;
-}
-
-.badge-day { font-size: 11px; color: #10b981; font-weight: 900; font-family: monospace; }
-.badge-name { font-size: 12px; color: #e4e4e7; font-weight: bold; margin-top: 4px; letter-spacing: 1px;}
-.badge-progress { font-size: 9px; color: #a1a1aa; font-family: monospace; margin-top: 4px; background: #27272a; padding: 2px 6px; border-radius: 8px;}
-
-.badge-item:not(.unlocked):not(.next-goal) .badge-day { color: #52525b; }
-.badge-item:not(.unlocked):not(.next-goal) .badge-name { color: #52525b; }
-
-@keyframes slow-pulse {
-    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
-    100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
-}
-
-/* 数据分析模块 */
+/* ==== 徽章本身的复杂 CSS 均已抽离至 NeuroBadge.vue 中 ==== */
 .stat-row { width: 100%; }
 .stat-label { font-size: 12px; color: #a1a1aa; }
 .progress-bar { width: 200px; height: 6px; background-color: #27272a; border-radius: 3px; overflow: hidden;}
 .progress-fill { height: 100%; border-radius: 3px; box-shadow: 0 0 10px currentColor;}
 .stat-val { font-size: 18px; font-weight: 900; font-family: monospace; width: 60px; flex-shrink: 0;}
 .text-right { text-align: right; }
-.text-green { color: #10b981; }
+.text-cyan { color: #00C6FF; }
 .text-red { color: #ef4444; }
 </style>
