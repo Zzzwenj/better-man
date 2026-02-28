@@ -71,3 +71,16 @@
   - **充能态 (Progress)**: 引入 SVG 级物理环形进度条 (`stroke-dashoffset` 算法精确还原进度)，赋予徽章心跳般的微弱光环呼吸动效。
   - **爆发态 (Unlocked)**: 强烈的微孔玻璃折射高光、深空蓝紫发光背景与赛博弥散光圈 (Glow Effect) 层叠发力，并附带平滑的缓动悬浮 (Float Animation) 为用户提供强烈的心理奖励。
 - **自定义导航拦截 (Bottom Navigation Overlay)**: 在所有核心舱室（Dashboard, Journey, Companion, Profile）全面普及了悬浮态 `CustomTabBar`，根除了原生 TabBar 的死板样式，确保了整端 "Rewire" 的沉浸式心流体感。
+
+## 阶段 10：档案云端持久化与静默免登体系 (Cloud Sync & Auto-Login)
+- **档案矩阵上云 (Profile Synchronization)**: 
+  - 彻底抛弃了原生相册，为系统中心 (`Profile`) 接入了 60 个内置的高级极简机器人/黑客头图 (`DiceBear bottts`) 引擎，强化神经特工沉浸感。
+  - 用户的名号 (Nickname)、图标与个性宣言不仅存在本地，更改后将即时通过 `user-center` 云函数进行远端上链覆盖。
+- **系统级防篡改机制 (Anti-Tampering & Security)**:
+  - **[30天冷却规则]**：服务端强制阻断极其频繁的代号修改，凡变更 `nickname` 均会被执行严格的时间戳差值比对，未满 30 天将触发拦截防线并告知冷却倒数。
+  - **[违禁词正则封锁]**：在云端植入了数十组敏感/涉政/黑灰产违禁词表，拦截不当的个性签名与名称。
+- **全局静默免登分发 (Global Router Guard)**:
+  - 废除了每次强行重启后必须输入凭证的繁复流程。在应用 `App.vue` 生命周期 (`onLaunch`) 植入底层路由守卫 `checkAutoLogin`。
+  - 毫秒级探测本地 `token` 有效期及 `neuro_baseline` 问卷基线。若凭证双满，则执行无缝时空穿梭 (`switchTab`) 闪击到主控舱。
+- **基坑探测持久化 (Onboarding Payload)**:
+  - 为了杜绝本地清缓存导致的失忆，问卷基线流程不仅进行终端封存，还在最后点击“生成协议”的一刹那触发 `syncBaseline` 云端同步。即使换设备登陆，也能完美恢复特工画像。

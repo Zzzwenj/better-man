@@ -64,7 +64,7 @@ const onSwitchChange = (e, item) => {
 }
 .list-item:last-child { border-bottom: none; }
 .item-hover { opacity: 0.7; }
-.item-icon { font-size: 18px; }
+.item-icon { font-size: 14px; font-family: monospace; color: #00C6FF; font-weight: bold; text-shadow: 0 0 5px rgba(0, 198, 255, 0.4);}
 .item-label { font-size: 14px; color: #d4d4d8; font-weight: 500;}
 .arrow-right { color: #52525b; font-size: 16px; font-family: monospace;}
 </style>

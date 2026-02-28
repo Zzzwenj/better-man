@@ -249,10 +249,39 @@ const submit = async () => {
       })
       uni.hideLoading()
       if (res.result.code === 0) {
-        // 登录成功，保存 token 并跳转
-        uni.setStorageSync('uni_id_token', res.result.token)
+        // 登录成功，保存 token
+        const token = res.result.token
+        uni.setStorageSync('uni_id_token', token)
         uni.setStorageSync('uni_id_token_expired', res.result.tokenExpired)
         uni.setStorageSync('uid', res.result.uid)
+        
+        // 拉取云端用户档案及状态
+        try {
+          const profileRes = await uniCloud.callFunction({
+            name: 'user-center',
+            data: {
+              action: 'getUserProfile',
+              token: token
+            }
+          })
+          if (profileRes.result.code === 0 && profileRes.result.data) {
+            const userData = profileRes.result.data
+            if (userData.neuro_baseline) {
+              // 此处混入可能更新了的 nickname, avatar, signature 到本地 baseline 中
+              const baseline = userData.neuro_baseline
+              baseline.nickname = userData.nickname || baseline.nickname
+              baseline.avatar = userData.avatar || baseline.avatar
+              baseline.signature = userData.signature || baseline.signature
+              uni.setStorageSync('neuro_baseline', JSON.stringify(baseline))
+            }
+            if (userData.neuro_start_date) {
+              uni.setStorageSync('neuro_start_date', userData.neuro_start_date)
+            }
+          }
+        } catch (err) {
+          console.error('拉取云端档案失败', err)
+        }
+
         uni.showToast({ title: '接入成功', icon: 'success' })
         
         setTimeout(() => {
@@ -298,9 +327,37 @@ const devLogin = () => {
 }
 
 // 登录成功后的公共跳转逻辑
-const storeFakeTokenAndRedirect = () => {
-    uni.setStorageSync('uni_id_token', 'fake_token_for_dev_' + Date.now())
+const storeFakeTokenAndRedirect = async () => {
+    const fakeToken = 'fake_token_for_dev_' + Date.now()
+    uni.setStorageSync('uni_id_token', fakeToken)
     uni.setStorageSync('uni_id_token_expired', Date.now() + 7200000)
+    uni.setStorageSync('uid', 'dev_uid')
+    
+    try {
+      const profileRes = await uniCloud.callFunction({
+        name: 'user-center',
+        data: {
+          action: 'getUserProfile',
+          token: fakeToken // uniCloud dev 伪随机会解析到 dev_uid，如果没配置则不生效，但不会报错阻断
+        }
+      })
+      if (profileRes.result.code === 0 && profileRes.result.data) {
+        const userData = profileRes.result.data
+        if (userData.neuro_baseline) {
+          const baseline = userData.neuro_baseline
+          baseline.nickname = userData.nickname || baseline.nickname
+          baseline.avatar = userData.avatar || baseline.avatar
+          baseline.signature = userData.signature || baseline.signature
+          uni.setStorageSync('neuro_baseline', JSON.stringify(baseline))
+        }
+        if (userData.neuro_start_date) {
+            uni.setStorageSync('neuro_start_date', userData.neuro_start_date)
+        }
+      }
+    } catch (err) {
+      console.warn('开发者模式拉取云端档案失败')
+    }
+
     uni.showToast({ title: '接入成功', icon: 'success' })
     setTimeout(() => {
         const baseline = uni.getStorageSync('neuro_baseline')

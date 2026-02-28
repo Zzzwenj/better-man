@@ -54,6 +54,21 @@
         </view>
       </view>
     </view>
+
+    <!-- 弹窗：60 个系统级内置头像选择器 (Cyber Avatars) -->
+    <view class="avatar-selector-overlay" v-if="showAvatarSelector" @click.stop="showAvatarSelector = false">
+      <view class="avatar-selector-content flex-col" @click.stop>
+        <text class="selector-title mb-4">系统物理特征库 (60)</text>
+        <scroll-view scroll-y class="avatar-grid-scroll">
+          <view class="avatar-grid">
+            <view class="avatar-grid-item" v-for="i in 60" :key="i" @click="selectSystemAvatar(i)">
+              <!-- 恢复最初的极简机器人/黑客头像风格 -->
+              <image :src="`https://api.dicebear.com/7.x/bottts/svg?seed=${i}`" mode="aspectFill" class="grid-avatar-img"></image>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -90,15 +105,18 @@ const openEditModal = () => {
   uni.vibrateShort()
 }
 
+const showAvatarSelector = ref(false)
+
 const chooseAvatar = () => {
-  uni.chooseImage({
-    count: 1,
-    sizeType: ['compressed'],
-    sourceType: ['album', 'camera'],
-    success: (res) => {
-      editAvatar.value = res.tempFilePaths[0]
-    }
-  })
+  showAvatarSelector.value = true
+  uni.vibrateShort()
+}
+
+const selectSystemAvatar = (index) => {
+  // 恢复最初的极简机器人/黑客头像风格
+  editAvatar.value = `https://api.dicebear.com/7.x/bottts/svg?seed=${index}`
+  showAvatarSelector.value = false
+  uni.showToast({ title: '特征提取成功', icon: 'none' })
 }
 
 const closeEditModal = () => {
@@ -231,4 +249,45 @@ const saveProfile = () => {
 .btn:active { transform: scale(0.95); }
 .btn-cancel { background: #27272a; color: #e4e4e7; }
 .btn-save { background: linear-gradient(135deg, #00C6FF 0%, #0072FF 100%); color: #fff; box-shadow: 0 5px 15px rgba(0, 114, 255, 0.3);}
+
+/* 头像库弹窗 */
+.avatar-selector-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
+  z-index: 10000;
+  display: flex; align-items: flex-end; /* 底部弹出 */
+}
+.avatar-selector-content {
+  width: 100%; height: 60vh;
+  background: #18181b;
+  border-top-left-radius: 24px;
+  border-top-right-radius: 24px;
+  border-top: 1px solid #3f3f46;
+  padding: 24px 20px 40px;
+  box-sizing: border-box;
+  animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+@keyframes slideUp {
+  0% { transform: translateY(100%); }
+  100% { transform: translateY(0); }
+}
+.selector-title { font-size: 16px; font-weight: bold; color: #00e5ff; text-align: center; font-family: monospace; letter-spacing: 1px;}
+.avatar-grid-scroll { height: calc(100% - 40px); margin-top: 16px; }
+.avatar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+}
+.avatar-grid-item {
+  width: 60px; height: 60px;
+  border-radius: 16px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  padding: 8px;
+  box-sizing: border-box;
+  display: flex; justify-content: center; align-items: center;
+}
+.avatar-grid-item:active { transform: scale(0.9); border-color: #00e5ff; }
+.grid-avatar-img { width: 100%; height: 100%; border-radius: 8px;}
 </style>
