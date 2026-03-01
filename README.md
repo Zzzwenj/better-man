@@ -172,3 +172,12 @@
   - 同步修正了 `dashboard`、`journey`、`login`、`profile`、`store`、`war-room` 等 7 个页面文件中的所有组件引用路径，确保编译零报错。
   - 修复了 `ThemeActionSheet.vue` 因迁移至 `common/` 子目录后 Store 引用路径缺少一层上级目录（`../store` → `../../store`）导致的 Vite 热更新崩溃。
 - **功能性注释注入 (Functional Annotations)**: 为每个迁移组件顶部注入 `@component` + `@description` 标准化 JSDoc 注释块，强化代码自文档化能力与团队协作可读性。
+
+## 阶段 18：增长黑客与商业化初探 (Growth & Monetization Sandbox)
+- **同栏位心理抛锚 (Price Anchoring UI)**: 
+  - 在个人档案页 (`Profile`) 的 **“50元神经重铸契约（生死状）”** 下方，巧妙并列植入了 **“免费体验 24H 权限（观看加密影像）”** 的体验入口。利用 50 元的高价门槛作为极强的抛锚物，反向衬托免费体验的心智吸引力，旨在以极低成本让新用户感受全站级别的大模型降维打击。
+- **单次体验物理截断 (One-Time Trial Cut-off)**:
+  - 为了维持产品“神经干预”的严肃调性和克制感，杜绝白嫖党无止尽的广告观看流水线。
+  - 在底层状态引擎 (`userStore`) 中新增了绝对的一次性校验字段 `hasUsedTrial`。
+  - 当特工点击并完整观看“商业信号波（广告模拟）”完毕，不仅立刻获得 24 小时的临时最高权限（当前为 Mock Toast），组件会即刻触发 Vue 响应式销毁 (`v-if="!userStore.hasUsedTrial"`)，该绿色白嫖入口将彻底从用户端 UI 上**永久抹除**。
+  - 状态同时做了 `uni.setStorageSync` 的端落盘和 `profileData` 后续云化对账准备。确保“珍惜唯一一次体验机会，之后想用必须签 50 元对赌”的终极逼单核心链路完全闭环。
