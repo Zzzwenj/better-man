@@ -33,29 +33,40 @@
     </view>
     
     <!-- 2. 平台服务契约模幅 (对赌质押区) -->
-    <view :class="['premium-card mx-4', userStore.isProActive ? 'active-contract' : '']" @click="upgradePremium" hover-class="card-hover">
-        <view class="flex justify-between items-center">
-            <text class="premium-title">{{ userStore.isProActive ? '🛡️ 绝对意志契约生效中' : '⚡ 神经重铸契约 (质押挑战)' }}</text>
-            <view class="price-chip" v-if="!userStore.isProActive">
-                <text>￥50 / 30天</text>
+    <view :class="['premium-card mx-4', userStore.isProActive ? 'active-contract' : '']">
+        <!-- 契约主体区 -->
+        <view @click="upgradePremium" hover-class="card-hover" class="contract-main">
+            <view class="flex justify-between items-center">
+                <text class="premium-title">{{ userStore.isProActive ? '🛡️ 绝对意志契约生效中' : '⚡ 神经重铸契约 (质押挑战)' }}</text>
+                <view class="price-chip" v-if="!userStore.isProActive">
+                    <text>￥50 / 30天</text>
+                </view>
+            </view>
+            
+            <text class="premium-desc block mt-2" v-if="!userStore.isProActive">
+              支付 50 元质押金，立即解锁全站高级防御与大模型。
+              若 30 天未破戒，<text style="color: #00e5ff; font-weight: bold;">50元全额退还</text>并奖励黑金头衔与 10000 神经币。破戒则作为平台服务费扣除。
+            </text>
+            
+            <view class="contract-progress mt-4 flex-col" v-else>
+               <text class="timer-text">契约解禁倒计时: {{ userStore.contractDaysLeft }} 天</text>
+               <view class="progress-bar mt-2">
+                 <view class="progress-fill" :style="{ width: ((30 - userStore.contractDaysLeft) / 30 * 100) + '%' }"></view>
+               </view>
+            </view>
+    
+            <view class="premium-footer flex items-center mt-4" v-if="!userStore.isProActive">
+                <text class="unlock-text">立下生死状 (立刻开启)</text>
+                <text class="arrow ml-1">→</text>
             </view>
         </view>
-        
-        <text class="premium-desc block mt-2" v-if="!userStore.isProActive">
-          支付 50 元质押金，立即解锁全站高级防御与大模型。
-          若 30 天未破戒，<text style="color: #00e5ff; font-weight: bold;">50元全额退还</text>并奖励黑金头衔与 10000 神经币。破戒则作为平台服务费扣除。
-        </text>
-        
-        <view class="contract-progress mt-4 flex-col" v-else>
-           <text class="timer-text">契约解禁倒计时: {{ userStore.contractDaysLeft }} 天</text>
-           <view class="progress-bar mt-2">
-             <view class="progress-fill" :style="{ width: ((30 - userStore.contractDaysLeft) / 30 * 100) + '%' }"></view>
-           </view>
-        </view>
 
-        <view class="premium-footer flex items-center mt-4" v-if="!userStore.isProActive">
-            <text class="unlock-text">立下生死状 (立刻开启)</text>
-            <text class="arrow ml-1">→</text>
+        <!-- 临时越权体验 (看广告, 仅显示一次) -->
+        <view class="ad-trial-zone mt-4" v-if="!userStore.isProActive && !userStore.hasUsedTrial" @click.stop="watchAdForTrial" hover-class="ad-hover">
+            <view class="ad-content flex items-center justify-center">
+                 <text class="ad-icon">📺</text>
+                 <text class="ad-text ml-2">_ 获取24H 临时观察期权限 (仅限1次)</text>
+            </view>
         </view>
     </view>
     
@@ -259,6 +270,27 @@ const upgradePremium = () => {
     })
 }
 
+// 模拟看广告体验一天
+const watchAdForTrial = () => {
+    uni.showModal({
+        title: '拦截：非安全频段',
+        content: '这是本系统唯一一次开放底层漏洞的机会。\n是否授权接入视网膜 30 秒 (观看视频广告) ?\n我们将为你无损注入 24 小时的大模型降维打击权限。',
+        confirmText: '建立连接',
+        cancelText: '拒绝接入',
+        confirmColor: '#10b981',
+        success: (res) => {
+            if (res.confirm) {
+                uni.showLoading({ title: '解析影像中...' })
+                setTimeout(() => {
+                    uni.hideLoading()
+                    userStore.claimTrialPermission() // 记录为已使用
+                    uni.showToast({ title: '权限覆写成功 (剩 23:59:59)', icon: 'none', duration: 3000 })
+                }, 2000)
+            }
+        }
+    })
+}
+
 // 统一处理所有通用设置行的点击分发
 const handleSettingClick = (originItem) => {
   const { id, url } = originItem
@@ -425,17 +457,33 @@ page {
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 16px;
-    padding: 24px 20px;
+    padding: 20px 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.contract-main {
+    padding: 4px;
+    border-radius: 12px;
     transition: all 0.2s ease;
 }
-.card-hover { transform: translateY(2px); box-shadow: 0 5px 15px var(--theme-shadow-primary); }
+.card-hover { transform: translateY(2px); text-shadow: 0 0 5px var(--theme-shadow-primary); }
 .premium-title { font-size: 16px; font-weight: 900; color: var(--theme-primary); }
 .price-chip { background: var(--theme-primary); color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
 .premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
 .premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
 .arrow { color: var(--theme-primary); font-weight: bold; font-size: 18px;}
+
+/* 广告体验栏位 */
+.ad-trial-zone {
+    margin-top: 16px;
+    padding: 12px;
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px dashed rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+.ad-hover { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
+.ad-text { color: #10b981; font-size: 13px; font-family: monospace; text-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
 
 /* 契约进行中状态 */
 .active-contract {
