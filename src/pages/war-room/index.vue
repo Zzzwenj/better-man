@@ -1,427 +1,259 @@
 <template>
   <view class="container flex-col" :style="themeStore.themeCssVars">
-    <!-- Header: Status -->
-    <view class="header flex justify-between items-center">
-      <view class="room-info flex-col">
-        <text class="room-title">第 {{ displayRoomNum || '???' }} 战区</text>
-        <text class="room-subtitle mt-1">战区通讯频道</text>
+    <view class="header flex-col">
+      <view class="flex justify-between items-center mb-4">
+        <view class="room-info flex-col">
+          <text class="room-title">全境通讯大厅</text>
+          <text class="room-subtitle mt-1">寻找组织 或 发起血契对赌</text>
+        </view>
+        <view class="online-chip flex items-center">
+          <view class="dot-live"></view>
+          <text class="online-text ml-1">{{ totalOnline }} 在线</text>
+        </view>
       </view>
-      <view class="online-chip flex items-center">
-        <view class="dot-live"></view>
-        <text class="online-text ml-1">500 在线</text>
+      
+      <view class="tab-wrapper flex">
+        <view :class="['tab-item flex-1 flex justify-center', currentTab === 0 ? 'active' : '']" @click="currentTab = 0">
+          <text class="tab-text">公共频段</text>
+        </view>
+        <view :class="['tab-item flex-1 flex justify-center', currentTab === 1 ? 'active' : '']" @click="currentTab = 1">
+          <text class="tab-text">生死血契 🔒</text>
+        </view>
       </view>
     </view>
 
-    <!-- Global Resonance Matrix (代替排行榜) -->
-    <view class="px-4 mt-4">
-      <GlobalResonance />
-    </view>
-
-    <!-- Chat Area -->
-    <scroll-view 
-      scroll-y 
-      class="chat-area flex-1 px-4" 
-      :scroll-top="scrollTop" 
-      scroll-with-animation
-    >
-      <view v-if="chatStore.messages.length === 0" class="empty-state">
-        <text class="text-gray-600 block text-center mt-10 text-sm">通讯频道建立，等待讯号...</text>
-      </view>
-
-      <view 
-        v-for="(msg, index) in chatStore.messages" 
-        :key="msg._id || Math.random()" 
-        class="msg-row flex mb-4 msg-pop"
-        :style="`animation-delay: ${index * 0.05 < 1 ? index * 0.05 : 0}s;`"
-        :class="{'justify-end': msg.user_id === currentUid}"
-      >
-        <!-- 其他人发送的消息，头像在气泡左侧 -->
-        <view class="avatar other-avatar flex items-center justify-center mr-2" v-if="msg.user_id !== currentUid">
-          <text class="user-icon">{{ msg.user_id ? msg.user_id.substring(msg.user_id.length - 2).toUpperCase() : '?' }}</text>
-        </view>
-
-        <view class="msg-bubble" :class="msg.user_id === currentUid ? 'my-bubble' : 'other-bubble'">
-          <!-- 自定义渲染器，解析 [emo:xxx] -->
-          <rich-text :nodes="renderContent(msg.content)"></rich-text>
-        </view>
-
-        <!-- 本人发送的消息，头像在气泡右侧 -->
-        <view class="avatar my-avatar flex items-center justify-center ml-2" v-if="msg.user_id === currentUid">
-          <image v-if="userAvatar" :src="userAvatar" class="avatar-img" mode="aspectFill"></image>
-          <text v-else class="user-icon">{{ avatarInitial }}</text>
+    <!-- 全局防溢出的大厅滚动层 -->
+    <scroll-view scroll-y class="hall-area flex-1 px-4 mt-4" scroll-with-animation>
+      <!-- 战局搜索口 -->
+      <view class="search-bar flex items-center mb-4">
+        <text class="search-icon ml-3">🔍</text>
+        <input 
+          class="search-input flex-1 ml-2" 
+          v-model="searchQuery" 
+          placeholder="输入战役特征或 ID..." 
+          placeholder-class="search-placeholder"
+        />
+        <view class="clear-btn p-2" v-if="searchQuery" @click="searchQuery = ''">
+          <text class="text-gray-500">✕</text>
         </view>
       </view>
-      <!-- Spacer for bottom input -->
-      <view class="chat-spacer"></view>
+
+      <view v-if="currentTab === 0" class="fade-in-up">
+        <RoomCard 
+          v-for="room in filteredPublicRooms" :key="room.id"
+          :roomType="room.type"
+          :roomName="room.name"
+          :description="room.description"
+          :onlineCount="room.onlineCount"
+          :maxUsers="room.maxUsers"
+          :status="room.status"
+          :isActive="room.id === warzoneStore.activePublicRoomId"
+          @click="enterRoom(room)"
+        />
+      </view>
+      
+      <view v-else-if="currentTab === 1" class="fade-in-up">
+        <view class="create-btn flex justify-center items-center mb-4" @click="handleCreateDeathMatch">
+          <text class="btn-icon">⚔️</text>
+          <text class="btn-text ml-2">发起新的战局</text>
+        </view>
+        
+        <RoomCard 
+          v-for="dm in filteredDeathMatches" :key="dm.id"
+          :roomType="dm.type"
+          :roomName="dm.name"
+          :description="dm.description"
+          :onlineCount="dm.onlineCount"
+          :maxUsers="dm.maxUsers"
+          :prizePool="dm.prizePool"
+          :status="dm.status"
+          :isActive="dm.id === warzoneStore.activeDeathMatchId"
+          @click="enterRoom(dm)"
+        />
+      </view>
+      
+      <view class="pb-safe"></view>
     </scroll-view>
 
-    <!-- Input Area (悬浮式现代设计) -->
-    <view class="input-area flex items-center">
-      <view class="input-container flex-1 flex items-center">
-        <view class="quick-emos flex items-center mr-2">
-          <text class="emo-btn" @click="sendEmo('fire')">🔥</text>
-          <text class="emo-btn" @click="sendEmo('ice')">🧊</text>
-          <text class="emo-btn" @click="sendEmo('fist')">✊</text>
-        </view>
-        
-        <input 
-          class="input-box flex-1" 
-          v-model="inputVal" 
-          placeholder="传递意志..." 
-          placeholder-class="text-gray-500"
-          @confirm="sendText"
-        />
-        
-        <view class="btn-send flex justify-center items-center ml-2" 
-              :class="{'disabled': !inputVal.trim()}" 
-              @click="sendText">
-          <text class="send-icon">▲</text>
-        </view>
-      </view>
-    </view>
+    <!-- 生死局创建弹窗 -->
+    <ContractModal 
+      :show="showContractModal" 
+      @update:show="showContractModal = $event"
+      @confirm="onContractCreated"
+    />
+
     <CustomTabBar :current="1" />
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
-import { onHide } from '@dcloudio/uni-app'
-import { useChatStore } from '../../store/chat.js'
-import CustomTabBar from '../../components/CustomTabBar.vue'
-import GlobalResonance from '../../components/GlobalResonance.vue'
+import { ref, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
+import { useWarzoneStore } from '../../store/warzone.js'
+import CustomTabBar from '../../components/CustomTabBar.vue'
+import RoomCard from '../../components/RoomCard.vue'
+import ContractModal from '../../components/ContractModal.vue'
+import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
+const warzoneStore = useWarzoneStore()
 
-const chatStore = useChatStore()
-const inputVal = ref('')
-const scrollTop = ref(0)
-const currentUid = ref('')
-const userAvatar = ref('')
-const avatarInitial = ref('我')
+const currentTab = ref(0)
+const showContractModal = ref(false)
+const searchQuery = ref('')
 
-// 获取云端数据
-onMounted(async () => {
-  uni.hideTabBar()
-  
-  const token = uni.getStorageSync('uni_id_token')
-  if (!token) {
-    uni.redirectTo({ url: '/pages/login/index' })
-    return
-  }
-  currentUid.value = token.split('_').pop()
-  
-  const data = uni.getStorageSync('neuro_baseline')
-  if (data) {
-    const profile = JSON.parse(data)
-    userAvatar.value = profile.avatar || ''
-    if (profile.nickname) {
-       const str = String(profile.nickname)
-       avatarInitial.value = str.includes('_') ? str.split('_').pop().substring(0,2) : str.substring(str.length - 2)
-    } else {
-        avatarInitial.value = currentUid.value ? currentUid.value.substring(currentUid.value.length - 2).toUpperCase() : '我'
-    }
-  } else {
-      avatarInitial.value = currentUid.value ? currentUid.value.substring(currentUid.value.length - 2).toUpperCase() : '我'
-  }
-
-  uni.showLoading({ title: '搜索战区标定...' })
-  try {
-    // 1. 调用云函数进行自动分组
-    const assignRes = await uniCloud.callFunction({
-      name: 'chat-hub',
-      data: { token, action: 'assignRoom' }
-    })
-    
-    if (assignRes.result.code === 0) {
-      chatStore.setRoomId(assignRes.result.roomId)
-      
-      // 2. 拉取近期历史记录
-      const historyRes = await uniCloud.callFunction({
-        name: 'chat-hub',
-        data: { token, action: 'getHistoryLogs', payload: { room_id: assignRes.result.roomId } }
-      })
-      if (historyRes.result.code === 0) {
-        chatStore.setHistory(historyRes.result.data)
-        scrollToBottom()
-      }
-    }
-  } catch(e) {
-    uni.showToast({ title: '连接通讯塔失败', icon: 'none' })
-  } finally {
-    uni.hideLoading()
+onShow(() => {
+  // 不再执行任何强制路由跳转，让用户在重新切回战区Tab时，能够一览大盘全局
+  const savedTab = uni.getStorageSync('warzone_current_tab')
+  if (savedTab !== '') {
+    currentTab.value = Number(savedTab)
   }
 })
 
-// 防止跳转到其他 tab 时 loading 仍然滞留
 onHide(() => {
-  uni.hideLoading()
+  uni.setStorageSync('warzone_current_tab', currentTab.value)
 })
 
-onUnmounted(() => {
-  uni.hideLoading()
-})
+const publicRooms = computed(() => warzoneStore.publicRooms)
+const deathMatches = computed(() => warzoneStore.deathMatches)
 
-// 自动滚到底部机制
-watch(() => chatStore.messages.length, () => {
-  scrollToBottom()
-})
-
-const scrollToBottom = () => {
-  nextTick(() => {
-    scrollTop.value = chatStore.messages.length * 100 // 暴力滚动
-  })
+const matchSearch = (room) => {
+  if (!searchQuery.value) return true
+  const q = searchQuery.value.toLowerCase()
+  return room.name.toLowerCase().includes(q) || 
+         room.id.toLowerCase().includes(q) || 
+         room.description.toLowerCase().includes(q)
 }
 
-const displayRoomNum = computed(() => {
-  if (!chatStore.roomId) return ''
-  return chatStore.roomId.replace('room_', '')
+const filteredPublicRooms = computed(() => publicRooms.value.filter(matchSearch))
+const filteredDeathMatches = computed(() => deathMatches.value.filter(matchSearch))
+
+const totalOnline = computed(() => {
+  let count = 0
+  publicRooms.value.forEach(r => count += r.onlineCount)
+  deathMatches.value.forEach(r => count += r.onlineCount)
+  return count > 500 ? 500 : count // Mock value cap
 })
 
-const goBack = () => {
-  uni.switchTab({ url: '/pages/dashboard/index' })
-}
-
-// 富文本渲染：替换指令为 emoji 
-const renderContent = (content) => {
-  if (!content) return ''
-  let finalHTML = content
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;") // 防 XSS
-    .replace(/\[emo:fire\]/g, '<span style="font-size: 20px;">🔥</span>')
-    .replace(/\[emo:ice\]/g, '<span style="font-size: 20px;">🧊</span>')
-    .replace(/\[emo:fist\]/g, '<span style="font-size: 20px;">✊</span>')
-  
-  if (content === '***[通讯屏蔽]***') {
-      finalHTML = '<span style="color: #ef4444; font-style: italic;">[该引子包含不稳定情绪，已屏蔽]</span>'
+const handleCreateDeathMatch = () => {
+  if (warzoneStore.activeDeathMatchId) {
+     uni.showModal({
+       title: '警告：身负血契',
+       content: '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。',
+       showCancel: false,
+       confirmColor: '#ef4444'
+     })
+     return
   }
-  return finalHTML
+  showContractModal.value = true
 }
 
-const sendEmo = (emoType) => {
-  executeSend(`[emo:${emoType}]`)
-}
+const enterRoom = (room) => {
+  const isPublic = room.type === 'public'
+  const currentActive = isPublic ? warzoneStore.activePublicRoomId : warzoneStore.activeDeathMatchId
+  const typeName = isPublic ? '公共战区' : '生死血契战役'
 
-const sendText = () => {
-  if (!inputVal.value.trim()) return
-  const txt = inputVal.value
-  inputVal.value = ''
-  executeSend(txt)
-}
-
-const executeSend = async (content) => {
-  const token = uni.getStorageSync('uni_id_token')
-  
-  // 乐观更新（先不写，因为没真实的 ID 返回，直接等待实际入库结果）
-  
-  try {
-    const res = await uniCloud.callFunction({
-      name: 'chat-hub',
-      data: { 
-        token, 
-        action: 'sendMessage', 
-        payload: { room_id: chatStore.roomId, content } 
-      }
-    })
-    
-    if (res.result.code === 0 || res.result.code === 403) {
-      // 本人发送的，直接由于推送不返回给自己，手动推入 state
-      chatStore.pushMessage(res.result.data)
-    }
-  } catch(e) {
-    uni.showToast({ title: '发送失败', icon: 'none' })
+  if (currentActive && currentActive !== room.id) {
+     uni.showModal({
+       title: '侦测到并行的神经驻留',
+       content: `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`,
+       showCancel: false,
+       confirmColor: '#ef4444'
+     })
+     return
   }
+
+  uni.vibrateShort()
+  
+  if (isPublic) {
+    warzoneStore.setActivePublicRoom(room.id)
+    uni.navigateTo({ url: `/pages/war-room/chat-channel?id=${room.id}` })
+  } else {
+    warzoneStore.setActiveDeathMatch(room.id)
+    uni.navigateTo({ url: `/pages/war-room/death-match?id=${room.id}` })
+  }
+}
+
+const onContractCreated = (formData) => {
+  warzoneStore.createDeathMatch(formData)
+  uni.showToast({ title: '血契已生成', icon: 'success' })
 }
 </script>
 
-<style lang="scss" scoped>
-/* 让 page 级高度撑满，避免 100vh 导致的滚动条和底部被遮挡 */
-page {
-  height: 100%;
+<style scoped>
+page { height: 100%; }
+.container { 
+  height: 100%; width: 100%; overflow-x: hidden; background-color: #09090b; display: flex; box-sizing: border-box; 
 }
-
-.container {
-  height: 100%;
-  width: 100%;
-  overflow-x: hidden;
-  background-color: #09090b;
-  display: flex;
-  box-sizing: border-box;
-}
-.px-4 { padding: 0 20px; }
-.pt-10 { padding-top: 40px; }
-.pb-4 { padding-bottom: 16px; }
-.py-3 { padding: 12px 16px; }
-.pb-bottom { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-.mt-1 { margin-top: 4px; }
-.mt-10 { margin-top: 40px; }
-.mb-4 { margin-bottom: 16px; }
-.ml-2 { margin-left: 8px; }
-.ml-3 { margin-left: 12px; }
-.mr-2 { margin-right: 8px; }
-.mr-3 { margin-right: 12px; }
-
-.flex { display: flex; }
-.flex-col { display: flex; flex-direction: column; }
-.flex-1 { flex: 1; overflow: hidden; }
-.justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
-.justify-end { justify-content: flex-end; }
-.items-center { align-items: center; }
-.block { display: block; }
-.text-center { text-align: center; }
-
-/* Header */
 .header { 
   padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
   background: rgba(9, 9, 11, 0.65);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  box-sizing: border-box;
-  width: 100%;
+  position: sticky; top: 0; z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03); width: 100%; box-sizing: border-box;
 }
+
 .room-title { font-size: 24px; font-weight: 900; color: var(--theme-primary); letter-spacing: 2px; text-shadow: 0 0 15px var(--theme-shadow-primary); }
 .room-subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px; }
-.header-right { gap: 8px; }
-.online-chip {
-  background: var(--theme-bg-highlight);
-  border: 1px solid var(--theme-shadow-primary);
-  padding: 3px 8px;
-  border-radius: 10px;
-}
+
+.online-chip { background: var(--theme-bg-highlight); border: 1px solid var(--theme-shadow-primary); padding: 3px 8px; border-radius: 10px; }
 .dot-live { width: 6px; height: 6px; background-color: var(--theme-primary); border-radius: 50%; box-shadow: 0 0 5px var(--theme-primary); animation: blink 2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .online-text { font-size: 10px; color: var(--theme-primary); font-family: monospace; padding-left: 4px; }
-.leave-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 4px 12px;
-  border-radius: 10px;
-  transition: all 0.2s;
-}
-.leave-hover { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); }
-.leave-text { font-size: 12px; color: #a1a1aa; font-weight: 500; }
 
-/* Chat Area */
-.chat-area { 
-  flex: 1; 
-  padding-top: 20px; 
-  box-sizing: border-box; 
-  padding-bottom: 100px; /* 为悬浮输入框预留空间 */
-  overflow: hidden; 
-}
-.chat-spacer { height: 20px; }
-.empty-state { opacity: 0.5; }
+.tab-wrapper { background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; }
+.tab-item { padding: 8px 0; border-radius: 8px; transition: all 0.2s; }
+.tab-item.active { background: var(--theme-primary); box-shadow: 0 0 10px var(--theme-shadow-primary); }
+.tab-item.active .tab-text { color: #09090b; font-weight: bold; }
+.tab-text { font-size: 13px; color: #a1a1aa; font-weight: bold;}
 
-.msg-bubble {
-  padding: 12px 16px;
-  border-radius: 12px;
-  max-width: 65%; /* 增加头像后收缩一点气泡最大宽度以免溢出 */
-  font-size: 14px;
-  line-height: 1.5;
-  word-break: break-all;
-  transition: all 0.3s ease;
-}
-
-.msg-pop {
-  opacity: 0;
-  transform: translateY(10px) scale(0.95);
-  animation: popMessage 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes popMessage {
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-.other-bubble {
-  background-color: #18181b;
-  border: 1px solid #27272a;
-  color: #e4e4e7;
-  border-top-left-radius: 4px;
-}
-.my-bubble {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-top-right-radius: 4px;
-}
-
-/* 战区聊天头像样式 */
-.avatar {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-}
-.other-avatar {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(0, 229, 255, 0.1));
-  border: 1px solid rgba(8, 145, 178, 0.3);
-  box-shadow: 0 0 10px rgba(8, 145, 178, 0.1);
-}
-.my-avatar {
-  background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(0, 198, 255, 0.1));
-  border: 1px solid rgba(0, 198, 255, 0.3);
-  box-shadow: 0 0 10px rgba(0, 198, 255, 0.1);
-}
-.avatar-img { width: 100%; height: 100%; border-radius: 12px; }
-.user-icon {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: bold;
-  font-family: monospace;
-}
-
-/* 现代悬浮底部输入区 */
-.input-area {
-  flex-shrink: 0;
-  padding: 10px 16px calc(66px + env(safe-area-inset-bottom)) 16px; 
-  background: linear-gradient(180deg, rgba(9, 9, 11, 0) 0%, rgba(9, 9, 11, 0.8) 20%, #09090b 100%);
-  margin-top: -80px; 
-  z-index: 20;
-  width: 100%;
-  box-sizing: border-box; /* 防止边距超出版心 */
-}
-.input-container {
-  width: 100%;
-  background: rgba(24, 24, 27, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 28px;
-  padding: 6px 6px 6px 16px;
+/* 搜索框强聚合样式 */
+.search-bar {
+  background: rgba(24, 24, 27, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 12px;
+  height: 44px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s;
   box-sizing: border-box;
 }
-.input-container:focus-within {
-  border-color: rgba(0, 229, 255, 0.4);
-  box-shadow: 0 8px 32px rgba(0, 229, 255, 0.1);
-  background: rgba(24, 24, 27, 0.95);
+.search-bar:focus-within {
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 10px var(--theme-shadow-primary);
 }
+.search-icon { font-size: 16px; opacity: 0.6; }
+.search-input { color: #fff; font-size: 14px; height: 100%; border: none; background: transparent;}
+.search-placeholder { color: #52525b; font-size: 13px; }
+.clear-btn { padding: 4px 10px; }
+.text-gray-500 { color: #71717a; font-size: 14px; }
 
-.emo-btn { font-size: 20px; padding: 4px; margin-right: 4px; transition: transform 0.1s;}
-.emo-btn:active { transform: scale(0.9); }
-
-.input-box {
-  background: transparent;
-  height: 40px;
-  flex: 1;
-  font-size: 14px;
-  color: #fff;
-  border: none;
-}
-.text-gray-500 { color: #52525b; }
-
-.btn-send {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%);
-  box-shadow: 0 4px 12px var(--theme-shadow-primary);
+.hall-area { padding-bottom: 120px; box-sizing: border-box; width: 100%; } /* 留出 TabBar 空间及约束溢出 */
+.create-btn {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(185, 28, 28, 0.4) 100%);
+  border: 1px dashed rgba(239, 68, 68, 0.5);
+  border-radius: 16px;
+  padding: 16px;
   transition: all 0.2s;
-  flex-shrink: 0; /* 绝对防止右侧发送按钮被挤压遮挡 */
 }
-.btn-send.disabled { background: #27272a; opacity: 0.6; box-shadow: none;}
-.send-icon { color: #fff; font-size: 16px; font-weight: 900; }
-.btn-send.disabled .send-icon { color: #52525b; }
+.create-btn:active { transform: scale(0.98); background: rgba(239, 68, 68, 0.3); }
+.btn-icon { font-size: 20px; }
+.btn-text { font-size: 16px; font-weight: bold; color: #ef4444; letter-spacing: 1px; }
+
+.fade-in-up { opacity: 0; transform: translateY(10px); animation: fadeInUp 0.4s forwards; }
+@keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.items-center { align-items: center; }
+.px-4 { padding: 0 20px; }
+.mt-4 { margin-top: 16px; }
+.mt-1 { margin-top: 4px; }
+.mb-4 { margin-bottom: 16px; }
+.ml-1 { margin-left: 4px; }
+.ml-2 { margin-left: 8px; }
+.pb-safe { height: calc(88px + env(safe-area-inset-bottom)); }
 </style>

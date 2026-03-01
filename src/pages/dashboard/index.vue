@@ -306,6 +306,7 @@ page {
 .chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary);}
 .chip-text { font-size: 12px; color: #e4e4e7; font-family: monospace;}
 
+
 /* 紧急阻断按钮 */
 .action-area { width: 100%; box-sizing: border-box; }
 .panic-btn {

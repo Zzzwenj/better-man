@@ -2,22 +2,36 @@
   <view>
   <view class="header flex items-center" @click="openEditModal" hover-class="header-hover">
     <!-- 头像区 -->
-    <view class="avatar flex justify-center items-center">
+    <view class="avatar flex justify-center items-center" :class="{
+        'frame-plasma': userStore.equipped.avatarFrame === 'f_01',
+        'frame-glitch': userStore.equipped.avatarFrame === 'f_02'
+    }">
       <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill"></image>
       <text v-else class="avatar-text">{{ avatarInitial }}</text>
     </view>
     
     <!-- 文本区 -->
-    <view class="user-info ml-4 flex-col justify-center">
+    <view class="user-info ml-4 flex-col justify-center flex-1">
       <view class="flex items-center">
-        <text class="username tracking-wider">{{ userName }}</text>
+        <!-- 动态称号 / 黑金皇冠 -->
+        <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
+        <text class="profile-title mr-1" v-if="userStore.equipped.title">
+          {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
+        </text>
+        <text :class="['username', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
         <text class="edit-icon ml-2">✎</text>
       </view>
       <text v-if="signature" class="signature-text mt-1">{{ signature }}</text>
       <view class="status-badge flex items-center mt-2">
-        <view class="status-dot offline"></view>
-        <text class="status-text ml-1">{{ userDesc }}</text>
+        <view :class="['status-dot', isProActive ? 'online' : 'offline']"></view>
+        <text :class="['status-text', 'ml-1', isProActive ? 'text-online' : '']">{{ userDesc }}</text>
       </view>
+    </view>
+
+    <!-- 神经币快捷入口 (嵌入头像栏右侧) -->
+    <view class="wallet-chip flex items-center" @click.stop="goStore" hover-class="wallet-hover">
+      <NeuroCoinIcon :size="18" />
+      <text class="wallet-val ml-1">{{ formattedCoins }}</text>
     </view>
   </view>
 
@@ -74,14 +88,25 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useUserStore } from '@/store/user'
+import NeuroCoinIcon from './NeuroCoinIcon.vue'
+
+const userStore = useUserStore()
 
 const props = defineProps({
   userName: { type: String, default: '探索者' },
   userDesc: { type: String, default: '系统干预：已停用' },
   avatar: { type: String, default: '' },
-  signature: { type: String, default: '' }
+  signature: { type: String, default: '' },
+  isProActive: { type: Boolean, default: false },
+  hasBlackGoldCrown: { type: Boolean, default: false },
+  formattedCoins: { type: String, default: '0' }
 })
 const emit = defineEmits(['updateProfile', 'modalStateChange'])
+
+const goStore = () => {
+    uni.navigateTo({ url: '/pages/store/index' })
+}
 
 const showModal = ref(false)
 const editName = ref('')
@@ -142,11 +167,15 @@ const saveProfile = () => {
 
 <style lang="scss" scoped>
 .px-4 { padding: 0 20px; }
+.mx-4 { margin-left: 20px; margin-right: 20px; }
 .ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
+.ml-3 { margin-left: 12px; }
 .ml-4 { margin-left: 16px; }
+.mr-1 { margin-right: 4px; }
 .mr-2 { margin-right: 8px; }
 .mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
 .mt-6 { margin-top: 24px; }
 .mb-4 { margin-bottom: 16px; }
 .mb-6 { margin-bottom: 24px; }
@@ -187,11 +216,73 @@ const saveProfile = () => {
 .username { font-size: 20px; color: #f4f4f5; font-weight: 900; }
 .edit-icon { font-size: 14px; color: #52525b; }
 .signature-text { font-size: 11px; color: #a1a1aa; font-family: monospace; }
+.crown-icon { font-size: 16px; text-shadow: 0 0 10px rgba(250, 204, 21, 0.8); }
+.gold-text { color: #facc15; text-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
 
-.status-badge { background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2); align-self: flex-start;}
+.status-badge { background: rgba(255, 255, 255, 0.05); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); align-self: flex-start;}
 .status-dot { width: 6px; height: 6px; border-radius: 3px; }
 .status-dot.offline { background-color: #ef4444; box-shadow: 0 0 5px #ef4444;}
-.status-text { font-size: 10px; color: #ef4444; font-weight: bold; font-family: monospace;}
+.status-dot.online { background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary); animation: pulse 2s infinite;}
+.status-text { font-size: 10px; color: #a1a1aa; font-weight: bold; font-family: monospace;}
+.status-text.text-online { color: var(--theme-primary); }
+
+@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.5; } }
+
+/* 动态称号 */
+.profile-title {
+  font-size: 14px;
+  color: #a78bfa;
+  font-weight: 900;
+  font-family: monospace;
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  letter-spacing: 1px;
+}
+
+/* 动态头像框 - 深空等离子 */
+.frame-plasma {
+  border: none !important;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 5px inset rgba(139, 92, 246, 0.5) !important;
+  position: relative;
+}
+.frame-plasma::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 22px;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(139, 92, 246, 0.8) 25%, transparent 50%, rgba(0, 229, 255, 0.8) 75%, transparent 100%);
+  z-index: -1;
+  animation: rotatePlasma 3s linear infinite;
+}
+@keyframes rotatePlasma { 100% { transform: rotate(360deg); } }
+
+/* 动态头像框 - 故障干扰线 */
+.frame-glitch {
+  border: 2px solid rgba(239, 68, 68, 0.8) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+  animation: glitchBorder 1s infinite alternate;
+}
+@keyframes glitchBorder {
+  0% { transform: translate(0) skew(0deg); }
+  20% { transform: translate(-2px, 1px) skew(2deg); }
+  40% { transform: translate(1px, -1px) skew(-2deg); }
+  60% { transform: translate(0) skew(0deg); }
+  80% { transform: translate(2px, 0) skew(1deg); }
+  100% { transform: translate(0) skew(0deg); }
+}
+
+/* 神经币快捷入口 (头像栏右侧内嵌) */
+.wallet-chip {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  transition: all 0.2s;
+}
+.wallet-hover { background: rgba(139, 92, 246, 0.15); transform: scale(0.95); }
+.wallet-val { font-size: 12px; color: #e4e4e7; font-family: monospace; font-weight: 900; }
+.wallet-arrow { font-size: 14px; color: #71717a; font-weight: bold; }
 
 /* 修改资料弹窗 */
 .modal-overlay {

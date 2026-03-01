@@ -5,21 +5,36 @@
       :userDesc="userDesc" 
       :avatar="userAvatar"
       :signature="userSignature"
+      :isProActive="userStore.isProActive"
+      :hasBlackGoldCrown="userStore.hasBlackGoldCrown"
+      :formattedCoins="userStore.formattedCoins"
       @updateProfile="onUpdateProfile" 
       @modalStateChange="onModalStateChange"
     />
     
-    <!-- 2. 订阅特权模幅 (保留，因其具有业务强相关性) -->
-    <view class="premium-card mx-4" @click="upgradePremium" hover-class="card-hover">
+    <!-- 2. 平台服务契约模幅 (对赌质押区) -->
+    <view :class="['premium-card mx-4', userStore.isProActive ? 'active-contract' : '']" @click="upgradePremium" hover-class="card-hover">
         <view class="flex justify-between items-center">
-            <text class="premium-title">⚡ 强制护城河 (系统级防御)</text>
-            <view class="price-chip">
-                <text>￥9.9 / 月</text>
+            <text class="premium-title">{{ userStore.isProActive ? '🛡️ 绝对意志契约生效中' : '⚡ 神经重铸契约 (质押挑战)' }}</text>
+            <view class="price-chip" v-if="!userStore.isProActive">
+                <text>￥50 / 30天</text>
             </view>
         </view>
-        <text class="premium-desc block mt-2">开启设备底层的无障碍劫持防御。\n在理智被吞噬前，让系统接管你的设备控制权。</text>
-        <view class="premium-footer flex items-center mt-4">
-            <text class="unlock-text">立即解锁终极防御</text>
+        
+        <text class="premium-desc block mt-2" v-if="!userStore.isProActive">
+          支付 50 元质押金，立即解锁全站高级防御与大模型。
+          若 30 天未破戒，<text style="color: #00e5ff; font-weight: bold;">50元全额退还</text>并奖励黑金头衔与 10000 神经币。破戒则作为平台服务费扣除。
+        </text>
+        
+        <view class="contract-progress mt-4 flex-col" v-else>
+           <text class="timer-text">契约解禁倒计时: {{ userStore.contractDaysLeft }} 天</text>
+           <view class="progress-bar mt-2">
+             <view class="progress-fill" :style="{ width: ((30 - userStore.contractDaysLeft) / 30 * 100) + '%' }"></view>
+           </view>
+        </view>
+
+        <view class="premium-footer flex items-center mt-4" v-if="!userStore.isProActive">
+            <text class="unlock-text">立下生死状 (立刻开启)</text>
             <text class="arrow ml-1">→</text>
         </view>
     </view>
@@ -48,12 +63,14 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
+import { useUserStore } from '../../store/user.js'
 import ProfileUserCard from '../../components/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/ProfileSettingsList.vue'
 import CustomTabBar from '../../components/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/ThemeActionSheet.vue'
 
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 const showThemeSheet = ref(false)
 
 // --- 用户状态 ---
@@ -176,13 +193,42 @@ const onModalStateChange = (state) => {
   isModalOpen.value = state
 }
 
-// 点击解锁特权
+// 点击解锁特权（测试质押入口）
 const upgradePremium = () => {
+    if (userStore.isProActive) {
+        uni.showModal({
+            title: '重制契约违约',
+            content: '你正在履行 30 天的绝对意志契约。如果此时放弃，你的 50 元质押金将被立即扣除！',
+            confirmText: '我要放弃',
+            cancelText: '继续坚持',
+            confirmColor: '#ef4444',
+            success: (res) => {
+                if (res.confirm) {
+                    userStore.failContract()
+                    uni.showToast({ title: '契约终结，押金已入账服务费', icon: 'none' })
+                }
+            }
+        })
+        return
+    }
+
     uni.showModal({
-        title: '开启终极防御',
-        content: '只需 9.9 元/月，即可获得系统底层的强制接管权限。当你不受理智控制时，系统将成为你最后一道门槛。',
-        confirmText: '立刻开启',
-        confirmColor: themeStore.activeThemeData.primary
+        title: '签署神经重铸生死状',
+        content: '预付 50 元。\n30天后未破戒，全额原路退还并奖励 10000 神经币 + 黑金皇冠荣耀。\n破戒或中途放弃，不予退还。',
+        confirmText: '确认微信支付',
+        cancelText: '我再想想',
+        confirmColor: themeStore.activeThemeData.primary,
+        success: (res) => {
+            if (res.confirm) {
+                // 模拟支付成功
+                uni.showLoading({ title: '拉起收银台...' })
+                setTimeout(() => {
+                    uni.hideLoading()
+                    userStore.startPlatformContract()
+                    uni.showToast({ title: '契约成立！祝你生还。', icon: 'success' })
+                }, 1000)
+            }
+        }
     })
 }
 
@@ -265,4 +311,15 @@ page {
 .premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
 .arrow { color: var(--theme-primary); font-weight: bold; font-size: 18px;}
+
+/* 契约进行中状态 */
+.active-contract {
+    border-color: rgba(0, 229, 255, 0.4);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+    background: linear-gradient(180deg, rgba(0, 229, 255, 0.05) 0%, rgba(24, 24, 27, 0.9) 100%);
+}
+.contract-progress { width: 100%; }
+.timer-text { font-size: 16px; color: #00e5ff; font-family: monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,229,255,0.5);}
+.progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; background: #00e5ff; box-shadow: 0 0 10px #00e5ff; border-radius: 3px; transition: width 0.5s ease-out; }
 </style>
