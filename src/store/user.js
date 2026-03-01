@@ -22,6 +22,10 @@ export const useUserStore = defineStore('user', {
             // 赢来的最高荣耀 (黑金桂冠)
             hasBlackGoldCrown: uni.getStorageSync('neuro_black_gold') === 'true',
 
+            // --- 短期体验权限 ---
+            // 是否领取过一次性的 24 小时广告越权体验药剂
+            hasUsedTrial: uni.getStorageSync('neuro_has_used_trial') === 'true',
+
             // --- 暗网黑市购买与装备状态 ---
             // 采用 Dict { 'f_01': 1735689600000 } 记录每个物品的过期时间戳
             ownedItems: (() => {
@@ -203,6 +207,13 @@ export const useUserStore = defineStore('user', {
             console.log('[Store] 王者之路，契约圆满。')
         },
 
+        // 领取一次性 24 小时越权体验 (看广告后调用)
+        claimTrialPermission() {
+            this.hasUsedTrial = true
+            uni.setStorageSync('neuro_has_used_trial', 'true')
+            console.log('[Store] 已发放一次性临时越权体验。')
+        },
+
         // 从云端恢复资产 (登录或启动时调用)
         initAssetsFromCloud(profileData) {
             if (profileData) {
@@ -217,6 +228,11 @@ export const useUserStore = defineStore('user', {
                 if (profileData.equipped) {
                     this.equipped = { ...this.equipped, ...profileData.equipped }
                     uni.setStorageSync('neuro_equipped', this.equipped)
+                }
+                if (profileData.has_used_trial !== undefined) {
+                    // 同步云端，如果云端有这个标记
+                    this.hasUsedTrial = profileData.has_used_trial
+                    uni.setStorageSync('neuro_has_used_trial', Boolean(this.hasUsedTrial).toString())
                 }
             }
         },
