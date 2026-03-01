@@ -464,7 +464,7 @@ page {
 
 /* Header */
 .header { 
-  padding: calc(var(--status-bar-height) + 16px) 20px 16px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 16px 20px;
   background: linear-gradient(180deg, rgba(9, 9, 11, 0.9) 0%, rgba(9, 9, 11, 0.4) 100%);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);

@@ -1,14 +1,6 @@
 <template>
   <view class="video-page" :style="themeStore.themeCssVars">
-    <!-- Header -->
-    <view class="header fixed-top flex justify-between items-center px-4">
-       <view class="back-btn flex items-center" @click="goBack" hover-class="btn-hover">
-         <text class="back-icon">←</text>
-         <text class="back-text ml-2">返回主控</text>
-       </view>
-       <text class="page-title">系统级视觉注入</text>
-       <view style="width: 80px;"></view> <!-- 占位保持居中 -->
-    </view>
+    <CyberNavBar title="系统级视觉注入" :blur="true" />
 
     <!-- Content Area -->
     <view class="content-area mt-top">
@@ -111,21 +103,7 @@ const goBack = () => {
   display: flex;
   flex-direction: column;
 }
-.fixed-top {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: calc(var(--status-bar-height) + 54px);
-   padding-top: var(--status-bar-height);
-   background: rgba(0, 0, 0, 0.85);
-   backdrop-filter: blur(15px);
-   z-index: 100;
-   border-bottom: 1px solid rgba(255,255,255,0.05);
-   box-sizing: border-box;
-}
-.mt-top { margin-top: calc(var(--status-bar-height) + 54px); }
-.pt-10 { padding-top: 40px; }
+.mt-top { margin-top: 24px; }
 .px-4 { padding: 0 16px; }
 .px-5 { padding: 0 24px; }
 .mt-3 { margin-top: 12px; }
@@ -142,12 +120,6 @@ const goBack = () => {
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .block { display: block; }
-
-.back-btn { padding: 10px 0; }
-.btn-hover { opacity: 0.7; transform: translateX(-2px); }
-.back-icon { color: #e4e4e7; font-size: 20px; font-weight: bold; }
-.back-text { color: #a1a1aa; font-size: 14px; font-weight: bold; }
-.page-title { color: #52525b; font-size: 13px; font-family: monospace; letter-spacing: 2px;}
 
 .loading-state, .error-state { height: 200px; }
 .glitch-text { color: var(--theme-primary); font-family: monospace; font-size: 14px; }

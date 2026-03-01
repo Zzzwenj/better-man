@@ -230,7 +230,7 @@ page {
   overflow-y: auto;
 }
 .header {
-  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
   background: rgba(9, 9, 11, 0.65);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);

@@ -99,9 +99,11 @@ const userAvatar = ref('')
 const avatarInitial = ref('U')
 
 const scrollToBottom = () => {
+  if (chatList.value.length <= 1) return
   nextTick(() => {
-    // 强制赋予一个极大值将其推到底部
-    scrollTop.value = chatList.value.length * 1000 
+    // 通过数值微调确保 scroll-view 感知到变化并由底层引擎触发滚动
+    const target = chatList.value.length * 500
+    scrollTop.value = scrollTop.value === target ? target + 1 : target
   })
 }
 
@@ -133,8 +135,6 @@ onMounted(() => {
     role: 'ai',
     content: `你好，我是你的专属成长伙伴。\n在这里，你可以放下防备，随时和我倾诉你的焦虑、困惑或是生活中的那些微小进步。\n\n今天感觉怎么样？聊聊你的想法吧。`
   })
-  
-  scrollToBottom()
 })
 
 onShow(() => {
@@ -231,12 +231,15 @@ page {
 /* 顶部导航栏 */
 .nav-bar {
   flex-shrink: 0; 
-  padding-top: calc(var(--status-bar-height) + 10px);
+  padding-top: calc(var(--status-bar-height) + 24px);
   padding-bottom: 12px;
-  background-color: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   z-index: 10;
+  position: sticky;
+  top: 0;
 }
 .nav-content {
   min-height: 44px;
@@ -258,7 +261,7 @@ page {
   border-radius: 8px;
   flex-shrink: 0; 
 }
-.quota-text { font-size: 9px; color: #8b5cf6; font-weight: bold; font-family: monospace;}
+.quota-text { font-size: 9px; color: #8b5cf6; font-weight: bold; font-family: monospace; padding-left: 4px;}
 
 /* 聊天流水区 */
 .chat-list {
@@ -289,7 +292,7 @@ page {
   border: 1px solid rgba(139, 92, 246, 0.4);
   box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
 }
-.ai-icon { color: #8b5cf6; font-size: 18px; font-weight: bold;}
+.ai-icon { color: #8b5cf6; font-size: 18px; font-weight: bold; padding-bottom: 2px;}
 .user-avatar {
   width: 36px;
   height: 36px;

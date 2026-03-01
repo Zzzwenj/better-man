@@ -47,7 +47,7 @@ const onSwitchChange = (e, item) => {
 
 <style lang="scss" scoped>
 .mx-4 { margin: 0 20px; }
-.mt-6 { margin-top: 24px; }
+.mt-6 { margin-top: 24px !important; }
 .px-2 { padding: 0 8px; }
 .mb-2 { margin-bottom: 8px; }
 .ml-3 { margin-left: 12px; }

@@ -172,3 +172,19 @@
   - 同步修正了 `dashboard`、`journey`、`login`、`profile`、`store`、`war-room` 等 7 个页面文件中的所有组件引用路径，确保编译零报错。
   - 修复了 `ThemeActionSheet.vue` 因迁移至 `common/` 子目录后 Store 引用路径缺少一层上级目录（`../store` → `../../store`）导致的 Vite 热更新崩溃。
 - **功能性注释注入 (Functional Annotations)**: 为每个迁移组件顶部注入 `@component` + `@description` 标准化 JSDoc 注释块，强化代码自文档化能力与团队协作可读性。
+
+## 阶段 18：全局视觉标准化与黑市交互重塑 (Global Spacing & Store Re-engineering)
+- **全局间距标准化 ("Golden Spacing")**:
+  - **一级页面统合**: 确立了 `calc(var(--status-bar-height) + 24px)` 的全局黄金顶部边距。Login、Hub、Warzone、Profile 及 Journey 现已达成主标题像素级垂直对齐，彻底消除了页面切换时的标题跳变感。
+  - **导航栏视觉对齐**: 针对使用 `CyberNavBar` 的页面，引入了 `+14px` 的位移补偿算法，确保 44px 标准导航栏的文字重心与大标题页面的视觉重心在同一水平轴线上。
+- **暗网黑市 (Black Market) 重大重构**:
+  - **单行高集成布局**: 彻底重塑了 `StoreItemCard.vue`。将商品图标、名称、价格全部内聚到卡片首行。这种极简的“物资清单式”设计显著提升了在大规模装备目录下的扫描效率。
+  - **币种视觉精修**: 修正了全站 NeuroCoin 图标与数值的“粘连”痼疾，统一采用标准 **8px (mr-2)** 呼吸间距，极大提升了资产数值的专业阅读感。
+  - **神经脉冲购买防抖**: 在 `executeTransaction` 逻辑中引入了 800ms 的强制交互锁屏，有效防止了用户在快速连抽盲盒时的视觉截断，确保每一次开奖结果都能被感知。
+  - **装饰品规则修正**: 废除了模糊的“永久有效”，根据物品价值曲线重新定义为 `7天 / 15天 / 30天` 时效。
+- **AI 导师交互体验打磨 (Companion Stabilization)**:
+  - **转场平滑化**: 修复了进入 AI 对话页时由于 `scrollToBottom` 误触导致的初始视觉位移，确保第一条欢迎语始终完美对齐顶部黄金间距。
+  - **对齐精修**: 优化了 AI 发光图标与在线文字的垂直像素级补偿，达成了几何层面的视觉平行。
+- **品牌职能与叙事纯化 (Localization Reform)**:
+  - **核心地位确立**: 将 Dashboard 正式重命名为 `核心中枢 (Core Hub)`。
+  - **100% 汉化**: 清除了登录页、商店资产区、对话提示词等残留的所有次级英文标签。

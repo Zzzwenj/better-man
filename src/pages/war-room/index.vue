@@ -23,7 +23,7 @@
     </view>
 
     <!-- 全局防溢出的大厅滚动层 -->
-    <scroll-view scroll-y class="hall-area flex-1 px-4 mt-4" scroll-with-animation>
+    <scroll-view scroll-y class="hall-area flex-1 px-4 mt-4" scroll-with-animation :show-scrollbar="false">
       <!-- 战局搜索口 -->
       <view class="search-bar flex items-center mb-4">
         <text class="search-icon ml-3">🔍</text>
@@ -193,7 +193,7 @@ page { height: 100%; }
   height: 100%; width: 100%; overflow-x: hidden; background-color: #09090b; display: flex; box-sizing: border-box; 
 }
 .header { 
-  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
   background: rgba(9, 9, 11, 0.65);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);

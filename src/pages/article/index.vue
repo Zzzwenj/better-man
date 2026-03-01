@@ -1,10 +1,6 @@
 <template>
   <view class="article-container" :style="themeStore.themeCssVars">
-    <!-- header -->
-    <view class="header fixed-top flex items-center px-4" @click="goBack">
-      <text class="back-icon">←</text>
-      <text class="header-title ml-3">{{ pageTitle }}</text>
-    </view>
+    <CyberNavBar :title="pageTitle" :blur="true" />
     
     <scroll-view class="content-scroll" scroll-y @scrolltolower="loadMore">
        <view class="pt-header px-4">
@@ -142,26 +138,12 @@ const openExternal = (link) => {
    display: flex;
    flex-direction: column;
 }
-.fixed-top {
-   position: fixed;
-   top: 0;
-   left: 0;
-   width: 100%;
-   height: calc(var(--status-bar-height) + 54px);
-   padding-top: var(--status-bar-height);
-   background: rgba(9, 9, 11, 0.85);
-   backdrop-filter: blur(15px);
-   z-index: 100;
-   border-bottom: 1px solid rgba(255,255,255,0.05);
-   box-sizing: border-box;
-}
 .content-scroll {
    flex: 1;
    height: 100vh;
 }
 .pt-header {
-   /* 增加充裕的 paddingTop，完美避开自定义导航栏可能出现的计算误差或刘海屏 */
-   padding-top: calc(var(--status-bar-height) + 120px);
+   padding-top: 24px;
 }
 .pb-8 {
    padding-bottom: 40px;
@@ -174,19 +156,6 @@ const openExternal = (link) => {
 .flex { display: flex; }
 .items-center { align-items: center; }
 .block { display: block; }
-
-.back-icon {
-   color: #e4e4e7;
-   font-size: 20px;
-   font-weight: bold;
-   padding: 10px 10px 10px 0;
-}
-.header-title {
-   color: #a1a1aa;
-   font-size: 15px;
-   font-family: monospace;
-   font-weight: bold;
-}
 .link-card {
     background: #18181b;
     border: 1px solid #27272a;

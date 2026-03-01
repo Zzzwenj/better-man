@@ -1,10 +1,12 @@
 <!-- src/components/common/CyberNavBar.vue -->
 <template>
-  <view class="cyber-nav-container" :class="{ 'with-blur': blur }" :style="{ paddingTop: statusBarHeight + 'px' }">
+  <view class="cyber-nav-container" :class="{ 'with-blur': blur }" :style="{ 'padding-top': 'calc(var(--status-bar-height) + 14px)' }">
     <view class="cyber-nav-content flex items-center justify-between px-4">
       <view class="nav-left flex items-center" @click="handleBack">
-        <view v-if="showBack" class="back-btn flex items-center justify-center p-2" hover-class="back-hover">
-          <text class="back-icon">←</text>
+        <view v-if="showBack" class="back-btn flex items-center justify-center" hover-class="back-hover">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </view>
         <slot name="left"></slot>
       </view>
@@ -90,19 +92,22 @@ const handleBack = () => {
 }
 
 .back-btn {
-  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   transition: all 0.2s;
-  margin-left: -8px; /* Offset padding to align visually */
+  color: #e4e4e7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-left: -4px;
 }
 
 .back-hover {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.back-icon {
-  font-size: 20px;
-  color: #e4e4e7;
-  font-weight: bold;
+  transform: scale(0.9);
 }
 
 .nav-title {

@@ -16,8 +16,8 @@
         <view class="snapshot-info ml-3 flex-col">
           <text class="snapshot-title">{{ product.title }}</text>
           <view class="flex items-center mt-1">
-            <NeuroCoinIcon :size="14" />
-            <text class="snapshot-price ml-1">{{ product.price }} <text class="duration-badge ml-2" v-if="product.duration">({{ product.duration }})</text></text>
+            <NeuroCoinIcon :size="14" class="mr-2" />
+            <text class="snapshot-price">{{ product.price }} <text class="duration-badge ml-2" v-if="product.duration">({{ product.duration }})</text></text>
           </view>
         </view>
       </view>
@@ -27,15 +27,15 @@
         <view class="flex justify-between items-center w-full">
           <text class="val-label">账户持有</text>
           <view class="flex items-center">
-            <NeuroCoinIcon :size="14" />
-            <text class="val-value ml-1">{{ currentBalance }}</text>
+            <NeuroCoinIcon :size="14" class="mr-2" />
+            <text class="val-value">{{ currentBalance }}</text>
           </view>
         </view>
         <view class="flex justify-between items-center w-full mt-2 pt-2 border-top">
           <text class="val-label">结余预测</text>
           <view class="flex items-center">
-            <NeuroCoinIcon :size="14" />
-            <text class="val-value ml-1" :class="isAffordable ? 'text-cyan' : 'text-red'">
+            <NeuroCoinIcon :size="14" class="mr-2" />
+            <text class="val-value" :class="isAffordable ? 'text-cyan' : 'text-red'">
               {{ expectedBalance }}
             </text>
           </view>
@@ -165,6 +165,7 @@ const handleConfirm = () => {
 }
 .snapshot-title { font-size: 16px; color: #f4f4f5; font-weight: bold; }
 .snapshot-price { font-size: 14px; color: #a1a1aa; font-family: monospace; }
+.duration-badge { font-size: 10px; opacity: 0.6; }
 
 .validation-box {
   background: #000;
@@ -204,8 +205,10 @@ const handleConfirm = () => {
 .mt-2 { margin-top: 8px; }
 .mt-4 { margin-top: 16px; }
 .mt-6 { margin-top: 24px; }
+.ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
 .ml-3 { margin-left: 12px; }
+.mr-1 { margin-right: 6px; }
 .mr-2 { margin-right: 8px; }
 .pt-2 { padding-top: 8px; }
 </style>

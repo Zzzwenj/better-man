@@ -1,14 +1,21 @@
 <template>
   <view class="login-container flex-col" :style="themeStore.themeCssVars">
-    <CyberNavBar :showBack="false" :title="modeTitle" :blur="false" />
-    <view class="header px-6">
-      <text class="subtitle block mt-2">Dopamine Reset 档案库接入</text>
+    <!-- 1. 顶部状态栏 - 对齐主控页风格 -->
+    <view class="login-header flex justify-between items-center">
+      <view class="title-wrap">
+        <text class="title tracking-wider">觉醒空间</text>
+        <text class="subtitle block mt-1">终端接入协议 v1.0 - 身份核验中</text>
+      </view>
+      <view class="status-chip flex items-center justify-center">
+        <text class="chip-dot"></text>
+        <text class="chip-text ml-1">待接入</text>
+      </view>
     </view>
 
     <view class="auth-box flex-1 px-6 mt-10">
       <!-- 账号 (手机号/邮箱) -->
       <view class="input-group mb-6">
-        <text class="label">神经元溯源 ID (手机号或邮箱)</text>
+        <text class="label">神经元溯源 ID</text>
         <view class="input-wrapper flex items-center mt-2" :class="{ 'focused': isAccountFocused }">
           <input 
             class="input-field flex-1" 
@@ -21,33 +28,33 @@
         </view>
       </view>
 
-      <!-- 图形验证码 (登录和注册时使用) -->
+      <!-- 图形验证码 -->
       <view class="input-group mb-6" v-if="mode === 'login' || mode === 'register'">
-        <text class="label">图形指令 (防重放验证)</text>
+        <text class="label">图形校验序列</text>
         <view class="input-wrapper flex items-center justify-between mt-2">
-          <input class="input-field flex-1" type="text" v-model="form.captchaInput" placeholder="输入图形字符" maxlength="4" />
+          <input class="input-field flex-1" type="text" v-model="form.captchaInput" placeholder="输入校验字符" maxlength="4" />
           <view class="captcha-box" @click="generateCaptcha">
-            <text class="captcha-text" :style="{ transform: 'rotate(' + (Math.random() * 20 - 10) + 'deg)' }">{{ captchaText }}</text>
+            <text class="captcha-text">{{ captchaText }}</text>
           </view>
         </view>
       </view>
 
-      <!-- 动态验证码 (注册和忘记密码时使用) -->
+      <!-- 动态验证码 -->
       <view class="input-group mb-6" v-if="mode === 'register' || mode === 'forgot'">
-        <text class="label">动态安全指令 (验证码)</text>
+        <text class="label">动态安全指令</text>
         <view class="input-wrapper flex items-center justify-between mt-2">
-          <input class="input-field flex-1" type="text" v-model="form.verifyCode" placeholder="输入验证码" maxlength="6" />
+          <input class="input-field flex-1" type="text" v-model="form.verifyCode" placeholder="输入指令" maxlength="6" />
           <view class="btn-code" :class="{ disabled: countdown > 0 }" @click="sendVerifyCode">
-            <text class="btn-code-text">{{ countdown > 0 ? `${countdown}s 后重试` : '获取指令' }}</text>
+            <text class="btn-code-text">{{ countdown > 0 ? `${countdown}s 后重试` : '拉取指令' }}</text>
           </view>
         </view>
       </view>
 
       <!-- 密码 -->
       <view class="input-group mb-8">
-        <text class="label">密钥 (密码)</text>
+        <text class="label">访问密钥</text>
         <view class="input-wrapper flex items-center mt-2">
-          <input class="input-field flex-1" type="text" password v-model="form.password" placeholder="输入密码" />
+          <input class="input-field flex-1" type="text" password v-model="form.password" placeholder="输入密钥" />
         </view>
       </view>
 
@@ -56,16 +63,16 @@
       </view>
 
       <!-- 模式切换 -->
-      <view class="switch-mode mt-6 flex justify-between px-2">
-        <text v-if="mode !== 'login'" class="text-gray-400 text-sm" @click="switchMode('login')">返回接入</text>
-        <text v-if="mode === 'login'" class="text-gray-400 text-sm" @click="switchMode('register')">激活新节点 (注册)</text>
-        <text v-if="mode === 'login'" class="text-gray-400 text-sm" @click="switchMode('forgot')">密钥重置 (忘记密码)</text>
+      <view class="switch-mode mt-8 flex justify-between px-2">
+        <text v-if="mode !== 'login'" class="nav-text" @click="switchMode('login')">返回接入终端</text>
+        <text v-if="mode === 'login'" class="nav-text" @click="switchMode('register')">激活新节点</text>
+        <text v-if="mode === 'login'" class="nav-text" @click="switchMode('forgot')">密钥丢失</text>
       </view>
     </view>
 
-    <!-- 隐藏的开发者免密入口 -->
-    <view class="dev-entry pb-bottom px-6 flex justify-center mt-10" @click="devLogin">
-        <text class="dev-text opacity-10">点击此处 激活最高权限 (Dev Only)</text>
+    <!-- 底部免密入口 -->
+    <view class="dev-entry pb-bottom flex justify-center mt-10" @click="devLogin">
+        <text class="dev-text">系统深度调试模式 [DEV]</text>
     </view>
   </view>
 </template>
@@ -91,13 +98,13 @@ const countdown = ref(0)
 let timer = null
 
 const modeTitle = computed(() => {
-  if (mode.value === 'login') return '身份覆写 (OVERRIDE)'
-  if (mode.value === 'register') return '节点注册 (REGISTER)'
-  return '协议重置 (RESET)'
+  if (mode.value === 'login') return '身份核验'
+  if (mode.value === 'register') return '节点激活'
+  return '密钥重置'
 })
 
 const btnText = computed(() => {
-  if (mode.value === 'login') return '接入矩阵 (LOGIN)'
+  if (mode.value === 'login') return '建立连接'
   if (mode.value === 'register') return '提交注册'
   return '确认重置'
 })
@@ -395,9 +402,10 @@ const storeFakeTokenAndRedirect = async () => {
   background-color: #09090b;
   color: #fff;
 }
-.pt-10 { padding-top: 40px; }
-.mt-10 { margin-top: 40px; }
+
 .px-6 { padding: 0 24px; }
+.mt-10 { margin-top: 20px; }
+.pt-12 { padding-top: 48px; }
 .mb-6 { margin-bottom: 24px; }
 .mb-8 { margin-bottom: 32px; }
 .flex { display: flex; }
@@ -406,17 +414,53 @@ const storeFakeTokenAndRedirect = async () => {
 .items-center { align-items: center; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
-.ml-3 { margin-left: 12px; }
-.mt-2 { margin-top: 8px; }
-.mt-6 { margin-top: 24px; }
 .block { display: block; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.mt-8 { margin-top: 32px; }
 .px-2 { padding: 0 8px; }
-.opacity-10 { opacity: 0.1; transition: opacity 0.3s; }
-.opacity-10:active { opacity: 0.8; }
 .pb-bottom { padding-bottom: max(30px, env(safe-area-inset-bottom)); }
 
-.title { font-size: 28px; font-weight: 900; color: #fafafa; letter-spacing: 2px; text-shadow: 0 0 20px var(--theme-shadow-primary);}
+/* 头部样式：对齐主控页 (Dashboard) */
+.login-header {
+  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
+  background: rgba(9, 9, 11, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  width: 100%;
+}
+
+.title { 
+  font-size: 24px; 
+  font-weight: 900; 
+  color: var(--theme-primary); 
+  letter-spacing: 2px; 
+  text-shadow: 0 0 15px var(--theme-shadow-primary);
+}
 .subtitle { font-size: 14px; color: #a1a1aa; letter-spacing: 1px;}
+
+.status-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.chip-dot {
+  width: 6px;
+  height: 6px;
+  background: #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00e5ff;
+}
+
+.chip-text { font-size: 10px; color: #a1a1aa; font-weight: bold; padding-left: 4px;}
+
+/* 登录表单样式 (回归极简圆润) */
 .label { font-size: 13px; color: #a1a1aa; font-family: monospace;}
 
 .input-wrapper {
@@ -427,12 +471,12 @@ const storeFakeTokenAndRedirect = async () => {
   padding: 0 16px;
   transition: border-color 0.3s;
 }
+
 .input-wrapper.focused {
-  border-color: #10b981;
+  border-color: var(--theme-primary, #00e5ff);
 }
+
 .input-field { font-size: 16px; color: #fff; height: 100%;}
-.text-gray-400 { color: #9ca3af; }
-.text-sm { font-size: 14px; }
 
 .btn-code {
   background: var(--theme-bg-highlight); border: 1px solid var(--theme-shadow-primary);
@@ -457,7 +501,6 @@ const storeFakeTokenAndRedirect = async () => {
   font-weight: 900;
   letter-spacing: 3px;
   font-family: monospace;
-  display: inline-block;
 }
 
 .btn-login {
@@ -466,9 +509,13 @@ const storeFakeTokenAndRedirect = async () => {
   border-radius: 28px;
   box-shadow: 0 8px 24px var(--theme-shadow-primary);
 }
+
 .btn-text { color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px;}
 
 .btn-hover { transform: scale(0.96); opacity: 0.9;}
 
-.dev-text { font-size: 12px; color: #fff; text-shadow: 0 0 5px #fff;}
+.nav-text { font-size: 14px; color: #9ca3af; }
+.nav-text:active { color: #fff; }
+
+.dev-text { font-size: 12px; color: #fff; opacity: 0.1; }
 </style>

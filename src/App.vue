@@ -114,6 +114,29 @@ view {
   box-sizing: border-box;
 }
 
+/* 彻底隐藏所有原生滚动条 (2026 沉浸式 App 标准) */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+/* 兼容 Firefox */
+* {
+  scrollbar-width: none !important;
+}
+
+/* 针对部分容器隐藏滚动条 */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .app-theme-wrapper {
   min-height: 100vh;
   width: 100vw;

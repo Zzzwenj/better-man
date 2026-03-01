@@ -15,10 +15,12 @@
       <view class="name-row flex items-center">
         <!-- 动态称号 / 黑金皇冠 -->
         <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
-        <text class="profile-title mr-1 flex-shrink-0" v-if="userStore.equipped.title">
-          {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
-        </text>
-        <text :class="['username', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
+        <view class="profile-title-wrapper flex-shrink-1" v-if="userStore.equipped.title">
+          <text class="profile-title mr-1">
+            {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
+          </text>
+        </view>
+        <text :class="['username', 'flex-1', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
         <text class="edit-icon ml-2 flex-shrink-0">✎</text>
       </view>
       <text v-if="signature" class="signature-text mt-1">{{ signature }}</text>
@@ -194,7 +196,7 @@ const saveProfile = () => {
 
 /* 头部卡片本身 */
 .header {
-  padding: calc(var(--status-bar-height) + 30px) 20px 16px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 16px 20px;
   background: rgba(9, 9, 11, 0.65);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -236,8 +238,14 @@ const saveProfile = () => {
 @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.5; } }
 
 /* 动态称号 */
+.profile-title-wrapper {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .profile-title {
-  font-size: 14px;
+  font-size: 13px;
   color: #a78bfa;
   font-weight: 900;
   font-family: monospace;

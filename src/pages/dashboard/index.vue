@@ -1,61 +1,49 @@
 <template>
-  <view class="container flex-col" :style="themeStore.themeCssVars">
-    <!-- 顶部状态栏 -->
-    <view class="header flex justify-between items-center">
-      <view class="title-wrap">
-        <text class="title tracking-wider">觉醒空间</text>
-        <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
+  <view class="dashboard-wrapper" :style="themeStore.themeCssVars">
+    <view class="container flex-col">
+      <!-- 顶部状态栏 -->
+      <view class="header flex justify-between items-center">
+        <view class="title-wrap">
+          <text class="title tracking-wider">核心中枢</text>
+          <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
+        </view>
+        <view class="user-chip flex items-center justify-center">
+          <text class="chip-dot"></text>
+          <text class="chip-text ml-1">#8972</text>
+        </view>
       </view>
-      <view class="user-chip flex items-center justify-center">
-        <text class="chip-dot"></text>
-        <text class="chip-text ml-1">#8972</text>
+      
+      <!-- 核心专注区域 -->
+      <view class="scroll-area flex-1 flex-col">
+        <view class="core-area flex-col justify-center items-center mt-4 fade-in-up" style="animation-delay: 0.1s;">
+          <EnergyCore :hoursClean="hoursClean" :currentPhase="currentPhase" />
+          <view class="fade-in-up" style="animation-delay: 0.2s; width: 100%;">
+            <DataCards :hoursSaved="hoursSaved" :dopamineIndex="dopamineIndex" />
+          </view>
+          <view class="quote-wrapper mt-4 px-4 fade-in-up" style="animation-delay: 0.3s; width: 100%;">
+            <MotivationalQuote />
+          </view>
+        </view>
+        
+        <!-- 底部紧急阻断按钮 -->
+        <view class="action-area px-4 pb-8 fade-in-up" style="animation-delay: 0.4s;">
+          <view class="panic-btn flex justify-center items-center" hover-class="panic-hover" @click="triggerPanic">
+            <text class="panic-icon mr-2">⚠️</text>
+            <text class="panic-text">紧急干预系统</text>
+            <view class="btn-ripple"></view>
+          </view>
+          <text class="panic-hint block mt-3 text-center">渴求来袭？点击进入 60秒 强制神经阻断</text>
+        </view>
       </view>
-    </view>
-    
-    <!-- 核心专注区域（原能量环代码被抽离在此） -->
-    <view class="core-area flex-1 flex-col justify-center items-center mt-4 fade-in-up" style="animation-delay: 0.1s;">
-      <EnergyCore :hoursClean="hoursClean" :currentPhase="currentPhase" />
 
-      <!-- 数据面板被抽离 -->
-      <view class="fade-in-up" style="animation-delay: 0.2s; width: 100%;">
-        <DataCards :hoursSaved="hoursSaved" :dopamineIndex="dopamineIndex" />
-      </view>
-
-      <view class="quote-wrapper mt-4 px-4 fade-in-up" style="animation-delay: 0.3s; width: 100%;">
-        <MotivationalQuote />
-      </view>
-    </view>
-    
-    <!-- 底部紧急阻断按钮 -->
-    <view class="action-area px-4 pb-8 fade-in-up" style="animation-delay: 0.4s;">
-      <view class="panic-btn flex justify-center items-center" hover-class="panic-hover" @click="triggerPanic">
-        <text class="panic-icon mr-2">⚠️</text>
-        <text class="panic-text">紧急干预系统</text>
-        <view class="btn-ripple"></view>
-      </view>
-      <text class="panic-hint block mt-3 text-center">渴求来袭？点击进入 60秒 强制神经阻断</text>
-    </view>
-
-    <!-- 阻断模式全屏覆盖层 -->
-    <PanicOverlay 
-      :show="isPanicMode" 
-      :currentIntervention="currentIntervention"
-      :timeLeft="timeLeft"
-      :completedActions="completedActions"
-      @doAction="doAction"
-    />
-
-    <!-- 平台级原生原生防卡顿悬浮球 (采用原生 touch 重构) -->
-    <view 
-      class="ai-fab flex items-center justify-center pop-in" 
-      :style="{ left: fabX + 'px', top: fabY + 'px' }"
-      @touchstart="onFabTouchStart"
-      @touchmove.stop.prevent="onFabTouchMove"
-      @touchend="onFabTouchEnd"
-      @click="onFabClick"
-    >
-      <view class="ai-fab-glow"></view>
-      <text class="ai-fab-icon">⎔</text>
+      <!-- 阻断模式全屏覆盖层 -->
+      <PanicOverlay 
+        :show="isPanicMode" 
+        :currentIntervention="currentIntervention"
+        :timeLeft="timeLeft"
+        :completedActions="completedActions"
+        @doAction="doAction"
+      />
     </view>
 
     <CustomTabBar :current="0" />
@@ -72,54 +60,6 @@ import PanicOverlay from '../../components/dashboard/PanicOverlay.vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()
-
-// FAB 拖拽逻辑原生平滑处理
-const sysInfo = uni.getSystemInfoSync()
-// 初始位置放置在右下角偏上的位置，避开顶部标题 (通常标题在 y < 100 区域)
-const fabX = ref(sysInfo.windowWidth - 76)
-const fabY = ref(sysInfo.windowHeight - 220)
-
-let isDragging = false
-let startX = 0
-let startY = 0
-let lastX = 0
-let lastY = 0
-
-const onFabTouchStart = (e) => {
-  isDragging = false
-  startX = e.touches[0].clientX
-  startY = e.touches[0].clientY
-  lastX = fabX.value
-  lastY = fabY.value
-}
-
-const onFabTouchMove = (e) => {
-  isDragging = true
-  const dx = e.touches[0].clientX - startX
-  const dy = e.touches[0].clientY - startY
-  
-  let newX = lastX + dx
-  let newY = lastY + dy
-  
-  // 边缘限制 (56 是悬浮球自身的宽高)
-  if (newX < 0) newX = 0
-  if (newX > sysInfo.windowWidth - 56) newX = sysInfo.windowWidth - 56
-  if (newY < 0) newY = 0
-  if (newY > sysInfo.windowHeight - 56) newY = sysInfo.windowHeight - 56
-  
-  fabX.value = newX
-  fabY.value = newY
-}
-
-const onFabTouchEnd = (e) => {
-  // 可在未来增加贴边回弹逻辑
-}
-
-const onFabClick = () => {
-  if (isDragging) return // 防止拖拽结束时误触点击
-  uni.vibrateShort()
-  uni.navigateTo({ url: '/pages/companion/index' })
-}
 
 const hoursClean = ref(0)
 const hoursSaved = ref(0)
@@ -230,6 +170,13 @@ page {
   height: 100%;
 }
 
+.dashboard-wrapper {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
 .container {
   height: 100%;
   width: 100%;
@@ -280,7 +227,7 @@ page {
 
 /* 顶部状态栏 */
 .header {
-  padding: calc(var(--status-bar-height) + 20px) 20px 12px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
   background: rgba(9, 9, 11, 0.65);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
@@ -348,34 +295,6 @@ page {
   letter-spacing: 1px;
 }
 
-/* 悬浮版 AI 护盾入口 */
-.ai-fab {
-  position: fixed;
-  z-index: 999;
-  width: 56px;
-  height: 56px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
-  border: 1px solid rgba(139, 92, 246, 0.5);
-  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
-}
-.ai-fab:active {
-  transform: scale(0.9);
-}
-.ai-fab-glow {
-  position: absolute;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.6);
-  animation: fab-pulse 2s infinite;
-}
-.ai-fab-icon {
-  font-size: 28px;
-  color: #fff;
-  font-weight: bold;
-  z-index: 2;
-  text-shadow: 0 0 10px rgba(255,255,255,0.8);
-}
 @keyframes fab-pulse {
   0% { transform: scale(1); opacity: 0.8; }
   50% { transform: scale(1.3); opacity: 0; }

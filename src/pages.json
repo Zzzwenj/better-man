@@ -115,7 +115,8 @@
         "navigationBarTextStyle": "white",
         "navigationBarTitleText": "REWIRE AI",
         "navigationBarBackgroundColor": "#09090b",
-        "backgroundColor": "#09090b"
+        "backgroundColor": "#09090b",
+        "scrollIndicator": "none"
     },
     "tabBar": {
         "color": "#71717a",

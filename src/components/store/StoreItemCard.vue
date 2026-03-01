@@ -1,22 +1,25 @@
 <template>
   <view class="store-item-card" :class="cardClass" hover-class="store-item-hover" @click="handlePurchase">
-    <view class="item-header flex justify-between items-center">
-      <view class="item-icon-box flex justify-center items-center">
-        <text class="item-icon">{{ icon }}</text>
+    <view class="item-header flex items-center justify-between">
+      <view class="header-left flex items-center flex-1 mr-2">
+        <view class="item-icon-box flex justify-center items-center">
+          <text class="item-icon">{{ icon }}</text>
+        </view>
+        <text class="item-title ml-3 truncate">{{ title }}</text>
       </view>
       <view class="item-price flex items-center" :class="isOwned && typeTag !== '消耗品(单次)' && typeTag !== '概率深坑' ? 'owned' : (canAfford ? 'affordable' : 'expensive')">
         <template v-if="isOwned && typeTag !== '消耗品(单次)' && typeTag !== '概率深坑'">
            残存 {{ daysLeft }} 天
         </template>
         <template v-else>
-           <NeuroCoinIcon :size="16" class="mr-1" /> {{ price }}
+           <NeuroCoinIcon :size="16" class="mr-2" /> 
+           <text>{{ price }}</text>
         </template>
       </view>
     </view>
     
-    <view class="item-content mt-3">
-      <text class="item-title">{{ title }}</text>
-      <text class="item-desc mt-1">{{ description }}</text>
+    <view class="item-content mt-2">
+      <text class="item-desc block">{{ description }}</text>
     </view>
     
     <view class="item-footer flex justify-between items-center mt-3">
@@ -184,10 +187,19 @@ const handlePurchase = () => {
 }
 
 .item-title {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
-  color: #f4f4f5;
+  color: #fff;
   letter-spacing: 0.5px;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-left: 10px;
+}
+.item-info {
+  display: none;
 }
 .item-desc {
   font-size: 11px;
@@ -242,4 +254,8 @@ const handlePurchase = () => {
 .mt-1 { margin-top: 4px; }
 .mt-3 { margin-top: 12px; }
 .ml-1 { margin-left: 4px; }
+.mr-1 { margin-right: 6px; }
+.mr-2 { margin-right: 8px; }
+.mr-3 { margin-right: 12px; }
+
 </style>

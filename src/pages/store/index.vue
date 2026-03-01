@@ -1,17 +1,12 @@
 <template>
   <view class="store-container flex-col">
-    <!-- 定制的高斯模糊导航栏 -->
-    <view class="nav-bar flex items-center" :style="{ paddingTop: statusBarHeight + 'px' }">
-      <view class="back-btn flex justify-center items-center" @click="goBack" hover-class="btn-hover">
-        <text class="back-icon">←</text>
-      </view>
-      <text class="nav-title ml-4">暗网黑市</text>
-    </view>
+    <!-- 定制的高斯模糊导航栏 (统一使用 CyberNavBar) -->
+    <CyberNavBar title="暗网黑市" :blur="true" />
 
-    <scroll-view scroll-y class="store-scroll flex-1">
+    <scroll-view scroll-y class="store-scroll flex-1" :show-scrollbar="false">
       <!-- 资产展现区 -->
       <view class="asset-dashboard mt-6 mx-4 flex-col items-center">
-        <text class="dashboard-title">未解密资产 (Neurocoins)</text>
+        <text class="dashboard-title">未解密资产</text>
         <view class="coin-display flex items-end mt-2">
           <NeuroCoinIcon :size="40" class="mr-3" />
           <text class="coin-amount">{{ formattedCoins }}</text>
@@ -76,10 +71,10 @@ import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import StoreItemCard from '@/components/store/StoreItemCard.vue'
 import CyberTransactionModal from '@/components/store/CyberTransactionModal.vue'
+import CyberNavBar from '@/components/common/CyberNavBar.vue'
 import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const userStore = useUserStore()
-const statusBarHeight = ref(uni.getSystemInfoSync().statusBarHeight || 44)
 
 const formattedCoins = computed(() => userStore.formattedCoins)
 
@@ -95,18 +90,19 @@ const goBack = () => {
 // 模拟数据库商品
 const allProducts = ref([
   // 赛博装扮
-  { id: 'f_01', category: 0, title: '深空等离子边框', description: '装配后你的头像将被高温等离子射线环绕。', price: 500, icon: '🌌', typeTag: '视觉系', duration: '永久有效' },
-  { id: 'f_02', category: 0, title: '故障干扰线边框', description: '模拟信号被强制截断的红色雪花屏幕效果。', price: 500, icon: '📺', typeTag: '视觉系', duration: '永久有效' },
-  { id: 't_01', category: 0, title: '称号：深渊行者', description: '在所有的战区聊天显示，象征极限承压能力。', price: 300, icon: '🦇', typeTag: '社交展示', duration: '永久有效' },
-  { id: 't_02', category: 0, title: '称号：绝命赌徒', description: '只有在生死契约中沉浮过的人才敢佩戴。', price: 300, icon: '🃏', typeTag: '社交展示', duration: '永久有效' },
-  { id: 't_03', category: 0, title: '称号：赛博精神病', description: '精神承载力过载的象征，极度危险。', price: 800, icon: '🧠', typeTag: '社交展示', duration: '永久有效' },
+  // 赛博装扮 - 30天周期
+  { id: 'f_01', category: 0, title: '深空等离子边框', description: '装配后你的头像将被高温等离子射线环绕。', price: 500, icon: '🌌', typeTag: '视觉系', duration: '30天有效' },
+  { id: 'f_02', category: 0, title: '故障干扰线边框', description: '模拟信号被强制截断的红色雪花屏幕效果。', price: 500, icon: '📺', typeTag: '视觉系', duration: '30天有效' },
+  { id: 't_01', category: 0, title: '称号：深渊行者', description: '在所有的战区聊天显示，象征极限承压能力。', price: 300, icon: '🦇', typeTag: '社交展示', duration: '15天有效' },
+  { id: 't_02', category: 0, title: '称号：绝命赌徒', description: '只有在生死契约中沉浮过的人才敢佩戴。', price: 300, icon: '🃏', typeTag: '社交展示', duration: '15天有效' },
+  { id: 't_03', category: 0, title: '称号：赛博精神病', description: '精神承载力过载的象征，极度危险。', price: 800, icon: '🧠', typeTag: '社交展示', duration: '30天有效' },
   
   // 战区武装
   { id: 'w_01', category: 1, title: '全频 EMP 脉冲电报', description: '在公共频道发出的消息附带血红色EMP边框，并高亮悬置 15 分钟，全服瞩目。', price: 150, icon: '📢', typeTag: '消耗品(单次)', duration: '15分钟 / 发送1次' },
   { id: 'w_02', category: 1, title: '赛博坦之怒', description: '发送一个震动全群的强制特效（开发中）。', price: 500, icon: '🤖', typeTag: '消耗品(单次)', duration: '仅限1场战区' },
   
   // 盲盒与彩蛋
-  { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '永久有效' },
+  { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '7天有效' },
   { id: 'b_01', category: 2, title: '神经元盲盒', description: '搏一搏单车变摩托。可能开出极品装扮碎片、谢谢参与，或者...系统病毒扣钱。', price: 50, icon: '🎲', typeTag: '概率深坑', duration: '即时生效' }
 ])
 
@@ -136,13 +132,17 @@ const handlePurchaseClick = (productPayload) => {
   uni.vibrateShort()
 }
 
-const executeTransaction = (product) => {
-  // 拦截判断：如果是消耗品或盲盒无需检查拥有状态
-  if (product.typeTag === '消耗品(单次)' || product.typeTag === '概率深坑') {
-    // 允许继续
-  } else {
-    // 非消耗品如果在拥有期，允许续期，这交由 purchaseItem 内处理
-  }
+const transactionLoading = ref(false)
+
+const executeTransaction = async (product) => {
+  if (transactionLoading.value) return
+  transactionLoading.value = true
+  
+  // 神经脉冲鉴权反馈 (防抖 800ms)
+  uni.showLoading({ title: '神经网络鉴权中...' })
+  
+  await new Promise(resolve => setTimeout(resolve, 800))
+  uni.hideLoading()
 
   // 执行购买
   const success = userStore.purchaseItem(product)
@@ -153,27 +153,27 @@ const executeTransaction = (product) => {
     if (product.id === 'b_01') {
       const roll = Math.random()
       if (roll < 0.05) {
-         // 5% 概率获得大奖 500 币
          userStore.earnCoins(500, '盲盒大奖')
          uni.showToast({ title: '🔥 暴击！开出 500 神经币', icon: 'none', duration: 3000 })
       } else if (roll < 0.25) {
-         // 20% 概率回本 100 币
          userStore.earnCoins(100, '盲盒回本')
          uni.showToast({ title: '👏 运气不错，开出 100 神经币', icon: 'none' })
       } else if (roll > 0.85) {
-         // 15% 概率惨遭深网病毒攻击，倒扣 100 币
          userStore.spendCoins(100, '盲盒病毒扣款')
          uni.showToast({ title: '💀 遭遇赛博病毒，你的账户流失了 100 币', icon: 'none', duration: 3000 })
          uni.vibrateLong()
       } else {
-         // 60% 概率纯纯打水漂
          uni.showToast({ title: '📦 里面空空如也...谢谢参与', icon: 'none' })
       }
     }
   } else {
-    // CyberTransactionModal 内部已拦截可负担性，这里是防呆
     uni.showToast({ title: '余额异常', icon: 'error' })
   }
+  
+  // 交易完成后冷却 200ms 完全解除锁定
+  setTimeout(() => {
+    transactionLoading.value = false
+  }, 200)
 }
 </script>
 
@@ -186,21 +186,8 @@ const executeTransaction = (product) => {
 }
 
 .nav-bar {
-  padding-bottom: 12px;
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  position: relative;
-  z-index: 50;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: none;
 }
-.back-btn {
-  width: 44px; height: 44px;
-  background: transparent;
-}
-.btn-hover { opacity: 0.7; }
-.back-icon { color: #f4f4f5; font-size: 24px; font-weight: normal; }
-.nav-title { font-size: 18px; font-weight: bold; color: #fff; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
 
 .store-scroll { height: 100%; box-sizing: border-box; }
 

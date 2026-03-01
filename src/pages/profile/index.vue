@@ -12,6 +12,26 @@
       @modalStateChange="onModalStateChange"
     />
     
+    <!-- 1.5 神经元 AI 导师入口 (NEW) -->
+    <view class="ai-mentor-card mx-4" @click="goToAI" hover-class="card-hover">
+      <view class="ai-glow"></view>
+      <view class="flex items-center justify-between relative z-10">
+        <view class="flex items-center">
+          <view class="ai-avatar-wrap">
+            <text class="ai-icon">⎔</text>
+            <view class="pulse-ring"></view>
+          </view>
+          <view class="ml-3">
+            <text class="ai-name block">神经元导师 (Nova)</text>
+            <text class="ai-status block">状态: 实时监控中...</text>
+          </view>
+        </view>
+        <view class="ai-btn flex items-center justify-center">
+          <text class="ai-btn-text">接入终端</text>
+        </view>
+      </view>
+    </view>
+    
     <!-- 2. 平台服务契约模幅 (对赌质押区) -->
     <view :class="['premium-card mx-4', userStore.isProActive ? 'active-contract' : '']" @click="upgradePremium" hover-class="card-hover">
         <view class="flex justify-between items-center">
@@ -272,6 +292,11 @@ const handleSettingClick = (originItem) => {
 const onThemeSelect = (themeId) => {
   themeStore.setTheme(themeId)
 }
+
+const goToAI = () => {
+  uni.vibrateShort()
+  uni.navigateTo({ url: '/pages/companion/index' })
+}
 </script>
 
 <style lang="scss" scoped>
@@ -299,10 +324,103 @@ page {
 .justify-between { justify-content: space-between; }
 .items-center { align-items: center; }
 .block { display: block; }
+.ml-3 { margin-left: 12px; }
+.z-10 { z-index: 10; }
+.relative { position: relative; }
+
+/* AI 导师卡片样式 */
+.ai-mentor-card {
+  margin-top: 24px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(9, 9, 11, 0.8) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.ai-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+  animation: rotateGlow 10s linear infinite;
+}
+
+@keyframes rotateGlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.ai-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  background: rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.ai-icon {
+  font-size: 24px;
+  color: #a78bfa;
+  text-shadow: 0 0 10px #8b5cf6;
+  padding-bottom: 3px;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #8b5cf6;
+  border-radius: 12px;
+  animation: pulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 0; }
+  100% { transform: scale(0.95); opacity: 0; }
+}
+
+.ai-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #f4f4f5;
+  letter-spacing: 1px;
+}
+
+.ai-status {
+  font-size: 11px;
+  color: #a78bfa;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
+.ai-btn {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  padding: 6px 12px;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+}
+
+.ai-btn-text {
+  font-size: 12px;
+  color: #d8b4fe;
+  font-weight: bold;
+}
 
 /* 订阅特权模幅 */
 .premium-card {
     margin-top: 24px;
+    margin-bottom: 0px;
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
