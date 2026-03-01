@@ -128,8 +128,16 @@ const onClick = () => {
 }
 
 /* =========================================
-   状态 1: 沉睡态 (Locked)  - 保持上述默认样式
+   状态 1: 沉睡态 (Locked)
    ========================================= */
+.status-locked {
+    filter: grayscale(100%) opacity(0.4) blur(0.5px);
+    transform: scale(0.9);
+}
+.status-locked .badge-icon {
+    box-shadow: inset 0 4px 15px rgba(0,0,0,0.9);
+    border-color: #18181b;
+}
 
 
 /* =========================================

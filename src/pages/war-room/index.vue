@@ -29,9 +29,10 @@
       </view>
 
       <view 
-        v-for="msg in chatStore.messages" 
+        v-for="(msg, index) in chatStore.messages" 
         :key="msg._id || Math.random()" 
-        class="msg-row flex mb-4"
+        class="msg-row flex mb-4 msg-pop"
+        :style="`animation-delay: ${index * 0.05 < 1 ? index * 0.05 : 0}s;`"
         :class="{'justify-end': msg.user_id === currentUid}"
       >
         <!-- 其他人发送的消息，头像在气泡左侧 -->
@@ -294,7 +295,7 @@ page {
 }
 .dot-live { width: 6px; height: 6px; background-color: var(--theme-primary); border-radius: 50%; box-shadow: 0 0 5px var(--theme-primary); animation: blink 2s infinite; }
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.online-text { font-size: 10px; color: var(--theme-primary); font-family: monospace; }
+.online-text { font-size: 10px; color: var(--theme-primary); font-family: monospace; padding-left: 4px; }
 .leave-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -323,6 +324,17 @@ page {
   font-size: 14px;
   line-height: 1.5;
   word-break: break-all;
+  transition: all 0.3s ease;
+}
+
+.msg-pop {
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  animation: popMessage 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popMessage {
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .other-bubble {
   background-color: #18181b;

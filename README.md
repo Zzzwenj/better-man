@@ -92,3 +92,12 @@
   - 毫秒级探测本地 `token` 有效期及 `neuro_baseline` 问卷基线。若凭证双满，则执行无缝时空穿梭 (`switchTab`) 闪击到主控舱。
 - **基坑探测持久化 (Onboarding Payload)**:
   - 为了杜绝本地清缓存导致的失忆，问卷基线流程不仅进行终端封存，还在最后点击“生成协议”的一刹那触发 `syncBaseline` 云端同步。即使换设备登陆，也能完美恢复特工画像。
+
+## 阶段 12：UI 吸引力与 UX 交互深度优化 (UI/UX Motion Overhaul)
+- **主控空间重构 (Dashboard Refactor)**: 
+  - 核心能量环 (`EnergyCore`) 抽离，升级多维 CSS3 发光旋转能量环、数据悬浮层特效与呼吸晕影。
+  - 数据面板 (`DataCards`) 抽离，引入内发光与悬停微交互。
+  - 阻断覆盖层 (`PanicOverlay`) 抽离，增强红屏急促呼吸背景特效、赛博风警示外围圈、以及故障文字颤动（Glitch）带来的压迫质感。
+- **悬浮球物理引擎重建 (AI Fab Native Physics)**: 彻底丢弃特定终端下存在穿透 Bug 的 `<movable-area>` 组件嵌套，直接底层使用纯原生 `@touchstart` 与 `@touchmove` 计算进行拖拽接管，彻底修复拖拽死锁、无法移动等跨端兼容痛点。
+- **战区弹簧进场 (War-Room Spring Pop)**: 为战区聊天气泡植入 `msg-pop` 的递进式弹跳位移动画，消除单调僵硬的 DOM 渲染感。
+- **徽章沉睡蒙版 (Locked Badge Blur)**: 为 Journey 模块中未解锁的徽章强制启用 100% 灰度、` blur` 滤镜加体积缩小压制，以形成解禁时的极强视觉反差冲击。
