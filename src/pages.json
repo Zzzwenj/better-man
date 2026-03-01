@@ -8,6 +8,14 @@
             }
         },
         {
+            "path": "pages/store/index",
+            "style": {
+                "navigationBarTitleText": "暗网黑市",
+                "navigationStyle": "custom",
+                "disableScroll": true
+            }
+        },
+        {
             "path": "pages/calculator/index",
             "style": {
                 "navigationBarTitleText": "",

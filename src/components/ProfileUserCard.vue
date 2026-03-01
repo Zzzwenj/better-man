@@ -2,16 +2,22 @@
   <view>
   <view class="header flex items-center" @click="openEditModal" hover-class="header-hover">
     <!-- 头像区 -->
-    <view class="avatar flex justify-center items-center">
+    <view class="avatar flex justify-center items-center" :class="{
+        'frame-plasma': userStore.equipped.avatarFrame === 'f_01',
+        'frame-glitch': userStore.equipped.avatarFrame === 'f_02'
+    }">
       <image v-if="avatar" :src="avatar" class="avatar-img" mode="aspectFill"></image>
       <text v-else class="avatar-text">{{ avatarInitial }}</text>
     </view>
     
     <!-- 文本区 -->
-    <view class="user-info ml-4 flex-col justify-center">
+    <view class="user-info ml-4 flex-col justify-center flex-1">
       <view class="flex items-center">
-        <!-- 动态判断是否带有黑金皇冠标志 -->
+        <!-- 动态称号 / 黑金皇冠 -->
         <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
+        <text class="profile-title mr-1" v-if="userStore.equipped.title">
+          {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
+        </text>
         <text :class="['username', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
         <text class="edit-icon ml-2">✎</text>
       </view>
@@ -21,23 +27,12 @@
         <text :class="['status-text', 'ml-1', isProActive ? 'text-online' : '']">{{ userDesc }}</text>
       </view>
     </view>
-  </view>
-  
-  <!-- 神经币资产总览卡面 (新增闭环区块) -->
-  <view class="asset-board flex justify-between items-center mx-4 mt-4" hover-class="board-hover" @click="goStore">
-      <view class="flex items-center">
-          <view class="coin-icon-wrap flex justify-center items-center">
-              <text class="coin-icon">⎊</text>
-          </view>
-          <view class="flex-col ml-3">
-              <text class="asset-title">神经币余额</text>
-              <text class="asset-amount">{{ formattedCoins }}</text>
-          </view>
-      </view>
-      <view class="store-btn flex items-center">
-          <text class="store-text mr-1">暗网黑市</text>
-          <text class="arrow">→</text>
-      </view>
+
+    <!-- 神经币快捷入口 (嵌入头像栏右侧) -->
+    <view class="wallet-chip flex items-center" @click.stop="goStore" hover-class="wallet-hover">
+      <NeuroCoinIcon :size="18" />
+      <text class="wallet-val ml-1">{{ formattedCoins }}</text>
+    </view>
   </view>
 
   <!-- 弹窗：编辑资料 (赛博朋克风) -->
@@ -93,6 +88,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useUserStore } from '@/store/user'
+import NeuroCoinIcon from './NeuroCoinIcon.vue'
+
+const userStore = useUserStore()
 
 const props = defineProps({
   userName: { type: String, default: '探索者' },
@@ -106,7 +105,7 @@ const props = defineProps({
 const emit = defineEmits(['updateProfile', 'modalStateChange'])
 
 const goStore = () => {
-    uni.showToast({ title: '暗网黑市尚未解密', icon: 'none' })
+    uni.navigateTo({ url: '/pages/store/index' })
 }
 
 const showModal = ref(false)
@@ -168,11 +167,15 @@ const saveProfile = () => {
 
 <style lang="scss" scoped>
 .px-4 { padding: 0 20px; }
+.mx-4 { margin-left: 20px; margin-right: 20px; }
 .ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
+.ml-3 { margin-left: 12px; }
 .ml-4 { margin-left: 16px; }
+.mr-1 { margin-right: 4px; }
 .mr-2 { margin-right: 8px; }
 .mt-2 { margin-top: 8px; }
+.mt-4 { margin-top: 16px; }
 .mt-6 { margin-top: 24px; }
 .mb-4 { margin-bottom: 16px; }
 .mb-6 { margin-bottom: 24px; }
@@ -225,23 +228,61 @@ const saveProfile = () => {
 
 @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.5; } }
 
-/* 资产盘 */
-.asset-board {
-    background: linear-gradient(135deg, rgba(24, 24, 27, 0.8) 0%, rgba(39, 39, 42, 0.4) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 16px;
-    padding: 16px 20px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    transition: all 0.2s;
+/* 动态称号 */
+.profile-title {
+  font-size: 14px;
+  color: #a78bfa;
+  font-weight: 900;
+  font-family: monospace;
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  letter-spacing: 1px;
 }
-.board-hover { transform: translateY(2px); background: rgba(39, 39, 42, 0.8); }
-.coin-icon-wrap { width: 40px; height: 40px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
-.coin-icon { font-size: 24px; color: #a78bfa; font-weight: bold; text-shadow: 0 0 10px #8b5cf6;}
-.asset-title { font-size: 12px; color: #a1a1aa; letter-spacing: 1px; }
-.asset-amount { font-size: 22px; color: #fff; font-family: monospace; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
-.store-btn { background: rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); }
-.store-text { font-size: 12px; font-weight: bold; color: #e4e4e7; }
-.arrow { color: #a1a1aa; font-weight: bold; }
+
+/* 动态头像框 - 深空等离子 */
+.frame-plasma {
+  border: none !important;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 5px inset rgba(139, 92, 246, 0.5) !important;
+  position: relative;
+}
+.frame-plasma::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 22px;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(139, 92, 246, 0.8) 25%, transparent 50%, rgba(0, 229, 255, 0.8) 75%, transparent 100%);
+  z-index: -1;
+  animation: rotatePlasma 3s linear infinite;
+}
+@keyframes rotatePlasma { 100% { transform: rotate(360deg); } }
+
+/* 动态头像框 - 故障干扰线 */
+.frame-glitch {
+  border: 2px solid rgba(239, 68, 68, 0.8) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+  animation: glitchBorder 1s infinite alternate;
+}
+@keyframes glitchBorder {
+  0% { transform: translate(0) skew(0deg); }
+  20% { transform: translate(-2px, 1px) skew(2deg); }
+  40% { transform: translate(1px, -1px) skew(-2deg); }
+  60% { transform: translate(0) skew(0deg); }
+  80% { transform: translate(2px, 0) skew(1deg); }
+  100% { transform: translate(0) skew(0deg); }
+}
+
+/* 神经币快捷入口 (头像栏右侧内嵌) */
+.wallet-chip {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 20px;
+  padding: 4px 10px;
+  transition: all 0.2s;
+}
+.wallet-hover { background: rgba(139, 92, 246, 0.15); transform: scale(0.95); }
+.wallet-val { font-size: 12px; color: #e4e4e7; font-family: monospace; font-weight: 900; }
+.wallet-arrow { font-size: 14px; color: #71717a; font-weight: bold; }
 
 /* 修改资料弹窗 */
 .modal-overlay {

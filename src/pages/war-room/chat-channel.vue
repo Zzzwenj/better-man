@@ -58,12 +58,16 @@
           <!-- 贴紧气泡的名称与徽章 (仅他人显示) -->
           <view class="name-tag-row flex items-center" v-if="msg.user_id !== currentUid">
             <text class="vanguard-crown mr-1" v-if="msg.is_vanguard">👑</text>
+            <text class="mr-1 title-tag" v-if="msg.equipped_title">
+              {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
+            </text>
             <text class="user-name-tag">{{ msg.nickname || '匿名特工' + (msg.user_id ? msg.user_id.substring(0,4) : '') }}</text>
           </view>
 
           <view class="msg-bubble" :class="[
             msg.user_id === currentUid ? 'my-bubble' : 'other-bubble',
-            msg.is_broadcast ? 'world-broadcast-bubble' : ''
+            msg.is_broadcast ? 'world-broadcast-bubble' : '',
+            msg.is_emp ? 'emp-pulse-bubble' : ''
           ]" @longpress="handleReportMsg(msg)">
             <!-- 如果是广播，附带震动动画样式和土豪边框 -->
             <rich-text :nodes="renderContent(msg.content, msg.is_broadcast)"></rich-text>
@@ -71,7 +75,12 @@
         </view>
 
         <!-- 本人发送的消息，头像在气泡右侧 -->
-        <view class="avatar my-avatar flex items-center justify-center ml-2 mt-1" v-if="msg.user_id === currentUid">
+        <view class="avatar my-avatar flex items-center justify-center ml-2 mt-1" 
+              :class="{
+                 'frame-plasma': userStore.equipped.avatarFrame === 'f_01' || (msg.user_id === currentUid && userStore.equipped.avatarFrame === 'f_01'),
+                 'frame-glitch': userStore.equipped.avatarFrame === 'f_02' || (msg.user_id === currentUid && userStore.equipped.avatarFrame === 'f_02')
+              }" 
+              v-if="msg.user_id === currentUid">
           <image v-if="userAvatar" :src="userAvatar" class="avatar-img" mode="aspectFill"></image>
           <text v-else class="user-icon">{{ avatarInitial }}</text>
         </view>
@@ -371,12 +380,21 @@ const triggerBroadcast = () => {
 const executeSend = async (content, isBroadcast = false, payloadContent = null) => {
   const token = uni.getStorageSync('uni_id_token')
   
+  // 检查是否使用了 EMP 脉冲 (单挑或手动按钮都会设此状态)
+  const isEMP = userStore.equipped.empActive
+  if (isEMP) {
+      userStore.consumeEMP()
+  }
+
   // 乐观更新
   chatStore.pushMessage({
     _id: Date.now().toString(),
     user_id: currentUid.value,
     content: content,
-    is_broadcast: isBroadcast
+    is_broadcast: isBroadcast,
+    is_emp: isEMP,
+    equipped_title: userStore.equipped.title,
+    equipped_avatar: userStore.equipped.avatarFrame
   })
   
   try {
@@ -385,7 +403,14 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
       data: { 
         token, 
         action: 'sendMessage', 
-        payload: { room_id: chatStore.roomId, content: payloadContent || content, is_broadcast: isBroadcast } 
+        payload: { 
+            room_id: chatStore.roomId, 
+            content: payloadContent || content, 
+            is_broadcast: isBroadcast,
+            is_emp: isEMP,
+            equipped_title: userStore.equipped.title,
+            equipped_avatar: userStore.equipped.avatarFrame
+        } 
       }
     })
     
@@ -542,12 +567,23 @@ page {
   40%, 60% { transform: translate3d(4px, 0, 0); }
 }
 
+/* 称号 Tag 样式 */
+.title-tag {
+  font-size: 10px;
+  color: #a78bfa;
+  font-weight: bold;
+  font-family: monospace;
+  text-shadow: 0 0 5px rgba(139, 92, 246, 0.4);
+}
+
 /* 战区聊天头像样式 */
 .avatar {
   flex-shrink: 0;
   width: 36px;
   height: 36px;
   border-radius: 12px;
+  position: relative;
+  margin: 0 4px; /* 为 Glitch 左右抖动动画留出呼吸空间防止截断 */
 }
 .other-avatar {
   background: linear-gradient(135deg, rgba(8, 145, 178, 0.2), rgba(0, 229, 255, 0.1));
@@ -559,12 +595,62 @@ page {
   border: 1px solid rgba(0, 198, 255, 0.3);
   box-shadow: 0 0 10px rgba(0, 198, 255, 0.1);
 }
-.avatar-img { width: 100%; height: 100%; border-radius: 12px; }
+
+/* 动态头像框 - 深空等离子 (f_01) */
+.frame-plasma {
+  border: none !important;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.8), 0 0 5px inset rgba(139, 92, 246, 0.5) !important;
+}
+.frame-plasma::after {
+  content: '';
+  position: absolute;
+  top: -2px; left: -2px; right: -2px; bottom: -2px;
+  border-radius: 14px;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(139, 92, 246, 0.8) 25%, transparent 50%, rgba(0, 229, 255, 0.8) 75%, transparent 100%);
+  z-index: -1;
+  animation: rotatePlasma 3s linear infinite;
+}
+@keyframes rotatePlasma { 100% { transform: rotate(360deg); } }
+
+/* 动态头像框 - 故障干扰线 (f_02) */
+.frame-glitch {
+  border: 1px solid rgba(239, 68, 68, 0.8) !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4) !important;
+  animation: glitchBorder 1s infinite alternate;
+  transform-style: preserve-3d;
+  z-index: 5;
+}
+@keyframes glitchBorder {
+  0% { transform: translate(0) skew(0deg); }
+  20% { transform: translate(-2px, 1px) skew(2deg); }
+  40% { transform: translate(1px, -1px) skew(-2deg); }
+  60% { transform: translate(0) skew(0deg); }
+  80% { transform: translate(2px, 0) skew(1deg); }
+  100% { transform: translate(0) skew(0deg); }
+}
+
+/* EMP 脉冲电报气泡 */
+.emp-pulse-bubble {
+  border: 1px solid #ef4444 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5) !important;
+  position: relative;
+  overflow: hidden;
+}
+.emp-pulse-bubble::before {
+  content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.8), transparent);
+  animation: empScan 2s linear infinite;
+}
+@keyframes empScan { 100% { left: 200%; } }
+
+.avatar-img { width: 100%; height: 100%; border-radius: 12px; position:relative; z-index: 1;}
 .user-icon {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
   font-weight: bold;
   font-family: monospace;
+  position:relative; z-index: 1;
 }
 
 /* 现代悬浮底部输入区: 抛弃负边距偏移，拥抱标准 Flex 与 safe-area */
