@@ -38,6 +38,11 @@
 </template>
 
 <script setup>
+/**
+ * @component RoomCard
+ * @description 战区大厅模块房间列表卡片组件，独立渲染单个竞技场/防线基站的各项入场信息。
+ */
+
 import { computed } from 'vue'
 
 const props = defineProps({

@@ -28,6 +28,11 @@
 </template>
 
 <script setup>
+/**
+ * @component EnergyCore
+ * @description 觉醒空间能量环核心组件，基于戒断时间渲染不同阶段及动态光效环。
+ */
+
 import { defineProps } from 'vue'
 
 const props = defineProps({

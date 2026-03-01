@@ -100,6 +100,11 @@
 </template>
 
 <script setup>
+/**
+ * @component GlobalResonance
+ * @description 战区通讯基站大盘组件，用于展示当前频道内的全球在线探员及战区总体数据看板。
+ */
+
 import { ref, computed, onMounted } from 'vue'
 
 const isCollapsed = ref(true) 

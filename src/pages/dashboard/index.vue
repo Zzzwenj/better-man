@@ -64,11 +64,11 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import MotivationalQuote from '../../components/MotivationalQuote.vue'
-import CustomTabBar from '../../components/CustomTabBar.vue'
-import EnergyCore from '../../components/EnergyCore.vue'
-import DataCards from '../../components/DataCards.vue'
-import PanicOverlay from '../../components/PanicOverlay.vue'
+import MotivationalQuote from '../../components/dashboard/MotivationalQuote.vue'
+import CustomTabBar from '../../components/common/CustomTabBar.vue'
+import EnergyCore from '../../components/dashboard/EnergyCore.vue'
+import DataCards from '../../components/dashboard/DataCards.vue'
+import PanicOverlay from '../../components/dashboard/PanicOverlay.vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()

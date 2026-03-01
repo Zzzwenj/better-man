@@ -33,9 +33,14 @@
 </template>
 
 <script setup>
+/**
+ * @component StoreItemCard
+ * @description 暗网黑市(商店)商品独立卡片组件，包含商品首图、价签及兑换动作触发。
+ */
+
 import { computed } from 'vue'
 import { useUserStore } from '@/store/user'
-import NeuroCoinIcon from './NeuroCoinIcon.vue'
+import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const props = defineProps({
   id: { type: String, required: true },

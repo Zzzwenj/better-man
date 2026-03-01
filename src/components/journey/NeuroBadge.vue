@@ -38,6 +38,11 @@
 </template>
 
 <script setup>
+/**
+ * @component NeuroBadge
+ * @description 神经元徽章组件，展示用户在不同成就阶段解锁的徽章状态及解锁条件。
+ */
+
 import { computed } from 'vue'
 
 const props = defineProps({

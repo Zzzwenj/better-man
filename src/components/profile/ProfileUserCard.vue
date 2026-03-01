@@ -12,14 +12,14 @@
     
     <!-- 文本区 -->
     <view class="user-info ml-4 flex-col justify-center flex-1">
-      <view class="flex items-center">
+      <view class="name-row flex items-center">
         <!-- 动态称号 / 黑金皇冠 -->
         <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
-        <text class="profile-title mr-1" v-if="userStore.equipped.title">
+        <text class="profile-title mr-1 flex-shrink-0" v-if="userStore.equipped.title">
           {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
         </text>
         <text :class="['username', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
-        <text class="edit-icon ml-2">✎</text>
+        <text class="edit-icon ml-2 flex-shrink-0">✎</text>
       </view>
       <text v-if="signature" class="signature-text mt-1">{{ signature }}</text>
       <view class="status-badge flex items-center mt-2">
@@ -87,9 +87,14 @@
 </template>
 
 <script setup>
+/**
+ * @component ProfileUserCard
+ * @description 系统自检(我的)模块顶部用户卡片组件，展示头像、动态称号、签名并在原位提供编辑入口。
+ */
+
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
-import NeuroCoinIcon from './NeuroCoinIcon.vue'
+import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const userStore = useUserStore()
 
@@ -213,7 +218,9 @@ const saveProfile = () => {
 }
 .avatar-img { width: 100%; height: 100%; border-radius: 20px; }
 .avatar-text { font-family: monospace; color: #a1a1aa; font-weight: bold; font-size: 14px;}
-.username { font-size: 20px; color: #f4f4f5; font-weight: 900; }
+.name-row { width: 100%; overflow: hidden; min-width: 0; }
+.username { font-size: 20px; color: #f4f4f5; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.flex-shrink-0 { flex-shrink: 0; }
 .edit-icon { font-size: 14px; color: #52525b; }
 .signature-text { font-size: 11px; color: #a1a1aa; font-family: monospace; }
 .crown-icon { font-size: 16px; text-shadow: 0 0 10px rgba(250, 204, 21, 0.8); }

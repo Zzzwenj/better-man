@@ -35,6 +35,11 @@
 </template>
 
 <script setup>
+/**
+ * @component PanicOverlay
+ * @description 紧急阻断全屏遮罩组件，触发后提供随机物理行为验证并开启 60 秒强制倒计时。
+ */
+
 import { computed, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({

@@ -77,6 +77,11 @@
 </template>
 
 <script setup>
+/**
+ * @component NeuroCoinIcon
+ * @description 神经币原生图标(SVG)组件，全局通用资产显示。提供大小可配置参数。
+ */
+
 defineProps({
   size: {
     type: [Number, String],

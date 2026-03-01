@@ -87,9 +87,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import MilestoneShareCard from '../../components/MilestoneShareCard.vue'
-import CustomTabBar from '../../components/CustomTabBar.vue'
-import NeuroBadge from '../../components/NeuroBadge.vue'
+import MilestoneShareCard from '../../components/journey/MilestoneShareCard.vue'
+import CustomTabBar from '../../components/common/CustomTabBar.vue'
+import NeuroBadge from '../../components/journey/NeuroBadge.vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()

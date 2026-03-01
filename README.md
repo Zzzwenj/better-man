@@ -162,4 +162,13 @@
 - **动态位图轨迹渲染 (Bitmap Journey Logging)**:
   - 没有使用每日建表的重负荷方案。在 `App.vue` 生命周期底层挂载了监听引擎。每日开启瞬间自动组装 `0`/`1` 位图字符串 (例如 `"1110011..."`) 塞入档案树。前端热力图凭借极致的字符串切片即可精准绘制数百天的修复史。
 - **开发特权指令流 (Dev-Cheat Code)**:
-  - 预留了极客免密入场暗门。直接授权一键下发 1,000,000 `NeuroCoins` 的开发资金，彻底打通所有黑市装扮和 50 元对赌生死契约的验证阻力链条。
+   - 预留了极客免密入场暗门。直接授权一键下发 1,000,000 `NeuroCoins` 的开发资金，彻底打通所有黑市装扮和 50 元对赌生死契约的验证阻力链条。
+
+## 阶段 17：组件工程化分舱与路径治理 (Component Architecture Refactor)
+- **模块化目录重构 (Modular Directory Restructure)**: 
+  - 将 `src/components/` 下原本扁平堆叠的 16 个组件文件，按业务领域严格分流至 6 大子目录：`common/`（通用弹窗/导航/图腾）、`dashboard/`（能量核心/数据面板/阻断层/悬浮球/每日认知/共振排名）、`journey/`（神经徽章/里程碑海报）、`profile/`（用户卡片/设置列表）、`store/`（商品卡片/交易弹窗）、`war-room/`（房间卡片/契约弹窗）。
+  - 彻底根除了无序平铺导致的组件可发现性差、命名碰撞风险高的工程化痼疾。
+- **全局导入路径治理 (Import Path Governance)**: 
+  - 同步修正了 `dashboard`、`journey`、`login`、`profile`、`store`、`war-room` 等 7 个页面文件中的所有组件引用路径，确保编译零报错。
+  - 修复了 `ThemeActionSheet.vue` 因迁移至 `common/` 子目录后 Store 引用路径缺少一层上级目录（`../store` → `../../store`）导致的 Vite 热更新崩溃。
+- **功能性注释注入 (Functional Annotations)**: 为每个迁移组件顶部注入 `@component` + `@description` 标准化 JSDoc 注释块，强化代码自文档化能力与团队协作可读性。

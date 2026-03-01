@@ -14,6 +14,11 @@
 </template>
 
 <script setup>
+/**
+ * @component DataCards
+ * @description 数据统计卡片组件，负责在觉醒空间展示戒断省下的时间、多巴胺恢复指数等关键指标。
+ */
+
 import { defineProps } from 'vue'
 
 const props = defineProps({

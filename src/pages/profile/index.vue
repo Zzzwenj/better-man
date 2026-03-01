@@ -64,10 +64,10 @@
 import { ref, onMounted } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
-import ProfileUserCard from '../../components/ProfileUserCard.vue'
-import ProfileSettingsList from '../../components/ProfileSettingsList.vue'
-import CustomTabBar from '../../components/CustomTabBar.vue'
-import ThemeActionSheet from '../../components/ThemeActionSheet.vue'
+import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
+import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
+import CustomTabBar from '../../components/common/CustomTabBar.vue'
+import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()

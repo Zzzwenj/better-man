@@ -20,6 +20,11 @@
 </template>
 
 <script setup>
+/**
+ * @component MotivationalQuote
+ * @description 觉醒空间随机引言组件，为用户提供心理暗示、激励箴言。
+ */
+
 import { ref, onMounted } from 'vue'
 
 const quotes = [

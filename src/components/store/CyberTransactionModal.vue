@@ -61,8 +61,13 @@
 </template>
 
 <script setup>
+/**
+ * @component CyberTransactionModal
+ * @description 暗网黑市(商店)交易弹窗组件，负责商品详情展示及神经币扣除逻辑。
+ */
+
 import { computed } from 'vue'
-import NeuroCoinIcon from './NeuroCoinIcon.vue'
+import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },

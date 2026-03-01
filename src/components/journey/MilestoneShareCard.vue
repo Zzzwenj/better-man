@@ -47,6 +47,11 @@
 </template>
 
 <script setup>
+/**
+ * @component MilestoneShareCard
+ * @description 突触历程(足迹)模块里程碑分享卡片组件，用于生成长图并提供外部分享机制。
+ */
+
 import { defineProps, defineEmits, ref, onMounted } from 'vue'
 
 const props = defineProps({

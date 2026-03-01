@@ -1,7 +1,7 @@
 <template>
   <view class="login-container flex-col" :style="themeStore.themeCssVars">
-    <view class="header pt-10 px-6">
-      <text class="title block">{{ modeTitle }}</text>
+    <CyberNavBar :showBack="false" :title="modeTitle" :blur="false" />
+    <view class="header px-6">
       <text class="subtitle block mt-2">Dopamine Reset 档案库接入</text>
     </view>
 
@@ -72,7 +72,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useThemeStore } from '../../store/theme.js'
+import { useThemeStore } from '@/store/theme.js'
+import CyberNavBar from '@/components/common/CyberNavBar.vue'
 
 const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'

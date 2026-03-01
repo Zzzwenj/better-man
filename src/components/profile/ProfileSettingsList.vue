@@ -22,6 +22,11 @@
 </template>
 
 <script setup>
+/**
+ * @component ProfileSettingsList
+ * @description 系统自检(我的)模块设置列表组件，包含主题切换、隐私模式等条目功能。
+ */
+
 const props = defineProps({
   title: { type: String, required: true },
   list: { type: Array, required: true },

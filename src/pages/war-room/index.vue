@@ -90,9 +90,9 @@
 import { ref, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useWarzoneStore } from '../../store/warzone.js'
-import CustomTabBar from '../../components/CustomTabBar.vue'
-import RoomCard from '../../components/RoomCard.vue'
-import ContractModal from '../../components/ContractModal.vue'
+import CustomTabBar from '../../components/common/CustomTabBar.vue'
+import RoomCard from '../../components/war-room/RoomCard.vue'
+import ContractModal from '../../components/war-room/ContractModal.vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()

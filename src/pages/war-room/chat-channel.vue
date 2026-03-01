@@ -120,7 +120,7 @@
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue'
 import { onHide } from '@dcloudio/uni-app'
 import { useChatStore } from '../../store/chat.js'
-import GlobalResonance from '../../components/GlobalResonance.vue'
+import GlobalResonance from '../../components/war-room/GlobalResonance.vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()

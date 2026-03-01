@@ -43,6 +43,11 @@
 </template>
 
 <script setup>
+/**
+ * @component CustomTabBar
+ * @description 全局底部自定义导航栏组件，负责主页、战区、图谱、系统页面的路由分发与高亮状态控制。
+ */
+
 import { ref } from 'vue'
 
 const props = defineProps({

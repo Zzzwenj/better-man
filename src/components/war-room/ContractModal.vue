@@ -53,6 +53,11 @@
 </template>
 
 <script setup>
+/**
+ * @component ContractModal
+ * @description 战区(生死血契)模块弹出层组件，用于签署对战契约或选择匹配模式。
+ */
+
 import { reactive, computed } from 'vue'
 
 const props = defineProps({

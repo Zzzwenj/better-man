@@ -61,8 +61,13 @@
 </template>
 
 <script setup>
+/**
+ * @component ThemeActionSheet
+ * @description 全局主题控制弹窗组件，供用户选择不同风格的赛博朋克主题配色(如霓虹红、黑客绿等)。
+ */
+
 import { ref, watch, computed } from 'vue'
-import { useThemeStore } from '../store/theme.js'
+import { useThemeStore } from '../../store/theme.js'
 
 const props = defineProps({
   show: Boolean,
