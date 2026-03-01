@@ -1,0 +1,68 @@
+{
+    "bsonType": "object",
+    "required": [
+        "type",
+        "title",
+        "status"
+    ],
+    "permission": {
+        "read": true,
+        "create": false,
+        "update": false,
+        "delete": false
+    },
+    "properties": {
+        "_id": {
+            "description": "存储文档 ID（主键）",
+            "bsonType": "string"
+        },
+        "type": {
+            "bsonType": "string",
+            "description": "内容类型：video (视频), article (文章)",
+            "enum": [
+                "video",
+                "article"
+            ]
+        },
+        "title": {
+            "bsonType": "string",
+            "description": "资源标题",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "desc": {
+            "bsonType": "string",
+            "description": "资源简述，用于列表展示",
+            "maxLength": 300
+        },
+        "author": {
+            "bsonType": "string",
+            "description": "作者/来源机构"
+        },
+        "readTime": {
+            "bsonType": "string",
+            "description": "预计阅读或观看时间"
+        },
+        "contentUrl": {
+            "bsonType": "string",
+            "description": "视频直链(.mp4) 或 外链地址"
+        },
+        "textContent": {
+            "bsonType": "string",
+            "description": "文章的原生富文本或Markdown内容（如果是原生文章）"
+        },
+        "icon": {
+            "bsonType": "string",
+            "description": "用于列表展示的 Emoji 图标"
+        },
+        "status": {
+            "bsonType": "int",
+            "description": "状态：1 正常，0 下架",
+            "defaultValue": 1
+        },
+        "publish_date": {
+            "bsonType": "timestamp",
+            "description": "发布时间"
+        }
+    }
+}

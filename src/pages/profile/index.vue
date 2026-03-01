@@ -24,17 +24,10 @@
         </view>
     </view>
     
-    <!-- 3. 设置列表区 (已组件化) -->
+    <!-- 3. 整合列表区：资料与设置 -->
     <ProfileSettingsList 
-      title="隐私与安全阻断" 
-      :list="securityList" 
-      :hideNative="isModalOpen"
-      @itemClick="handleSettingClick" 
-    />
-    
-    <ProfileSettingsList 
-      title="数据与资料库" 
-      :list="databaseList" 
+      title="" 
+      :list="integratedList" 
       :hideNative="isModalOpen || showThemeSheet"
       @itemClick="handleSettingClick" 
     />
@@ -71,17 +64,12 @@ const userSignature = ref('')
 const isModalOpen = ref(false)
 let localProfileData = {}
 
-// --- 设置列表配置表 ---
-const securityList = ref([
-  { id: 'appLock', icon: '[SEC]', label: '启动锁 (面容/指纹核验)', type: 'switch', value: false },
+// --- 整合列表配置表 (资料在上，系统设置在下) ---
+const integratedList = ref([
+  { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
+  { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
   { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
-  { id: 'whitelist', icon: '👁️', label: '系统级无障碍白名单', type: 'arrow' },
-  { id: 'disguise', icon: '🥷', label: 'App 图标隐匿伪装', type: 'switch', value: false }
-])
-
-const databaseList = ref([
-  { id: 'logs', icon: '[LOG]', label: '拦截与阻断日志表', type: 'arrow' },
-  { id: 'wipe', icon: '[DEL]', label: '执行终端数据焚毁', type: 'arrow' }
+  { id: 'wipe', icon: '🔥', label: '执行终端数据焚毁', type: 'arrow' }
 ])
 
 // --- 初始化钩子 ---
@@ -200,24 +188,17 @@ const upgradePremium = () => {
 
 // 统一处理所有通用设置行的点击分发
 const handleSettingClick = (originItem) => {
-  const { id } = originItem
+  const { id, url } = originItem
+
+  if (url) {
+      uni.navigateTo({ url })
+      return
+  }
 
   if (id === 'theme') {
     showThemeSheet.value = true
-  } else if (id === 'whitelist' || id === 'neuroModel' || id === 'wipe') {
-    // 尚未开通的模块，统一提示，绝不出现“死按钮”
-    uni.showToast({ title: '区域未解锁，等待基站信号', icon: 'none' })
   } else if (id === 'logs') {
     uni.showToast({ title: '日志网络节点未接通', icon: 'none' })
-  } else if (id === 'appLock' || id === 'disguise') {
-    // Switch Toggle 处理
-    const newValue = originItem.value
-    // 修改原数组状态
-    const target = securityList.value.find(item => item.id === id)
-    if (target) {
-        target.value = newValue
-        uni.showToast({ title: newValue ? '底层协议已注入' : '底层协议已撤销', icon: 'none' })
-    }
   } else if (id === 'wipe') {
     // 本地数据焚毁
     uni.showModal({

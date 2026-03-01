@@ -101,3 +101,16 @@
 - **悬浮球物理引擎重建 (AI Fab Native Physics)**: 彻底丢弃特定终端下存在穿透 Bug 的 `<movable-area>` 组件嵌套，直接底层使用纯原生 `@touchstart` 与 `@touchmove` 计算进行拖拽接管，彻底修复拖拽死锁、无法移动等跨端兼容痛点。
 - **战区弹簧进场 (War-Room Spring Pop)**: 为战区聊天气泡植入 `msg-pop` 的递进式弹跳位移动画，消除单调僵硬的 DOM 渲染感。
 - **徽章沉睡蒙版 (Locked Badge Blur)**: 为 Journey 模块中未解锁的徽章强制启用 100% 灰度、` blur` 滤镜加体积缩小压制，以形成解禁时的极强视觉反差冲击。
+
+## 阶段 13：云端知识库深度重构与沉浸展示优化 (Cloud Knowledge Base & UI Polish)
+- **真·独立文本注入 (Authentic AI Content Generation)**: 
+  - 彻底抛弃了早期使用 `for` 循环拼接重复文章模板导致“千篇一律”的劣质感。
+  - 在 `initLibraryData` 云函数中，注入了 **20 篇完全独立手写的高质量神经科学/成瘾机制深度干货长文**。每篇文章都配备了专属的《核心思想推演》与《实验佐证指南》，确保用户每一次点开都有获得感。
+  - 在视频库中，接入了多条稳定的高清公网测试视频（如 Big Buck Bunny），确保视频流能够实打实地内嵌播放而不是死链。
+- **全局并发抗压与云限流防御 (Resource Exhausted Shield)**:
+  - 针对 uniCloud 免费版严苛的读写限流，大幅优化数据库初始化逻辑。取消了极度消耗读写资源的“全表分批循环删除”方案。
+  - 数据录入改为 **单次大包写入 (bulk_insert)**，最大限度降低并发 API 消耗。
+  - 增加了友好的防刷异常拦截机制 (`try-catch`)，在云端冷却期以人性化的 UI 提示引导极客静默等待，杜绝红字报错。
+- **沉浸式视口与安全区修复 (Notch & Safe Area Fix)**: 
+  - 针对图文库 (`pages/article/index.vue`) 与详情页 (`pages/article_detail/index.vue`)，修复了顶部标题栏被刘海屏/状态栏无情遮挡的恶性排版 Bug。全面普及 `pt-header`（通过计算 `var(--status-bar-height) + 固定高度`），确保沉浸式暗黑风格下内容区依然绝对安全清晰。
+- **云端表单基建一键同步 (Schema Auto-Sync)**: 规范化了 `better-articles` 集合表，用户可通过 HBuilderX 端直接执行 `better-articles.schema.json` 上传，达成极其丝滑的无代码一键删库重生闭环。

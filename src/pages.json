@@ -58,6 +58,34 @@
                 "navigationBarTitleText": "系统自检",
                 "navigationStyle": "custom"
             }
+        },
+        {
+            "path": "pages/video/index",
+            "style": {
+                "navigationBarTitleText": "突触视觉注入",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/article_detail/index",
+            "style": {
+                "navigationBarTitleText": "底层图文解析",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/article/index",
+            "style": {
+                "navigationBarTitleText": "资料库解析",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/webview/index",
+            "style": {
+                "navigationBarTitleText": "资料详情",
+                "navigationStyle": "default"
+            }
         }
     ],
     "globalStyle": {

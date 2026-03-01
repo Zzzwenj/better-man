@@ -1,6 +1,6 @@
 <template>
   <view class="settings-group mt-6 mx-4">
-    <text class="group-title block px-2 mb-2">{{ title }}</text>
+    <text v-if="title" class="group-title block px-2 mb-2">{{ title }}</text>
     <view class="settings-list">
       <view class="list-item flex justify-between items-center" 
             v-for="(item, index) in list" 
