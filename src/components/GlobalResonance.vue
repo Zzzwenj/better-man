@@ -100,31 +100,38 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const isCollapsed = ref(true) 
 const activeTab = ref(0) // 0: 个人排行, 1: 战区排行
 
-// Mock 个人排行数据 (本战区内)
-const rawLocalRankings = ref([
-  { id: 'u1', nickname: '量子猎手', avatarChar: '量', title: 'Phase IV: 神经霸体', titleColor: '#eab308', days: 120, isMe: false },
-  { id: 'u2', nickname: '深空无声', avatarChar: '深', title: 'Phase III: 边缘重塑', titleColor: '#8b5cf6', days: 75, isMe: false },
-  { id: 'u3', nickname: 'NightOwl', avatarChar: 'N', title: 'Phase II: 额叶觉醒', titleColor: 'var(--theme-primary)', days: 42, isMe: false },
-  { id: 'u4', nickname: '破晓', avatarChar: '破', title: 'Phase II: 额叶觉醒', titleColor: 'var(--theme-primary)', days: 30, isMe: false },
-  { id: 'u5', nickname: '钢铁意志', avatarChar: '钢', title: 'Phase II: 额叶觉醒', titleColor: 'var(--theme-primary)', days: 28, isMe: false },
-  { id: 'u6', nickname: 'Sigma', avatarChar: 'S', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 14, isMe: false },
-  { id: 'u7', nickname: '重生之翼', avatarChar: '重', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 10, isMe: false },
-  { id: 'u8', nickname: '空', avatarChar: '空', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 9, isMe: false },
-  { id: 'u9', nickname: '行者无疆', avatarChar: '行', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 8, isMe: false },
-  { id: 'u10', nickname: 'Dawn', avatarChar: 'D', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 7, isMe: false },
-  { id: 'u11', nickname: '未命名_7X', avatarChar: '未', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 6, isMe: false },
-  { id: 'u12', nickname: '探索者_8972', avatarChar: '探', title: 'Phase I: 生理挣脱', titleColor: '#a1a1aa', days: 5, isMe: true }, // 模拟当前用户
-  { id: 'u13', nickname: 'Z', avatarChar: 'Z', title: 'System Reset', titleColor: '#ef4444', days: 0, isMe: false }
-])
+// 真实的从云端拉回来的数据
+const rawLocalRankings = ref([])
+const rawRoomRankings = ref([])
+
+onMounted(async () => {
+    try {
+        const token = uni.getStorageSync('uni_id_token')
+        if (!token) return
+        
+        const res = await uniCloud.callFunction({
+            name: 'user-center',
+            data: { action: 'getRankings', token }
+        })
+        
+        if (res.result.code === 0 && res.result.data) {
+            rawLocalRankings.value = res.result.data.localRankings || []
+            rawRoomRankings.value = res.result.data.roomRankings || []
+        }
+    } catch (err) {
+        console.error('拉取大盘共振数据失败', err)
+    }
+})
 
 // 截断逻辑：最多显示10人。如果在前9名，直接显示前10；如果不在前9名，显示前9名 + 本人
 const displayLocalRankings = computed(() => {
   const list = rawLocalRankings.value
+  if (list.length === 0) return []
   const meIndex = list.findIndex(u => u.isMe)
   
   if (meIndex < 10 && meIndex !== -1) {
@@ -138,20 +145,10 @@ const displayLocalRankings = computed(() => {
   }
 })
 
-// Mock 战区对抗排行数据
-const rawRoomRankings = ref([
-  { roomId: '09', online: 489, totalHours: '1,240,500', isMyRoom: false },
-  { roomId: '03', online: 320, totalHours: '984,200', isMyRoom: false },
-  { roomId: '07', online: 412, totalHours: '762,300', isMyRoom: false },
-  { roomId: '01', online: 156, totalHours: '420,100', isMyRoom: false },
-  { roomId: '05', online: 388, totalHours: '390,000', isMyRoom: false },
-  { roomId: '12', online: 500, totalHours: '259,000', isMyRoom: true }, // 模拟当前用户所在战区
-  { roomId: '08', online: 210, totalHours: '150,000', isMyRoom: false }
-])
-
 // 截断逻辑：最多显示5个。如果在前4名，直接显示前5；如果不在前4名，显示前4名 + 本战区
 const displayRoomRankings = computed(() => {
   const list = rawRoomRankings.value
+  if (list.length === 0) return []
   const myRoomIndex = list.findIndex(r => r.isMyRoom)
   
   if (myRoomIndex < 5 && myRoomIndex !== -1) {

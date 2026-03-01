@@ -13,8 +13,8 @@ export const useUserStore = defineStore('user', {
         return {
             // 用户唯一标识或通行证 (与旧版兼容)
             uuid: uni.getStorageSync('neuro_uuid') || '8972',
-            // 神经币余额 (目前强制设为无限资金方便测试)
-            neuroCoins: 9999999,
+            // 神经币余额
+            neuroCoins: Number(uni.getStorageSync('neuro_coins')) || 0,
 
             // --- 平台对赌契约状态 ---
             // 契约启动时间段 (如果是 0 代表未开启)
@@ -201,6 +201,47 @@ export const useUserStore = defineStore('user', {
 
             this.earnCoins(10000, '平台对赌胜利：30天退还押金并奖励神币')
             console.log('[Store] 王者之路，契约圆满。')
+        },
+
+        // 从云端恢复资产 (登录或启动时调用)
+        initAssetsFromCloud(profileData) {
+            if (profileData) {
+                if (profileData.neuro_coins !== undefined) {
+                    this.neuroCoins = profileData.neuro_coins
+                    uni.setStorageSync('neuro_coins', this.neuroCoins)
+                }
+                if (profileData.owned_items) {
+                    this.ownedItems = profileData.owned_items
+                    uni.setStorageSync('neuro_owned_items', this.ownedItems)
+                }
+                if (profileData.equipped) {
+                    this.equipped = { ...this.equipped, ...profileData.equipped }
+                    uni.setStorageSync('neuro_equipped', this.equipped)
+                }
+            }
+        },
+
+        // 将当前资产静默同步到云端
+        async syncAssetsToCloud() {
+            try {
+                const token = uni.getStorageSync('uni_id_token')
+                if (!token) return
+
+                await uniCloud.callFunction({
+                    name: 'user-center',
+                    data: {
+                        action: 'syncAssets',
+                        token,
+                        payload: {
+                            neuroCoins: this.neuroCoins,
+                            ownedItems: this.ownedItems,
+                            equipped: this.equipped
+                        }
+                    }
+                })
+            } catch (err) {
+                console.error('[Store] 云端资产对账失败', err)
+            }
         }
     }
 })

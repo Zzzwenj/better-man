@@ -189,23 +189,28 @@ const getGoalProgress = (badgeDay) => {
     return currentProgress / totalRequired
 }
 
-// 生成热力图的动态数据 (点亮用户连续坚持的天数)
+// 生成热力图的动态数据 (真正的签到历史渲染)
 const getMockLevel = (w, d) => {
-    // 假设 42 天的总表格
+    // 假设渲染 42 个格子 (6 星期)
     const totalCellIndex = (w - 1) * 7 + (d - 1)
     const maxCells = 42
     
-    // 如果用户坚持了 5 天，我们在表末尾点亮 5 个格子
-    const activeStart = maxCells - daysClean.value
+    // 取出最新的长字符串 "110111..."，按位从右至左(最新日期在前)填充
+    const historyFlags = uni.getStorageSync('neuro_checkins') || ''
     
-    if (totalCellIndex >= activeStart && totalCellIndex < maxCells) {
-        // 越高天数，格子的绿色会越有生机
-        return 'lvl-3'
-    } else if (totalCellIndex >= maxCells) {
-        return 'lvl-0'
+    // 如果还没记录或者格子超出历史长度
+    const lookbackIndex = maxCells - 1 - totalCellIndex
+    
+    if (lookbackIndex < historyFlags.length) {
+        const flag = historyFlags[historyFlags.length - 1 - lookbackIndex]
+        if (flag === '1') {
+            return 'lvl-3' // 成功抵御，高亮
+        } else {
+            return 'lvl-1' // 破戒失守，黯淡红/低亮
+        }
     }
     
-    // 前面为坚持之前的暗色
+    // 未知过去的暗色
     return 'lvl-0'
 }
 </script>

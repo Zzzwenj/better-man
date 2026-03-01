@@ -33,6 +33,12 @@ exports.main = async (event, context) => {
         case 'getArticleDetail':
             // 获取文章详细内容
             return await getArticleDetail(db, payload)
+        case 'syncAssets':
+            // 同步神经币和拥有的装扮资产
+            return await syncAssets(usersCollection, uid, payload)
+        case 'getRankings':
+            // 获取天梯榜单 (通过离线计算防抖版)
+            return await getRankings(db, uid)
         case 'initLibraryData':
             // 初始化内置的精选正向数据（仅用作系统种子数据，开发者调用）
             return await initLibraryData(db)
@@ -40,6 +46,46 @@ exports.main = async (event, context) => {
             return { code: 400, msg: 'Unknown action' }
     }
 };
+
+async function getRankings(db, uid) {
+    const cacheCollection = db.collection('system_cache')
+
+    // 我们从系统缓存表里拿跑批好的唯一记录，避免实时 join 计算几万用户
+    const res = await cacheCollection.where({ key: 'global_resonance_rankings' }).get()
+
+    if (res.data.length > 0) {
+        return { code: 0, data: res.data[0].value }
+    } else {
+        // 如果云端还没有跑批记录，返回一个前端可以直接渲染的安全全量假数据作为冷启动
+        return {
+            code: 0, data: {
+                localRankings: [
+                    { id: uid, nickname: '探索者_' + uid.substring(uid.length - 4), avatarChar: '探', title: 'Phase I: 启程', titleColor: '#a1a1aa', days: 1, isMe: true }
+                ],
+                roomRankings: [
+                    { roomId: '01', online: 1, totalHours: '0', isMyRoom: true }
+                ]
+            }
+        }
+    }
+}
+
+async function syncAssets(collection, uid, payload) {
+    const { neuroCoins, ownedItems, equipped } = payload
+
+    // 采用合并更新
+    const updateData = {}
+    if (neuroCoins !== undefined) updateData.neuro_coins = neuroCoins
+    if (ownedItems !== undefined) updateData.owned_items = ownedItems
+    if (equipped !== undefined) updateData.equipped = equipped
+
+    if (Object.keys(updateData).length > 0) {
+        updateData.updated_at = Date.now()
+        await collection.doc(uid).update(updateData)
+    }
+
+    return { code: 0, msg: '资产链已同步' }
+}
 
 async function syncBaseline(collection, uid, payload) {
     const { neuro_baseline } = payload
@@ -168,30 +214,19 @@ async function updateProfile(collection, uid, payload) {
 }
 
 async function getLibraryList(db, payload) {
-    const { type } = payload // 'video' or 'article' or 'habits'
+    const { type, page = 1, pageSize = 15 } = payload // 'video' or 'article' or 'habits'
     const col = db.collection('better-articles')
 
     try {
-        // [性能保护] 检查全量记录是否达到完美的 48 条
-        const existCount = await col.count()
-        if (existCount.total === 0) {
-            // 白纸一张，直接发一波大包注入 48 条安全组数据
-            await initLibraryData(db)
-        } else if (existCount.total !== 48) {
-            // 当数据错乱或者非 48 条时，拦截抛错
-            return {
-                code: 403,
-                msg: `【请执行手动清洗】您当前的资料库存在历史数据冲突（共 ${existCount.total} 条），请前往 uniCloud Web 控制台的 better-articles 表执行“清空集合”操作，以迎接全新版本。`
-            }
-        }
-
         // 按发布时间倒序，仅拉取已上架的数据
         let query = { status: 1 }
         if (type) {
             query.type = type
         }
 
-        const res = await col.where(query).orderBy('publish_date', 'desc').field({
+        const skipCount = (page - 1) * pageSize
+
+        const res = await col.where(query).orderBy('publish_date', 'desc').skip(skipCount).limit(pageSize).field({
             textContent: false // 列表不返回正文以节省带宽
         }).get()
 

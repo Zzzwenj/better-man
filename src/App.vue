@@ -31,6 +31,28 @@ export default {
   },
   onShow: function () {
     console.log('App Show')
+    // 每日打卡热力图计算 (位图字符串法)
+    const lastCheckin = uni.getStorageSync('neuro_last_checkin_date')
+    const todayStr = new Date().toDateString()
+    
+    if (lastCheckin !== todayStr) {
+        let history = uni.getStorageSync('neuro_checkins') || ''
+        
+        // 如果是新的一天，默认他今天还未破戒，追平这中间断断的 0，并加上今天的 1
+        if (lastCheckin) {
+           const diffDays = Math.floor((new Date(todayStr).getTime() - new Date(lastCheckin).getTime()) / (1000 * 60 * 60 * 24))
+           if (diffDays > 1) {
+               history += '0'.repeat(diffDays - 1)
+           }
+        }
+        history += '1' // 收录今天
+        
+        // 限制长度只存最近 100 天节省内存
+        if (history.length > 100) history = history.slice(-100)
+        
+        uni.setStorageSync('neuro_checkins', history)
+        uni.setStorageSync('neuro_last_checkin_date', todayStr)
+    }
   },
   onHide: function () {
     console.log('App Hide')

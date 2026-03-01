@@ -64,8 +64,8 @@
     </view>
 
     <!-- 隐藏的开发者免密入口 -->
-    <view class="dev-entry pb-bottom px-6 flex justify-center mt-10" @longpress="devLogin">
-        <text class="dev-text opacity-10">长按此处 激活最高权限 (Dev Only)</text>
+    <view class="dev-entry pb-bottom px-6 flex justify-center mt-10" @click="devLogin">
+        <text class="dev-text opacity-10">点击此处 激活最高权限 (Dev Only)</text>
     </view>
   </view>
 </template>
@@ -308,20 +308,23 @@ const submit = async () => {
     }
   } catch (e) {
     uni.hideLoading()
-    console.error(e)
-    uni.showToast({ title: '网络请求失败', icon: 'none' })
+    console.error('[登录异常] 详情:', JSON.stringify(e), e.message || e)
+    uni.showToast({ title: '网络请求失败(云端可能超限)', icon: 'none' })
     generateCaptcha()
   }
 }
 
 // [特殊] 开发者免密一键登入
 const devLogin = () => {
+    console.log('[DEV] 长按触发了 devLogin 函数')
     uni.showModal({
         title: 'ROOT 权限确认',
         content: '跳过所有鉴权限制，以开发者身份进入系统？',
         confirmColor: themeStore.activeThemeData.primary,
         success: (res) => {
+            console.log('[DEV] showModal 回调:', res)
             if (res.confirm) {
+                console.log('[DEV] 用户确认，开始执行 storeFakeTokenAndRedirect')
                 storeFakeTokenAndRedirect()
             }
         }
@@ -330,19 +333,28 @@ const devLogin = () => {
 
 // 登录成功后的公共跳转逻辑
 const storeFakeTokenAndRedirect = async () => {
+    console.log('[DEV] 进入 storeFakeTokenAndRedirect')
     const fakeToken = 'fake_token_for_dev_' + Date.now()
     uni.setStorageSync('uni_id_token', fakeToken)
     uni.setStorageSync('uni_id_token_expired', Date.now() + 7200000)
     uni.setStorageSync('uid', 'dev_uid')
+    console.log('[DEV] token 已写入本地:', fakeToken)
     
+    // 开发特权：拨款 1,000,000 神经币用于测试大额流转
+    uni.setStorageSync('neuro_coins', 1000000)
+
+    // 尝试拉取云端档案，但加超时保护，不阻塞跳转
     try {
-      const profileRes = await uniCloud.callFunction({
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('云函数超时')), 5000))
+      const cloudPromise = uniCloud.callFunction({
         name: 'user-center',
         data: {
           action: 'getUserProfile',
-          token: fakeToken // uniCloud dev 伪随机会解析到 dev_uid，如果没配置则不生效，但不会报错阻断
+          token: fakeToken
         }
       })
+      const profileRes = await Promise.race([cloudPromise, timeoutPromise])
+      console.log('[DEV] 云端档案拉取成功:', JSON.stringify(profileRes.result))
       if (profileRes.result.code === 0 && profileRes.result.data) {
         const userData = profileRes.result.data
         if (userData.neuro_baseline) {
@@ -357,15 +369,19 @@ const storeFakeTokenAndRedirect = async () => {
         }
       }
     } catch (err) {
-      console.warn('开发者模式拉取云端档案失败')
+      console.warn('[DEV] 云端档案拉取失败(不影响跳转):', err.message || err)
     }
 
+    console.log('[DEV] 准备跳转...')
     uni.showToast({ title: '接入成功', icon: 'success' })
     setTimeout(() => {
         const baseline = uni.getStorageSync('neuro_baseline')
+        console.log('[DEV] baseline 状态:', baseline ? '存在' : '不存在')
         if (!baseline) {
+            console.log('[DEV] 跳转到 onboarding')
             uni.redirectTo({ url: '/pages/onboarding/index' })
         } else {
+            console.log('[DEV] 跳转到 dashboard')
             uni.switchTab({ url: '/pages/dashboard/index' })
         }
     }, 1000)

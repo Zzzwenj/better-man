@@ -6,7 +6,7 @@
       <text class="header-title ml-3">{{ pageTitle }}</text>
     </view>
     
-    <scroll-view class="content-scroll" scroll-y>
+    <scroll-view class="content-scroll" scroll-y @scrolltolower="loadMore">
        <view class="pt-header px-4">
           <view class="link-card" v-for="(link, index) in currentLinks" :key="index" @click="openExternal(link)" hover-class="link-hover">
              <view class="flex items-center">
@@ -22,11 +22,17 @@
           </view>
        </view>
        
-       <view class="empty-state flex-col items-center justify-center mt-8" v-if="loading">
+       <view class="empty-state flex-col items-center justify-center mt-8" v-if="loading && page === 1">
          <text class="empty-text">同步云端突触网络...</text>
        </view>
        <view class="empty-state flex-col items-center justify-center mt-8" v-else-if="!currentLinks.length">
          <text class="empty-text">该区块暂无可用记录</text>
+       </view>
+       <view class="empty-state flex-col items-center justify-center mt-4 mb-4" v-if="!hasMore && currentLinks.length > 0">
+         <text class="empty-text" style="font-size: 12px; opacity: 0.6;">没有更多记录了</text>
+       </view>
+       <view class="empty-state flex-col items-center justify-center mt-4 mb-4" v-if="loading && page > 1">
+         <text class="empty-text" style="font-size: 12px; opacity: 0.6;">加载中...</text>
        </view>
     </scroll-view>
   </view>
@@ -51,15 +57,28 @@ const pageTitle = computed(() => {
 
 const currentLinks = ref([])
 const loading = ref(true)
+const page = ref(1)
+const hasMore = ref(true)
+const cacheKey = computed(() => `library_${pageType.value}`)
 
 onLoad((options) => {
    if (options.type) {
        pageType.value = options.type
-       fetchCloudList()
+       const cached = uni.getStorageSync(cacheKey.value)
+       if (cached && cached.length > 0) {
+           currentLinks.value = cached
+       }
+       fetchCloudList(true)
    }
 })
 
-const fetchCloudList = async () => {
+const fetchCloudList = async (isRefresh = false) => {
+    if (isRefresh) {
+        page.value = 1
+        hasMore.value = true
+    }
+    if (!hasMore.value) return
+
     loading.value = true
     try {
         const token = uni.getStorageSync('uni_id_token')
@@ -68,19 +87,38 @@ const fetchCloudList = async () => {
             data: {
                 action: 'getLibraryList',
                 token,
-                payload: { type: pageType.value }
+                payload: { type: pageType.value, page: page.value, pageSize: 15 }
             }
         })
         if (res.result.code === 0) {
-            currentLinks.value = res.result.data
+            const list = res.result.data
+            if (isRefresh) {
+                currentLinks.value = list
+                uni.setStorageSync(cacheKey.value, list)
+            } else {
+                currentLinks.value = [...currentLinks.value, ...list]
+            }
+            if (list.length < 15) {
+                hasMore.value = false
+            } else {
+                page.value++
+            }
         } else {
             uni.showToast({ title: res.result.msg, icon: 'none' })
         }
     } catch(err) {
         console.error('拉取资料库失败', err)
-        uni.showToast({ title: '网络连接异常', icon: 'none' })
+        if (!currentLinks.value.length) {
+            uni.showToast({ title: '网络连接异常', icon: 'none' })
+        }
     } finally {
         loading.value = false
+    }
+}
+
+const loadMore = () => {
+    if (!loading.value && hasMore.value) {
+        fetchCloudList()
     }
 }
 

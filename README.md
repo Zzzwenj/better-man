@@ -144,3 +144,22 @@
 - **沉浸式视口与安全区修复 (Notch & Safe Area Fix)**: 
   - 针对图文库 (`pages/article/index.vue`) 与详情页 (`pages/article_detail/index.vue`)，修复了顶部标题栏被刘海屏/状态栏无情遮挡的恶性排版 Bug。全面普及 `pt-header`（通过计算 `var(--status-bar-height) + 固定高度`），确保沉浸式暗黑风格下内容区依然绝对安全清晰。
 - **云端表单基建一键同步 (Schema Auto-Sync)**: 规范化了 `better-articles` 集合表，用户可通过 HBuilderX 端直接执行 `better-articles.schema.json` 上传，达成极其丝滑的无代码一键删库重生闭环。
+
+## 阶段 16：数据库配额攻坚与核心业务脱水重构 (RU Optimization & Mock Data Elimination)
+- **极限读写配额压缩 (RU Constraint)**: 
+  - 针对 uniCloud 500 RU 的严格限制，重构了多处滥用 `col.count()` 以及无限量 `limit` 的致命查询。
+  - 为长文/视频流 `article/index.vue` 引入了前置的 `uni.setStorageSync` 页面级强缓存隔离与标准分页 (`skip/limit(15)`) 架构。
+  - 压降了 `chat-hub` 历史消息的并发一次性拉取量（固定切割至 20 条）。
+- **神经币与资产防丢对账 (Optimistic Asset Sync)**:
+  - 废弃了完全单机的 `neuroCoins` 余额。全新设计了“本地乐观交互优先，离开页面/退到后台静默上链同步 (`syncAssets`)”的防抖策略模型。
+  - 修复了用户卸载重装导致的资产与购买记录毁灭问题，现在会与 `uni-id-users` 表精准绑定核销。
+- **战区大厅接入实体云数据库 (Warzone Reality)**:
+  - 移除了 `useWarzoneStore` 中写死的硬编码房间。真实联通 `chat_rooms` 集合。
+  - 针对开发者与冷启动，增加了全自动播种基建代码 (Database Seeding) —— 大厅初次请求若遇空表，自动补齐全球突触节点和硬核生死局演示数据。
+- **全局共振 T+1 缓存排行 (T+1 Leaderboard Middleware)**:
+  - 为杜绝高频聚合查询拖垮数据库，重写了 `GlobalResonance.vue` 逻辑。
+  - 采用读取 `system_cache` 单条 JSON 的网游经典静态截断方案，令查询排名成本无限趋近于零。
+- **动态位图轨迹渲染 (Bitmap Journey Logging)**:
+  - 没有使用每日建表的重负荷方案。在 `App.vue` 生命周期底层挂载了监听引擎。每日开启瞬间自动组装 `0`/`1` 位图字符串 (例如 `"1110011..."`) 塞入档案树。前端热力图凭借极致的字符串切片即可精准绘制数百天的修复史。
+- **开发特权指令流 (Dev-Cheat Code)**:
+  - 预留了极客免密入场暗门。直接授权一键下发 1,000,000 `NeuroCoins` 的开发资金，彻底打通所有黑市装扮和 50 元对赌生死契约的验证阻力链条。

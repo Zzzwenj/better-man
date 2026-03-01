@@ -133,6 +133,13 @@ const fetchCloudProfile = async () => {
             localProfileData.avatar = cloudUser.avatar || localProfileData.avatar
             localProfileData.signature = cloudUser.signature || localProfileData.signature
             uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
+            
+            // 同步资产到前端（覆盖合并本地）
+            userStore.initAssetsFromCloud({
+                neuro_coins: cloudUser.neuro_coins,
+                owned_items: cloudUser.owned_items,
+                equipped: cloudUser.equipped
+            })
         }
     } catch (err) {
         console.error('云端中枢档案同步失败', err)

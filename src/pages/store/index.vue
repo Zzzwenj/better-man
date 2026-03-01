@@ -72,6 +72,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
 import StoreItemCard from '@/components/StoreItemCard.vue'
 import CyberTransactionModal from '@/components/CyberTransactionModal.vue'
@@ -81,6 +82,11 @@ const userStore = useUserStore()
 const statusBarHeight = ref(uni.getSystemInfoSync().statusBarHeight || 44)
 
 const formattedCoins = computed(() => userStore.formattedCoins)
+
+onUnload(() => {
+   // 退出黑市页面时，由于大概率发生过消费，静默进行一波 T+1 资产上报对账以节约 RU
+   userStore.syncAssetsToCloud()
+})
 
 const goBack = () => {
   uni.navigateBack()

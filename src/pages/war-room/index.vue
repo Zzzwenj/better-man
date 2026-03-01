@@ -103,6 +103,9 @@ const showContractModal = ref(false)
 const searchQuery = ref('')
 
 onShow(() => {
+  // 每次进入大厅，静默拉取一下最新数据
+  warzoneStore.fetchRooms()
+  
   // 不再执行任何强制路由跳转，让用户在重新切回战区Tab时，能够一览大盘全局
   const savedTab = uni.getStorageSync('warzone_current_tab')
   if (savedTab !== '') {
@@ -174,9 +177,13 @@ const enterRoom = (room) => {
   }
 }
 
-const onContractCreated = (formData) => {
-  warzoneStore.createDeathMatch(formData)
-  uni.showToast({ title: '血契已生成', icon: 'success' })
+const onContractCreated = async (formData) => {
+  uni.showLoading({ title: '血契阵列生成中' })
+  const res = await warzoneStore.createDeathMatch(formData)
+  uni.hideLoading()
+  if (res) {
+    uni.showToast({ title: '血契已生成', icon: 'success' })
+  }
 }
 </script>
 

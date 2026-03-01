@@ -17,6 +17,12 @@ exports.main = async (event, context) => {
         case 'sendMessage':
             // 纯文本过滤并落库，推流
             return await sendMessage(uid, payload)
+        case 'getRooms':
+            // 获取大厅分类房间列表
+            return await getRooms()
+        case 'createDeathMatch':
+            // 创建生死局血契
+            return await createDeathMatch(uid, payload)
         case 'getHistoryLogs':
             // 获取当前聊天室的历史消息
             return await getHistoryLogs(uid, payload)
@@ -24,6 +30,96 @@ exports.main = async (event, context) => {
             return { code: 400, msg: 'Unknown action' }
     }
 };
+
+async function getRooms() {
+    const roomsCollection = db.collection('chat_rooms')
+
+    // 拉取活跃的公共房间
+    let publicRooms = await roomsCollection.where({
+        type: 'public',
+        status: 'active'
+    }).orderBy('created_date', 'asc').get()
+
+    // 🔥【开发阶段/冷启动增强】如果数据库是空的，自动注入初始房间数据以便验证
+    if (publicRooms.data.length === 0) {
+        const defaultPublicRooms = [
+            {
+                room_id: 'room_global_1', id: 'global_1', type: 'public', name: '全球突触连接枢纽',
+                description: '全境探员公共通讯频道，连接全球抵抗军。', member_count: 520, maxUsers: null, prizePool: 0, status: 'active', created_date: Date.now()
+            },
+            {
+                room_id: 'room_noob_1', id: 'noob_1', type: 'public', name: '新手挣脱互助站',
+                description: 'Phase I 阶段探员专区，请保持友善交流。', member_count: 128, maxUsers: null, prizePool: 0, status: 'active', created_date: Date.now()
+            }
+        ]
+
+        const defaultDeathMatches = [
+            {
+                room_id: 'dm_X7B9K2', id: 'X7B9K2', type: 'death-match', name: '硬核90天净化挑战',
+                description: '无情模式，任何一次破戒直接判定清零没收保密金。', member_count: 4, maxUsers: 5, prizePool: 2000, status: 'waiting', created_date: Date.now()
+            },
+            {
+                room_id: 'dm_A9F3R1', id: 'A9F3R1', type: 'death-match', name: '边缘重设 30周日',
+                description: '专攻多巴胺戒断，赢下那些本该属于你的东西。', member_count: 10, maxUsers: 10, prizePool: 5000, status: 'active', created_date: Date.now()
+            }
+        ]
+
+        // 批量插入初始数据
+        await roomsCollection.add([...defaultPublicRooms, ...defaultDeathMatches])
+        // 重新拉取
+        publicRooms = await roomsCollection.where({ type: 'public', status: 'active' }).orderBy('created_date', 'asc').get()
+    }
+
+    // 拉取活跃或等待中的生死局 (展示最新的 20 个即可)
+    const deathMatches = await roomsCollection.where({
+        type: 'death-match',
+        status: dbCmd.in(['active', 'waiting'])
+    }).orderBy('created_date', 'desc').limit(20).get()
+
+    return {
+        code: 0,
+        data: {
+            publicRooms: publicRooms.data,
+            deathMatches: deathMatches.data
+        }
+    }
+}
+
+async function createDeathMatch(uid, payload) {
+    const { name, days, maxUsers, deposit } = payload
+    const roomsCollection = db.collection('chat_rooms')
+    const usersCollection = db.collection('uni-id-users')
+
+    // 检查用户是否已在其他房间 (这里简化处理，允许创建并自动切过去)
+    const shortId = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const roomId = `dm_${shortId}`
+
+    const newRoom = {
+        room_id: roomId, // 唯一通道ID
+        id: shortId, // 展示ID
+        type: 'death-match',
+        name: name,
+        description: `目标 ${days} 天绝代风华。`,
+        onlineCount: 1, // 创建者本身
+        member_count: 1,
+        maxUsers: maxUsers,
+        prizePool: deposit,
+        status: 'waiting', // 先进入等待组排阶段
+        created_date: Date.now(),
+        creator_id: uid
+    }
+
+    await roomsCollection.add(newRoom)
+
+    // 强行把用户塞进去
+    await usersCollection.doc(uid).update({ current_room_id: roomId })
+
+    return {
+        code: 0,
+        msg: '生死血契已建立',
+        data: newRoom
+    }
+}
 
 async function assignRoom(uid) {
     const usersCollection = db.collection('uni-id-users')
@@ -150,11 +246,11 @@ async function getHistoryLogs(uid, payload) {
     const { room_id } = payload
     const messagesCollection = db.collection('chat_messages')
 
-    // 下发最后 50 条安全战区记录
+    // 下发最后 20 条安全战区记录以节约 RU
     const logs = await messagesCollection.where({
         room_id: room_id,
         is_blocked: false
-    }).orderBy('created_date', 'desc').limit(50).get()
+    }).orderBy('created_date', 'desc').limit(20).get()
 
     return { code: 0, data: logs.data.reverse() }
 }
