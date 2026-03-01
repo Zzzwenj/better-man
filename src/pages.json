@@ -18,7 +18,22 @@
         {
             "path": "pages/war-room/index",
             "style": {
-                "navigationBarTitleText": "战区通讯",
+                "navigationBarTitleText": "战区大厅",
+                "navigationStyle": "custom"
+            }
+        },
+        {
+            "path": "pages/war-room/chat-channel",
+            "style": {
+                "navigationBarTitleText": "通讯基站",
+                "navigationStyle": "custom",
+                "disableScroll": true
+            }
+        },
+        {
+            "path": "pages/war-room/death-match",
+            "style": {
+                "navigationBarTitleText": "生死血契",
                 "navigationStyle": "custom"
             }
         },

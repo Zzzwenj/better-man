@@ -10,15 +10,34 @@
     <!-- 文本区 -->
     <view class="user-info ml-4 flex-col justify-center">
       <view class="flex items-center">
-        <text class="username tracking-wider">{{ userName }}</text>
+        <!-- 动态判断是否带有黑金皇冠标志 -->
+        <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
+        <text :class="['username', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
         <text class="edit-icon ml-2">✎</text>
       </view>
       <text v-if="signature" class="signature-text mt-1">{{ signature }}</text>
       <view class="status-badge flex items-center mt-2">
-        <view class="status-dot offline"></view>
-        <text class="status-text ml-1">{{ userDesc }}</text>
+        <view :class="['status-dot', isProActive ? 'online' : 'offline']"></view>
+        <text :class="['status-text', 'ml-1', isProActive ? 'text-online' : '']">{{ userDesc }}</text>
       </view>
     </view>
+  </view>
+  
+  <!-- 神经币资产总览卡面 (新增闭环区块) -->
+  <view class="asset-board flex justify-between items-center mx-4 mt-4" hover-class="board-hover" @click="goStore">
+      <view class="flex items-center">
+          <view class="coin-icon-wrap flex justify-center items-center">
+              <text class="coin-icon">⎊</text>
+          </view>
+          <view class="flex-col ml-3">
+              <text class="asset-title">神经币余额</text>
+              <text class="asset-amount">{{ formattedCoins }}</text>
+          </view>
+      </view>
+      <view class="store-btn flex items-center">
+          <text class="store-text mr-1">暗网黑市</text>
+          <text class="arrow">→</text>
+      </view>
   </view>
 
   <!-- 弹窗：编辑资料 (赛博朋克风) -->
@@ -79,9 +98,16 @@ const props = defineProps({
   userName: { type: String, default: '探索者' },
   userDesc: { type: String, default: '系统干预：已停用' },
   avatar: { type: String, default: '' },
-  signature: { type: String, default: '' }
+  signature: { type: String, default: '' },
+  isProActive: { type: Boolean, default: false },
+  hasBlackGoldCrown: { type: Boolean, default: false },
+  formattedCoins: { type: String, default: '0' }
 })
 const emit = defineEmits(['updateProfile', 'modalStateChange'])
+
+const goStore = () => {
+    uni.showToast({ title: '暗网黑市尚未解密', icon: 'none' })
+}
 
 const showModal = ref(false)
 const editName = ref('')
@@ -187,11 +213,35 @@ const saveProfile = () => {
 .username { font-size: 20px; color: #f4f4f5; font-weight: 900; }
 .edit-icon { font-size: 14px; color: #52525b; }
 .signature-text { font-size: 11px; color: #a1a1aa; font-family: monospace; }
+.crown-icon { font-size: 16px; text-shadow: 0 0 10px rgba(250, 204, 21, 0.8); }
+.gold-text { color: #facc15; text-shadow: 0 0 15px rgba(250, 204, 21, 0.4); }
 
-.status-badge { background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2); align-self: flex-start;}
+.status-badge { background: rgba(255, 255, 255, 0.05); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.1); align-self: flex-start;}
 .status-dot { width: 6px; height: 6px; border-radius: 3px; }
 .status-dot.offline { background-color: #ef4444; box-shadow: 0 0 5px #ef4444;}
-.status-text { font-size: 10px; color: #ef4444; font-weight: bold; font-family: monospace;}
+.status-dot.online { background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary); animation: pulse 2s infinite;}
+.status-text { font-size: 10px; color: #a1a1aa; font-weight: bold; font-family: monospace;}
+.status-text.text-online { color: var(--theme-primary); }
+
+@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0.5; } }
+
+/* 资产盘 */
+.asset-board {
+    background: linear-gradient(135deg, rgba(24, 24, 27, 0.8) 0%, rgba(39, 39, 42, 0.4) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+}
+.board-hover { transform: translateY(2px); background: rgba(39, 39, 42, 0.8); }
+.coin-icon-wrap { width: 40px; height: 40px; border-radius: 12px; background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); box-shadow: 0 0 15px rgba(139, 92, 246, 0.3); }
+.coin-icon { font-size: 24px; color: #a78bfa; font-weight: bold; text-shadow: 0 0 10px #8b5cf6;}
+.asset-title { font-size: 12px; color: #a1a1aa; letter-spacing: 1px; }
+.asset-amount { font-size: 22px; color: #fff; font-family: monospace; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 15px rgba(255,255,255,0.4); }
+.store-btn { background: rgba(255, 255, 255, 0.05); padding: 6px 12px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.1); }
+.store-text { font-size: 12px; font-weight: bold; color: #e4e4e7; }
+.arrow { color: #a1a1aa; font-weight: bold; }
 
 /* 修改资料弹窗 */
 .modal-overlay {
