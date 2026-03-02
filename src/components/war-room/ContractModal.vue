@@ -30,12 +30,29 @@
         
         <view class="form-group mb-2">
           <text class="label">最大招募人数</text>
-          <picker mode="selector" :range="rangeArray" @change="onPickerChange">
-            <view class="picker-box flex justify-between items-center">
-              <text>{{ form.maxUsers }} 人</text>
-              <text class="picker-icon">▼</text>
+          <view class="flex items-center space-x-2">
+            <view 
+              v-for="num in rangeArray" 
+              :key="num" 
+              class="day-btn" 
+              :class="{ active: form.maxUsers === num }" 
+              @click="form.maxUsers = num"
+            >
+              {{ num }}
             </view>
-          </picker>
+          </view>
+          <text class="hint-text mt-1 text-xs block">招募战友越多，平摊生存概率越高</text>
+        </view>
+
+        <view class="form-group mb-4">
+          <text class="label">征召时限 (过期自动解散)</text>
+          <view class="flex items-center space-x-2">
+            <view class="day-btn" :class="{ active: form.recruitDeadline === 1 }" @click="form.recruitDeadline = 1">1小时</view>
+            <view class="day-btn" :class="{ active: form.recruitDeadline === 6 }" @click="form.recruitDeadline = 6">6小时</view>
+            <view class="day-btn" :class="{ active: form.recruitDeadline === 12 }" @click="form.recruitDeadline = 12">12小时</view>
+            <view class="day-btn" :class="{ active: form.recruitDeadline === 24 }" @click="form.recruitDeadline = 24">24小时</view>
+          </view>
+          <text class="hint-text mt-1 text-xs block">⏰ 若在此时限内未满员，对决将失效并退回保密金</text>
         </view>
       </scroll-view>
 
@@ -56,6 +73,7 @@
 /**
  * @component ContractModal
  * @description 战区(生死血契)模块弹出层组件，用于签署对战契约或选择匹配模式。
+ * 2026 优化：全自定义 UI 替代原生 Picker 以保证视觉统一性。
  */
 
 import { reactive, computed } from 'vue'
@@ -76,12 +94,9 @@ const form = reactive({
   name: '',
   days: 21,
   deposit: 500,
-  maxUsers: 2
+  maxUsers: 2,
+  recruitDeadline: 6 // 默认6小时
 })
-
-const onPickerChange = (e) => {
-  form.maxUsers = rangeArray[e.detail.value]
-}
 
 const expectedPool = computed(() => {
   const dep = parseInt(form.deposit) || 0
@@ -126,11 +141,14 @@ const submitContract = () => {
   padding: 10px 14px;
   color: #fff;
   font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .styled-input:focus { border-color: #ef4444; }
-.space-x-2 { gap: 8px; }
+.space-x-2 { display: flex; gap: 8px; flex-wrap: wrap; }
 .day-btn {
   flex: 1;
+  min-width: 50px;
   text-align: center;
   padding: 8px 0;
   background: #09090b;
@@ -147,15 +165,6 @@ const submitContract = () => {
   font-weight: bold;
 }
 .hint-text { color: #f59e0b; }
-.picker-box {
-  background: #09090b;
-  border: 1px solid #3f3f46;
-  border-radius: 8px;
-  padding: 10px 14px;
-  color: #fff;
-  font-size: 14px;
-}
-.picker-icon { color: #52525b; font-size: 12px; }
 
 .modal-footer { border-top: 1px solid rgba(255, 255, 255, 0.05); }
 .pool-label { font-size: 11px; color: #a1a1aa; }

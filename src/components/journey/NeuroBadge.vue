@@ -6,16 +6,11 @@
       <view class="flex-col items-center">
           <view class="badge-icon-wrapper">
               
-              <!-- 充能态：SVG 环形呼吸进度条 -->
-              <svg v-if="status === 'progress'" class="progress-ring" viewBox="0 0 60 60">
-                  <circle class="ring-bg" cx="30" cy="30" r="28" />
-                  <circle 
-                    class="ring-fill" 
-                    cx="30" cy="30" r="28" 
-                    :stroke-dasharray="175" 
-                    :stroke-dashoffset="175 - (175 * progress)" 
-                  />
-              </svg>
+              <!-- 充能态：CSS 环形进度条 (解决真机 SVG 兼容性) -->
+              <view v-if="status === 'progress'" 
+                    class="progress-ring-css" 
+                    :style="{ '--progress': (progress * 100) + '%' }">
+              </view>
               
               <!-- 核心徽章图标区 -->
               <view class="badge-icon">
@@ -41,6 +36,7 @@
 /**
  * @component NeuroBadge
  * @description 神经元徽章组件，展示用户在不同成就阶段解锁的徽章状态及解锁条件。
+ * 兼容性说明：进度环已重构为 CSS conic-gradient 模式以支持真机调试。
  */
 
 import { computed } from 'vue'
@@ -78,15 +74,11 @@ const onClick = () => {
 </script>
 
 <style lang="scss" scoped>
-/* 
-  高内聚徽章组件样式：
-  必须使用 flex-shrink: 0 极其关键，防止在外层横向 scroll-view 中被挤压变形。
-*/
 .badge-item {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
-    width: 72px; /* 固定跨度 */
+    width: 72px; 
     margin-right: 20px;
     flex-shrink: 0; 
     transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
@@ -104,7 +96,6 @@ const onClick = () => {
     margin-bottom: 8px;
 }
 
-/* 基础图标：生铁/未激活质感 */
 .badge-icon {
     width: 52px; height: 52px;
     background: linear-gradient(145deg, #121214, #18181b); 
@@ -118,11 +109,10 @@ const onClick = () => {
 }
 .icon-text {
     font-size: 24px;
-    color: #3f3f46; /* 暗淡无光 */
+    color: #3f3f46; 
     transition: all 0.6s ease;
 }
 
-/* 基础文字 */
 .badge-day { font-size: 11px; color: #52525b; font-family: monospace; font-weight: 900; transition: color 0.3s; }
 .badge-name { font-size: 12px; color: #52525b; font-weight: bold; margin-top: 4px; letter-spacing: 1px; transition: color 0.3s;}
 .badge-progress { 
@@ -132,9 +122,6 @@ const onClick = () => {
     padding: 2px 6px; border-radius: 8px;
 }
 
-/* =========================================
-   状态 1: 沉睡态 (Locked)
-   ========================================= */
 .status-locked {
     filter: grayscale(100%) opacity(0.4) blur(0.5px);
     transform: scale(0.9);
@@ -144,10 +131,6 @@ const onClick = () => {
     border-color: #18181b;
 }
 
-
-/* =========================================
-   状态 2: 充能态 (Progress) 
-   ========================================= */
 .status-progress {
     transform: scale(1.05);
 }
@@ -164,57 +147,48 @@ const onClick = () => {
 .status-progress .badge-day { color: var(--theme-primary); opacity: 0.8; }
 .status-progress .badge-name { color: #e4e4e7; opacity: 0.9; }
 
-/* SVG 进度条环绕机制 */
-.progress-ring {
+/* CSS 进度条环绕机制 (替代 SVG 以解决真机显示问题) */
+.progress-ring-css {
     position: absolute;
     top: 0; left: 0;
     width: 60px; height: 60px;
-    transform: rotate(-90deg);
+    border-radius: 50%;
+    /* 使用 conic-gradient 构建进度环 */
+    background: conic-gradient(var(--theme-primary) var(--progress), rgba(39, 39, 42, 0.3) var(--progress));
+    /* 使用 mask 镂空中心 */
+    -webkit-mask: radial-gradient(transparent 27px, #000 28px);
+    mask: radial-gradient(transparent 27px, #000 28px);
     z-index: 3;
     animation: ring-breathe 3s ease-in-out infinite alternate;
 }
-.ring-bg { fill: none; stroke: rgba(39, 39, 42, 0.5); stroke-width: 2; }
-.ring-fill {
-    fill: none;
-    stroke: var(--theme-primary);
-    stroke-width: 2.5;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1.5s cubic-bezier(0.25, 1, 0.5, 1);
-    filter: drop-shadow(0 0 4px var(--theme-shadow-primary));
-}
 
 @keyframes ring-breathe {
-    0% { transform: rotate(-90deg) scale(0.98); opacity: 0.8; }
-    100% { transform: rotate(-90deg) scale(1.02); opacity: 1; filter: drop-shadow(0 0 6px var(--theme-primary)); }
+    0% { transform: rotate(0deg) scale(0.98); opacity: 0.8; }
+    100% { transform: rotate(0deg) scale(1.02); opacity: 1; }
 }
 @keyframes icon-pulse {
     0% { opacity: 0.6; transform: scale(0.95); }
     100% { opacity: 1; transform: scale(1.05); }
 }
 
-/* =========================================
-   状态 3: 爆发态/已解锁 (Unlocked) 
-   ========================================= */
 .status-unlocked {
     transform: translateY(-6px);
     animation: float-super 4s ease-in-out infinite;
 }
 .status-unlocked .badge-icon {
     border-color: var(--theme-primary);
-    /* 强烈的玻璃高光切割感 */
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, var(--theme-shadow-primary) 100%);
     box-shadow: 
-        0 10px 20px rgba(0, 0, 0, 0.8), /* 底部深阴影拔高体积感 */
-        0 0 20px var(--theme-shadow-primary), /* 中层颜色辐射 */
-        inset 0 2px 2px rgba(255, 255, 255, 0.3), /* 顶部玻璃高光 */
-        inset 0 -4px 10px var(--theme-shadow-primary); /* 底部内反射光 */
+        0 10px 20px rgba(0, 0, 0, 0.8),
+        0 0 20px var(--theme-shadow-primary),
+        inset 0 2px 2px rgba(255, 255, 255, 0.3),
+        inset 0 -4px 10px var(--theme-shadow-primary);
     color: #fff;
 }
 .status-unlocked .icon-text {
     color: #fff;
     text-shadow: 0 0 15px rgba(255, 255, 255, 0.8), 0 0 30px var(--theme-primary);
 }
-/* 解锁后的外溢流光特效 */
 .glow-effect {
     position: absolute;
     top: 50%; left: 50%;
@@ -224,7 +198,7 @@ const onClick = () => {
     border-radius: 50%;
     z-index: 1;
     animation: slow-glow 3s infinite alternate;
-    mix-blend-mode: screen; /* 赛博朋克融合光核心属性 */
+    mix-blend-mode: screen; 
 }
 .status-unlocked .badge-day { color: var(--theme-primary); text-shadow: 0 0 8px var(--theme-shadow-primary); }
 .status-unlocked .badge-name { color: #f4f4f5; text-shadow: 0 0 4px rgba(255, 255, 255, 0.2); }

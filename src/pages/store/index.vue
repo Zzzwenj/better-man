@@ -222,8 +222,8 @@ const executeTransaction = async (product) => {
 }
 .asset-dashboard::before {
   content: ''; top: -50%; left: -50%; width: 200%; height: 200%; position: absolute;
-  background: conic-gradient(from 0deg, transparent 0%, rgba(0, 229, 255, 0.1) 25%, transparent 50%, rgba(139, 92, 246, 0.1) 75%, transparent 100%);
-  animation: rotate 10s linear infinite;
+  background: conic-gradient(from 0deg, transparent 0%, rgba(0, 229, 255, 0.05) 25%, transparent 50%, rgba(139, 92, 246, 0.05) 75%, transparent 100%);
+  animation: rotate 20s linear infinite; /* 减慢速度减少渲染压力 */
   pointer-events: none;
 }
 @keyframes rotate { 100% { transform: rotate(360deg); } }

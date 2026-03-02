@@ -45,8 +45,13 @@ export const useWarzoneStore = defineStore('warzone', {
                 })
 
                 if (res.result.code === 0) {
-                    // 立即切过去
-                    const newRoom = res.result.data
+                    // 计算过期时间戳 (当前服务器/本地时间 + 截止小时数)
+                    const expiryTime = Date.now() + (matchData.recruitDeadline || 6) * 3600 * 1000
+
+                    const newRoom = {
+                        ...res.result.data,
+                        expiryTime // 前端持久化模拟，后端实际也会存
+                    }
                     this.deathMatches.unshift({
                         ...newRoom,
                         onlineCount: newRoom.member_count || 1

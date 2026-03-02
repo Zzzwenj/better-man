@@ -75,11 +75,17 @@
       <view class="pb-safe"></view>
     </scroll-view>
 
-    <!-- 生死局创建弹窗 -->
     <ContractModal 
       :show="showContractModal" 
       @update:show="showContractModal = $event"
       @confirm="onContractCreated"
+    />
+
+    <CyberDialog
+      v-model:show="dialog.show"
+      :title="dialog.title"
+      :content="dialog.content"
+      :color="dialog.color"
     />
 
     <CustomTabBar :current="1" />
@@ -93,6 +99,7 @@ import { useWarzoneStore } from '../../store/warzone.js'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import RoomCard from '../../components/war-room/RoomCard.vue'
 import ContractModal from '../../components/war-room/ContractModal.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
@@ -101,6 +108,22 @@ const warzoneStore = useWarzoneStore()
 const currentTab = ref(0)
 const showContractModal = ref(false)
 const searchQuery = ref('')
+
+const dialog = ref({
+  show: false,
+  title: '',
+  content: '',
+  color: '#ef4444'
+})
+
+const showWarning = (title, content) => {
+  dialog.value = {
+    show: true,
+    title,
+    content,
+    color: '#ef4444'
+  }
+}
 
 onShow(() => {
   // 每次进入大厅，静默拉取一下最新数据
@@ -140,12 +163,7 @@ const totalOnline = computed(() => {
 
 const handleCreateDeathMatch = () => {
   if (warzoneStore.activeDeathMatchId) {
-     uni.showModal({
-       title: '警告：身负血契',
-       content: '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。',
-       showCancel: false,
-       confirmColor: '#ef4444'
-     })
+     showWarning('警告：身负血契', '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。')
      return
   }
   showContractModal.value = true
@@ -157,12 +175,7 @@ const enterRoom = (room) => {
   const typeName = isPublic ? '公共战区' : '生死血契战役'
 
   if (currentActive && currentActive !== room.id) {
-     uni.showModal({
-       title: '侦测到并行的神经驻留',
-       content: `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`,
-       showCancel: false,
-       confirmColor: '#ef4444'
-     })
+     showWarning('侦测到并行的神经驻留', `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`)
      return
   }
 
@@ -229,7 +242,7 @@ page { height: 100%; }
   border-color: var(--theme-primary);
   box-shadow: 0 0 10px var(--theme-shadow-primary);
 }
-.search-icon { font-size: 16px; opacity: 0.6; }
+.search-icon { font-size: 16px; opacity: 0.6; padding-left: 10px;}
 .search-input { color: #fff; font-size: 14px; height: 100%; border: none; background: transparent;}
 .search-placeholder { color: #52525b; font-size: 13px; }
 .clear-btn { padding: 4px 10px; }

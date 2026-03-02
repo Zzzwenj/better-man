@@ -8,34 +8,7 @@
       @click="switchTab(index, item.pagePath)"
     >
       <view class="icon-wrapper" :class="{ 'bounce': isAnimating === index }">
-        <!-- 主控 -->
-        <svg v-if="index === 0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tab-icon">
-          <path d="M12 2L22 7V17L12 22L2 17V7L12 2Z" :fill="current === 0 ? 'var(--theme-bg-highlight)' : 'none'" :stroke="current === 0 ? 'var(--theme-primary)' : '#71717a'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="12" cy="12" r="3" :fill="current === 0 ? 'var(--theme-primary)' : 'none'" :stroke="current === 0 ? 'var(--theme-primary)' : '#71717a'"/>
-          <path d="M12 15V19 M12 5V9 M5 8L8 10 M19 16L16 14 M5 16L8 14 M19 8L16 10" :stroke="current === 0 ? 'var(--theme-primary)' : '#71717a'"/>
-        </svg>
-
-        <!-- 战区 -->
-        <svg v-if="index === 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tab-icon">
-          <circle cx="12" cy="12" r="10" :fill="current === 1 ? 'var(--theme-bg-highlight)' : 'none'" :stroke="current === 1 ? 'var(--theme-primary)' : '#71717a'" stroke-width="1.5"/>
-          <circle cx="12" cy="12" r="4" :fill="current === 1 ? 'var(--theme-primary)' : 'none'" :stroke="current === 1 ? 'var(--theme-primary)' : '#71717a'"/>
-          <path d="M12 2v6 M12 16v6 M2 12h6 M16 12h6" :stroke="current === 1 ? 'var(--theme-primary)' : '#71717a'"/>
-          <path d="M4.93 4.93l4.24 4.24 M14.83 14.83l4.24 4.24 M4.93 19.07l4.24-4.24 M14.83 9.17l4.24-4.24" :stroke="current === 1 ? 'var(--theme-primary)' : '#71717a'"/>
-        </svg>
-
-        <!-- 图谱 -->
-        <svg v-if="index === 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tab-icon">
-          <path d="M2 12h4l3-9 5 18 3-9h5" :stroke="current === 2 ? 'var(--theme-primary)' : '#71717a'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <rect x="3" y="3" width="18" height="18" rx="2" :fill="current === 2 ? 'var(--theme-bg-highlight)' : 'none'" :stroke="current === 2 ? 'transparent' : '#71717a'" stroke-dasharray="2 2"/>
-          <circle v-if="current === 2" cx="12" cy="12" r="2" fill="var(--theme-primary)"/>
-        </svg>
-
-        <!-- 系统 -->
-        <svg v-if="index === 3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tab-icon">
-          <rect x="6" y="6" width="12" height="12" rx="1" :fill="current === 3 ? 'var(--theme-bg-highlight)' : 'none'" :stroke="current === 3 ? 'var(--theme-primary)' : '#71717a'" stroke-width="1.5"/>
-          <path d="M9 6V2 M15 6V2 M9 22v-4 M15 22v-4 M6 9H2 M6 15H2 M22 9h-4 M22 15h-4" :stroke="current === 3 ? 'var(--theme-primary)' : '#71717a'" stroke-width="1.5" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="2" :fill="current === 3 ? 'var(--theme-primary)' : 'none'" :stroke="current === 3 ? 'var(--theme-primary)' : '#71717a'"/>
-        </svg>
+        <image :src="getIconData(index)" class="tab-icon" mode="aspectFit" />
       </view>
       <text class="tab-text">{{ item.text }}</text>
     </view>
@@ -49,7 +22,9 @@
  */
 
 import { ref } from 'vue'
+import { useThemeStore } from '../../store/theme.js'
 
+const themeStore = useThemeStore()
 const props = defineProps({
   current: {
     type: Number,
@@ -65,6 +40,21 @@ const list = [
   { pagePath: '/pages/journey/index', text: '图谱' },
   { pagePath: '/pages/profile/index', text: '系统' }
 ]
+
+const getIconData = (index) => {
+  const isActive = props.current === index;
+  const primary = isActive ? themeStore.activeThemeData.primary : '#71717a';
+  const bg = isActive ? (themeStore.activeThemeData.bgHighlight || `rgba(0, 229, 255, 0.1)`) : 'none';
+  
+  const iconTemplates = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L22 7V17L12 22L2 17V7L12 2Z" fill="${bg}" stroke="${primary}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="${isActive ? primary : 'none'}" stroke="${primary}"/><path d="M12 15V19 M12 5V9 M5 8L8 10 M19 16L16 14 M5 16L8 14 M19 8L16 10" stroke="${primary}"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="${bg}" stroke="${primary}" stroke-width="1.5"/><circle cx="12" cy="12" r="4" fill="${isActive ? primary : 'none'}" stroke="${primary}"/><path d="M12 2v6 M12 16v6 M2 12h6 M16 12h6" stroke="${primary}"/><path d="M4.93 4.93l4.24 4.24 M14.83 14.83l4.24 4.24 M4.93 19.07l4.24-4.24 M14.83 9.17l4.24-4.24" stroke="${primary}"/></svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 12h4l3-9 5 18 3-9h5" stroke="${primary}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="3" width="18" height="18" rx="2" fill="${bg}" stroke="${isActive ? 'transparent' : '#71717a'}" stroke-dasharray="2 2"/>${isActive ? `<circle cx="12" cy="12" r="2" fill="${primary}"/>` : ''}</svg>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1" fill="${bg}" stroke="${primary}" stroke-width="1.5"/><path d="M9 6V2 M15 6V2 M9 22v-4 M15 22v-4 M6 9H2 M6 15H2 M22 9h-4 M22 15h-4" stroke="${primary}" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="${isActive ? primary : 'none'}" stroke="${primary}"/></svg>`
+  ];
+  
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(iconTemplates[index])}`;
+}
 
 const switchTab = (index, url) => {
   if (props.current === index) return

@@ -121,6 +121,22 @@
         </view>
       </view>
     </view>
+    
+    <!-- 弹窗：战区名重排 (自定义组件) -->
+    <SloganEditModal 
+      v-model:show="showRenameModal" 
+      title="📡 战区重排"
+      placeholder="输入新的战区识别代号..."
+      @confirm="onRenameConfirm"
+    />
+
+    <CyberDialog
+      v-model:show="dialog.show"
+      :title="dialog.title"
+      :content="dialog.content"
+      :showCancel="true"
+      @confirm="dialog.confirmAction"
+    />
   </view>
 </template>
 
@@ -130,6 +146,8 @@ import { onHide } from '@dcloudio/uni-app'
 import { useChatStore } from '../../store/chat.js'
 import GlobalResonance from '../../components/war-room/GlobalResonance.vue'
 import { useThemeStore } from '../../store/theme.js'
+import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
 
 const themeStore = useThemeStore()
 import { useUserStore } from '../../store/user.js'
@@ -141,6 +159,8 @@ const scrollTop = ref(0)
 const currentUid = ref('')
 const userAvatar = ref('')
 const avatarInitial = ref('我')
+const showRenameModal = ref(false)
+const dialog = ref({ show: false, title: '', content: '', confirmAction: () => {} })
 
 import { useWarzoneStore } from '../../store/warzone.js'
 const warzoneStore = useWarzoneStore()
@@ -255,18 +275,15 @@ const goBack = () => {
 }
 
 const leaveRoom = () => {
-  uni.showModal({
-    title: '撤离通讯网络',
-    content: '撤离后当前的通讯链接将被阻断，是否确认重返大厅？',
-    confirmText: '执行撤离',
-    confirmColor: '#ef4444',
-    success: (res) => {
-      if (res.confirm) {
+  dialog.value = {
+    show: true,
+    title: '撤离警告',
+    content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区。是否继续？',
+    confirmAction: () => {
         warzoneStore.clearActivePublicRoom()
         uni.switchTab({ url: '/pages/war-room/index' })
-      }
     }
-  })
+  }
 }
 
 // 模拟群组管理与举报流程
@@ -289,21 +306,17 @@ const handleMoreAction = () => {
       // 其他分支根据房主判断索引偏移
       if (isOwner.value) {
          if (res.tapIndex === 1) {
-            uni.showModal({
-              title: '战区重组', content: '输入新的战区名称（扣除 100 神经币）', editable: true, placeholderText: '新的纪元...',
-              success: (mRes) => {
-                if (mRes.confirm && mRes.content) {
-                   uni.showToast({ title: '战区名称部署完毕', icon: 'success' })
-                }
-              }
-            })
+            showRenameModal.value = true
          } else if (res.tapIndex === 2) {
-            uni.showModal({ title: '警告', content: '将清除本场所有通讯记录？', confirmColor: '#ef4444', success: (mRes) => {
-              if (mRes.confirm) {
-                 chatStore.messages = [] // 前端软清空
-                 uni.showToast({ title: '格式化完成' })
-              }
-            }})
+            dialog.value = {
+                show: true,
+                title: '格式化确认',
+                content: '即将清除本场所有本地通讯记录，此操作不可撤销。是否继续？',
+                confirmAction: () => {
+                   chatStore.messages = [] // 前端软清空
+                   uni.showToast({ title: '格式化完成' })
+                }
+            }
          } else {
             uni.showToast({ title: '记录已锚定，等待秩序庭空降验证。', icon: 'none' })
          }
@@ -365,24 +378,20 @@ const sendText = () => {
 }
 
 const triggerBroadcast = () => {
-  uni.showModal({
-    title: '全境系统广播 (500 神经币)',
-    content: '本次广播将无视战区区服，强行推送给所有在线探员，且携带红色震屏发光特效。',
-    confirmText: '豪掷发送',
-    confirmColor: themeStore.activeThemeData.primary,
-    success: (res) => {
-        if (res.confirm) {
+    dialog.value = {
+        show: true,
+        title: '全境广播确认',
+        content: '本次广播将无视战区区服，强行推送给所有在线探员，将消耗 500 神经币。',
+        confirmAction: () => {
             if (userStore.spendCoins(500, '购买高能世界广播')) {
                 const txt = inputVal.value.trim() || '🔥 战区最高意志者在此！'
                 inputVal.value = ''
-                // 为了演示持久化保留，可以在真正发给后端时带上特征码前缀
                 executeSend(txt, true, `[BROADCAST] ${txt}`)
             } else {
                 uni.showToast({ title: '神经币储备不足', icon: 'error' })
             }
         }
     }
-  })
 }
 
 const executeSend = async (content, isBroadcast = false, payloadContent = null) => {
@@ -440,6 +449,17 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     }
   } catch(e) {
     uni.showToast({ title: '发送失败', icon: 'none' })
+  }
+}
+const onRenameConfirm = (newName) => {
+  if (userStore.spendCoins(100, '重组战区命名')) {
+    uni.showLoading({ title: '通讯号波段重设中...' })
+    setTimeout(() => {
+      uni.hideLoading()
+      uni.showToast({ title: '战区名称部署完毕', icon: 'success' })
+    }, 1000)
+  } else {
+    uni.showToast({ title: '神经币不足，无法覆盖指令', icon: 'none' })
   }
 }
 </script>
