@@ -196,17 +196,7 @@ async function assignRoom(uid) {
 }
 
 async function sendMessage(uid, payload) {
-    const {
-        room_id,
-        content,
-        nickname,
-        avatar,
-        is_vanguard,
-        equipped_title,
-        equipped_avatar,
-        is_broadcast,
-        is_emp
-    } = payload
+    const { room_id, content, is_broadcast, is_emp } = payload
 
     if (!content || !room_id) return { code: 400, msg: '空信道' }
 
@@ -223,16 +213,32 @@ async function sendMessage(uid, payload) {
         }
     }
 
+    // --- 安全加固 ---
+    // 反查数据库，获取用户真实的 nickname, avatar, 和装备字段。杜绝前端伪装。
+    const usersCollection = db.collection('uni-id-users')
+    const userRes = await usersCollection.doc(uid).get()
+    const userInfo = userRes.data && userRes.data.length > 0 ? userRes.data[0] : {}
+
+    // 如果是广播，判断是否具备广播前缀。
+    // 去除 [BROADCAST] 标记，真实存库
+    if (is_broadcast && safeContent.startsWith('[BROADCAST]')) {
+        safeContent = safeContent.replace('[BROADCAST]', '').trim()
+    }
+
+    // 从云端提取装备信息，兼容 null 情况
+    const equippedRaw = userInfo.equipped || {}
+    const isVanguard = userInfo.has_black_gold === true || userInfo.has_black_gold === 'true'
+
     const messagesCollection = db.collection('chat_messages')
     const newMsg = {
         room_id,
         user_id: uid,
         content: safeContent,
-        nickname: nickname || '匿名特工',
-        avatar: avatar || '',
-        is_vanguard: !!is_vanguard,
-        equipped_title: equipped_title || null,
-        equipped_avatar: equipped_avatar || null,
+        nickname: userInfo.nickname || '匿名特工',
+        avatar: userInfo.avatar || '',
+        is_vanguard: isVanguard,
+        equipped_title: equippedRaw.title || null,
+        equipped_avatar: equippedRaw.avatarFrame || null,
         is_broadcast: !!is_broadcast,
         is_emp: !!is_emp,
         type: 'user',

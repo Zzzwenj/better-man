@@ -80,12 +80,60 @@ export const useUserStore = defineStore('user', {
                 }
                 // 盲盒逻辑预留（直接消耗币，这里不处理抽取结果）
                 else if (item.id === 'b_01') {
-                    // blind box logic
+                    // 奖池定义
+                    const pool = [
+                        { id: 'f_01', type: 'frame', name: '深空等离子', duration: 15, prob: 0.15 },
+                        { id: 'f_02', type: 'frame', name: '故障干扰线', duration: 15, prob: 0.15 },
+                        { id: 't_01', type: 'title', name: '深渊行者', duration: 15, prob: 0.10 },
+                        { id: 't_02', type: 'title', name: '绝命赌徒', duration: 15, prob: 0.10 },
+                        { id: 't_03', type: 'title', name: '赛博精神病', duration: 15, prob: 0.05 },
+                        { id: 'w_01', type: 'emp', name: '全频 EMP', duration: 0, prob: 0.20 }, // 单次消耗
+                        { id: 'coin', type: 'currency', name: '神经币碎片 (x200)', amount: 200, prob: 0.25 }
+                    ]
+
+                    // 轮盘抽奖
+                    const rand = Math.random()
+                    let sum = 0
+                    let wonItem = null
+                    for (const prize of pool) {
+                        sum += prize.prob
+                        if (rand <= sum) {
+                            wonItem = prize
+                            break
+                        }
+                    }
+
+                    if (wonItem) {
+                        if (wonItem.type === 'currency') {
+                            this.earnCoins(wonItem.amount, '盲盒中奖')
+                            uni.showToast({ title: `恭喜抽中 ${wonItem.name}`, icon: 'none' })
+                        } else if (wonItem.type === 'emp') {
+                            this.equipped.empActive = true
+                            uni.showToast({ title: `恭喜抽中 ${wonItem.name}`, icon: 'none' })
+                        } else {
+                            const now = Date.now()
+                            const durationMs = wonItem.duration * 24 * 60 * 60 * 1000
+                            const exp = this.ownedItems[wonItem.id]
+
+                            if (exp && exp > now) {
+                                this.ownedItems[wonItem.id] = exp + durationMs
+                            } else {
+                                this.ownedItems[wonItem.id] = now + durationMs
+                                // 自动装备
+                                this.equipItem(wonItem.id, true) // 传入 true 以略过 toast
+                            }
+                            uni.showToast({ title: `恭喜获得 [${wonItem.name}]`, icon: 'none' })
+                        }
+                        uni.setStorageSync('neuro_owned_items', this.ownedItems)
+                        uni.setStorageSync('neuro_equipped', this.equipped)
+                    }
                 }
-                // 期限装扮类 (30 天为例)
+                // 彩蛋等特效 / 期限装扮类 (30 天为例)
                 else {
                     const now = Date.now()
-                    const durationMs = 30 * 24 * 60 * 60 * 1000 // 默认给 30 天
+                    // 默认时效，如果是从商城来，通常 item.durationDays 会有值，没有则默认 30 天
+                    const days = item.durationDays || 30
+                    const durationMs = days * 24 * 60 * 60 * 1000
                     let exp = this.ownedItems[item.id]
 
                     if (exp && exp > now) {
@@ -95,21 +143,24 @@ export const useUserStore = defineStore('user', {
                         // 首次获得或已过期重新获得
                         this.ownedItems[item.id] = now + durationMs
                         // 自动装备刚买的东西
-                        this.equipItem(item.id)
+                        this.equipItem(item.id, true)
                     }
                     uni.setStorageSync('neuro_owned_items', this.ownedItems)
-                    uni.showToast({ title: '权限已授权并记录时效', icon: 'none' })
+                    uni.showToast({ title: '实体部署成功，权限已授权', icon: 'none' })
                 }
+
+                // 每次发生交易或者资产变化，防抖式向云端静默结印
+                this.syncAssetsToCloud()
                 return true
             }
             return false
         },
 
         // 穿戴/卸下 装备
-        equipItem(itemId) {
+        equipItem(itemId, silent = false) {
             const exp = this.ownedItems[itemId]
             if (!exp || exp < Date.now()) {
-                uni.showToast({ title: '该数据资产已过期或未获取', icon: 'none' })
+                if (!silent) uni.showToast({ title: '该数据资产已过期或未获取', icon: 'none' })
                 return
             }
 
@@ -121,13 +172,17 @@ export const useUserStore = defineStore('user', {
             else if (itemId.startsWith('t_')) {
                 this.equipped.title = this.equipped.title === itemId ? null : itemId
             }
-            // 彩蛋特效类
+            // 彩蛋特效类 (目前定义可能也占用某个槽位或者只是开关，这里假设目前彩蛋暂留或者设为挂载件)
             else if (itemId.startsWith('e_')) {
-                // TODO
+                // 如果后续有特效槽位可以加在这，如果只是留个后门先不处理
+                console.log('彩蛋已激活: ', itemId)
             }
 
             uni.setStorageSync('neuro_equipped', this.equipped)
-            uni.showToast({ title: '物理特征已更新', icon: 'none' })
+            if (!silent) uni.showToast({ title: '物理特征已更新', icon: 'none' })
+
+            // 装备变化也需要同步
+            this.syncAssetsToCloud()
         },
 
         // 在系统关键节点（例如每次打开战区）检验是否过期并自动扒下过期衣服
@@ -209,6 +264,7 @@ export const useUserStore = defineStore('user', {
 
             this.earnCoins(10000, '平台对赌胜利：30天退还押金并奖励神币')
             console.log('[Store] 王者之路，契约圆满。')
+            this.syncAssetsToCloud()
         },
 
         // 领取一次性 24 小时越权体验 (看广告后调用)

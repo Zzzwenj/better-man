@@ -77,7 +77,10 @@
                 {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
               </text>
             </view>
-            <text class="user-name-tag ellipsis">{{ (msg.user_id === currentUid ? '我' : '') + (msg.nickname || '匿名特工') }}</text>
+            <view class="flex items-center">
+              <text class="user-name-tag">{{ (msg.user_id === currentUid ? '我' : '') + (msg.nickname || '匿名特工') }}</text>
+              <text class="time-tag ml-1">{{ formatTimeAgo(msg.created_date) }}</text>
+            </view>
           </view>
 
           <view class="msg-bubble" :class="[
@@ -253,14 +256,8 @@ onMounted(async () => {
         data: { token, action: 'getHistoryLogs', payload: { room_id: assignRes.result.roomId } }
       })
       if (historyRes.result.code === 0) {
-        // Mock: 假设云端返回的数据有时丢了 is_broadcast 字段，但是世界公屏喊话内容有特有的 [BROADCAST] 前缀标识
-        const formattedLogs = historyRes.result.data.map(m => {
-          if (m.content && m.content.startsWith('[BROADCAST]')) {
-             return { ...m, is_broadcast: true, content: m.content.replace('[BROADCAST]', '').trim() }
-          }
-          return m
-        })
-        chatStore.setHistory(formattedLogs)
+        // 直接使用云端下发的结构数据，服务端已经洗净处理好了 `is_broadcast` 等标记
+        chatStore.setHistory(historyRes.result.data)
         scrollToBottom()
       }
     }
@@ -323,15 +320,25 @@ const leaveRoom = () => {
   }
 }
 
-// 获取房间真实创建者判断是否为所有者
+// 获取房间真实创建者判断是否为所有者，或者是否是公频的管理员权限
 const isOwner = computed(() => {
     if (!chatStore.roomId) return false;
     const roomKey = chatStore.roomId.replace('room_', ''); // 这里可能是公共房或者真实DM房间id
     const deathMatch = warzoneStore.deathMatches.find(r => r.id === roomKey);
+    // 生死局判定：创建者拥有绝对权限
     if (deathMatch && deathMatch.creator_id === currentUid.value) {
         return true;
     }
-    // TODO: 公共频道权限这里以后可能判断管理员，现在默认false
+    
+    // 公频判定：如果是公频（没在 deathMatch 且能在 publicRooms 找到）
+    const pubMatch = warzoneStore.publicRooms.find(r => r.id === roomKey);
+    if (pubMatch) {
+       // 如果持有黑金桂冠，或是极端称号 [深渊行者][绝命赌徒]，则临时赋予战区纠察队管理员权限
+       if (userStore.hasBlackGoldCrown || userStore.equipped.title === 't_01' || userStore.equipped.title === 't_02') {
+           return true;
+       }
+    }
+    
     return false;
 })
 
@@ -478,7 +485,8 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     is_broadcast: isBroadcast,
     is_emp: isEMP,
     equipped_title: userStore.equipped.title,
-    equipped_avatar: userStore.equipped.avatarFrame
+    equipped_avatar: userStore.equipped.avatarFrame,
+    created_date: Date.now()
   })
   
   try {
@@ -529,6 +537,22 @@ const onRenameConfirm = (newName) => {
     uni.showToast({ title: '神经币不足，无法覆盖指令', icon: 'none' })
   }
 }
+
+/**
+ * 时间相对格式化工具
+ * @param {Number|String} timestamp 
+ */
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return ''
+  const now = Date.now()
+  const diff = now - timestamp
+
+  if (diff < 60000) return '刚刚' // 1 分钟内
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm' // 1 小时内返回 m
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h' // 24 小时内返回 h
+  return Math.floor(diff / 86400000) + 'd' // 天数计算
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -629,7 +653,8 @@ page {
 .align-start { align-items: flex-start; }
 .align-end { align-items: flex-end; }
 .name-tag-row { margin-bottom: 4px; padding: 0 4px; }
-.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; max-width: 120px; }
+.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.time-tag { font-size: 9px; color: #52525b; font-family: monospace; margin-top: 1px; }
 .vanguard-crown { font-size: 13px; line-height: 1; }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
