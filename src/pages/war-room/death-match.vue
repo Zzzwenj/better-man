@@ -44,22 +44,22 @@
         <text class="slogan-text">“ {{ dmRoom.slogan }} ”</text>
       </view>
       
-      <!-- 群主干预台 -->
+      <!-- 群主干预台（只保留编辑宣言，征召令移至全员可见区） -->
       <view class="admin-panel mb-6" v-if="isOwner">
-        <view class="flex justify-between items-center mb-3">
+        <view class="flex justify-between items-center">
           <text class="panel-title flex items-center"><text class="text-xl mr-1">👑</text>一号位权限</text>
           <text class="edit-link" @click="editSlogan">编辑宣言 ✎</text>
-        </view>
-        <view class="btn-group flex flex-col gap-3">
-          <view class="admin-btn edit-btn flex justify-center items-center" @click="handleInvite">
-            <text class="btn-text">招募新探员 (生成征召令)</text>
-          </view>
         </view>
       </view>
 
       <view class="participant-list">
         <view class="flex justify-between items-center mb-4">
           <text class="list-title">生还名单 ({{ dmRoom.onlineCount }} / {{ dmRoom.maxUsers }})</text>
+          <!-- 征召令：所有成员均可生成，促进病毒式引流 -->
+          <view class="invite-chip flex items-center" @click="handleInvite" hover-class="invite-chip-hover">
+            <text class="invite-chip-icon">📡</text>
+            <text class="invite-chip-text">生成征召令</text>
+          </view>
         </view>
         <!-- 占位假数据 -->
         <view class="user-row flex justify-between items-center mb-3" @longpress="handleUserLongPress">
@@ -172,9 +172,12 @@ const displayRoomNum = computed(() => {
   return roomId.value
 })
 
-onLoad((options) => {
+onLoad(async (options) => {
   roomId.value = options.id || ''
   uni.hideTabBar()
+
+  // 先拉取云端数据，保证 expiryTime 就绪，再启动倒计时
+  await warzoneStore.fetchRooms()
   startCountdown()
   
   // 预加载二维码以提升海报生成速度
@@ -194,35 +197,49 @@ const actionSheet = ref({ show: false, title: '', list: [], type: '' })
 const qrLoading = ref(true)
 const countdownText = ref('')
 
+/**
+ * 启动征召倒计时
+ * 首次立即计算，之后每秒更新，避免进入页面时空白 1 秒
+ */
 const startCountdown = () => {
-  const timer = setInterval(() => {
+  // 内联计算函数，首次调用 + interval 复用
+  const tick = () => {
     if (!dmRoom.value.expiryTime) {
+      // 数据仍未就绪（极端情况兜底）
       countdownText.value = '计算中...'
       return
     }
-
     const now = Date.now()
     const diff = dmRoom.value.expiryTime - now
-    
     if (diff <= 0) {
       clearInterval(timer)
       countdownText.value = '征召已强制终结'
       return
     }
-
     const h = Math.floor(diff / (3600 * 1000))
     const m = Math.floor((diff % (3600 * 1000)) / (60 * 1000))
     const s = Math.floor((diff % (60 * 1000)) / 1000)
-    
     countdownText.value = `${h}h ${m}m ${s}s`
-  }, 1000)
+  }
+  tick() // 立即执行一次，不等 1 秒
+  const timer = setInterval(tick, 1000)
 }
 
 const onQrLoad = () => {
   qrLoading.value = false
 }
 
+/** 复制当前房间 ID 到剪贴板 */
+const copyId = () => {
+  if (!dmRoom.value.id) return
+  uni.setClipboardData({
+    data: String(dmRoom.value.id),
+    success: () => uni.showToast({ title: '战局口令已提取', icon: 'none' })
+  })
+}
+
 const goBack = () => {
+
   const pages = getCurrentPages()
   if (pages.length <= 1) {
     uni.switchTab({ url: '/pages/dashboard/index' })
@@ -289,10 +306,8 @@ const editSlogan = () => {
 const onSloganConfirm = (newSlogan) => {
   uni.showLoading({ title: '加密传输中...' })
   setTimeout(() => {
-    // 立即更新本地状态 (mock)
-    const match = warzoneStore.deathMatches.find(m => m.id === roomId.value)
-    if (match) match.slogan = newSlogan
-    
+    // 调用 store 的 saveSlogan，同时更新内存 + 就算重进页面也能恢复
+    warzoneStore.saveSlogan(roomId.value, newSlogan)
     uni.hideLoading()
     uni.showToast({ title: '战役口令已更替', icon: 'success' })
   }, 1000)
@@ -546,14 +561,28 @@ page { height: 100%; }
 .qr-placeholder { position: absolute; inset: 0; background: #000; z-index: 3; }
 .loading-icon { animation: blink 1s infinite; font-size: 24px; }
 
-/* 宣言卡片样式 */
+/* 宣言卡片样式 — 增强视觉重量，让用户明显感知 */
 .slogan-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.06) 0%, rgba(0, 100, 120, 0.04) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 12px;
   padding: 16px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.03);
 }
-.slogan-tag { font-size: 10px; color: #52525b; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-.tag-line { height: 1px; background: rgba(255, 255, 255, 0.03); }
-.slogan-text { font-size: 15px; color: #00e5ff; font-weight: 500; font-style: italic; line-height: 1.6; text-align: center; }
+.slogan-tag { font-size: 10px; color: #00e5ff; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; }
+.tag-line { height: 1px; background: linear-gradient(90deg, rgba(0, 229, 255, 0.3), transparent); }
+.slogan-text { font-size: 16px; color: #e4e4e7; font-weight: 500; font-style: italic; line-height: 1.6; text-align: center; text-shadow: 0 0 12px rgba(0, 229, 255, 0.3); }
+
+/* 征召令小按钮 — 全员可见，紧凑内联在生还名单标题行 */
+.invite-chip {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 20px;
+  padding: 4px 10px;
+  gap: 4px;
+  transition: all 0.2s;
+}
+.invite-chip-hover { background: rgba(0, 229, 255, 0.2); }
+.invite-chip-icon { font-size: 12px; }
+.invite-chip-text { font-size: 11px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px; }
 </style>

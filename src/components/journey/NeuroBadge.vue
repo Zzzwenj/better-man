@@ -83,7 +83,8 @@ const onClick = () => {
     flex-shrink: 0; 
     transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
     position: relative;
-    padding-top: 8px;
+    padding-top: 20px;
+    padding-bottom: 16px;
     vertical-align: top;
 }
 .flex-col { display: flex; flex-direction: column; }

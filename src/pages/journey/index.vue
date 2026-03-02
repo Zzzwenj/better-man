@@ -20,12 +20,38 @@
         </view>
       </view>
       
-      <!-- Git 风格模拟热力图 -->
-      <view class="heatmap-grid pb-2">
-        <view class="week-col" v-for="w in 6" :key="w">
-          <view v-for="d in 7" :key="d" :class="['heat-cell', getMockLevel(w, d)]"></view>
+      <!-- 带坐标轴的热力图 — 动态 12 列铺满卡片全宽 -->
+      <view class="heatmap-wrapper mt-2">
+        <!-- X轴：月份标签行 -->
+        <view class="heatmap-x-row flex">
+          <view class="y-axis-spacer"></view>
+          <view class="heatmap-x-labels flex flex-1">
+            <view class="x-label-cell flex-1" v-for="(col, i) in heatmapCols" :key="'xl'+i">
+              <text class="axis-text">{{ col.xLabel }}</text>
+            </view>
+          </view>
+        </view>
+        <!-- Y轴 + 热力格子主体 -->
+        <view class="heatmap-main flex mt-1">
+          <!-- Y轴 (完整 7 天) -->
+          <view class="y-axis flex-col mr-1">
+            <view class="y-cell" v-for="day in ['日','一','二','三','四','五','六']" :key="day">
+              <text class="axis-text">{{ day }}</text>
+            </view>
+          </view>
+          <!-- 格子区 — flex 弹性撑满剩余宽度 -->
+          <view class="heatmap-grid flex flex-1">
+            <view class="week-col flex-col flex-1" v-for="(col, wi) in heatmapCols" :key="'wc'+wi">
+              <view
+                v-for="(level, di) in col.cells"
+                :key="di"
+                :class="['heat-cell', level]"
+              ></view>
+            </view>
+          </view>
         </view>
       </view>
+      
       <text class="analysis-hint block mt-3">▶ 连续 14 天未熔断，基底神经节逐渐脱敏。</text>
     </view>
     
@@ -86,7 +112,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import MilestoneShareCard from '../../components/journey/MilestoneShareCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import NeuroBadge from '../../components/journey/NeuroBadge.vue'
@@ -189,30 +215,53 @@ const getGoalProgress = (badgeDay) => {
     return currentProgress / totalRequired
 }
 
-// 生成热力图的动态数据 (真正的签到历史渲染)
-const getMockLevel = (w, d) => {
-    // 假设渲染 42 个格子 (6 星期)
-    const totalCellIndex = (w - 1) * 7 + (d - 1)
-    const maxCells = 42
-    
-    // 取出最新的长字符串 "110111..."，按位从右至左(最新日期在前)填充
-    const historyFlags = uni.getStorageSync('neuro_checkins') || ''
-    
-    // 如果还没记录或者格子超出历史长度
-    const lookbackIndex = maxCells - 1 - totalCellIndex
-    
-    if (lookbackIndex < historyFlags.length) {
-        const flag = historyFlags[historyFlags.length - 1 - lookbackIndex]
-        if (flag === '1') {
-            return 'lvl-3' // 成功抵御，高亮
-        } else {
-            return 'lvl-1' // 破戒失守，黯淡红/低亮
+/**
+ * 热力图数据 — 动态 12 列，铺满卡片宽度
+ * 以今天为基准向前推 12 周，每列含 X 轴月份标签 + 7 天打卡等级
+ */
+const heatmapCols = computed(() => {
+  const historyFlags = uni.getStorageSync('neuro_checkins') || ''
+  const WEEKS = 12
+  const today = new Date()
+  const todayDow = today.getDay() // 0=日,1=一,...,6=六
+
+  // 第 0 列(最左)首格距今天多少天
+  const startOffset = (WEEKS - 1) * 7 + todayDow
+  const cols = []
+  let lastMonth = -1
+
+  for (let w = 0; w < WEEKS; w++) {
+    const cells = []
+    let xLabel = ''
+
+    for (let d = 0; d < 7; d++) {
+      // 该格距今天多少天前 (正 = 过去, 0 = 今天)
+      const daysAgo = startOffset - w * 7 - d
+
+      // X轴标签：每列首格检测到月份切换时显示
+      if (d === 0) {
+        const cellDate = new Date(today)
+        cellDate.setDate(today.getDate() - daysAgo)
+        const m = cellDate.getMonth() + 1
+        if (m !== lastMonth) {
+          xLabel = `${m}月`
+          lastMonth = m
         }
+      }
+
+      // 读取打卡历史位串 (最右侧 = 最新)
+      let level = 'lvl-0'
+      if (daysAgo >= 0 && daysAgo < historyFlags.length) {
+        const flag = historyFlags[historyFlags.length - 1 - daysAgo]
+        level = flag === '1' ? 'lvl-3' : 'lvl-1'
+      }
+      cells.push(level)
     }
-    
-    // 未知过去的暗色
-    return 'lvl-0'
-}
+
+    cols.push({ xLabel, cells })
+  }
+  return cols
+})
 </script>
 
 <style lang="scss" scoped>
@@ -275,34 +324,31 @@ page {
   padding: 20px;
 }
 
-/* 活跃度热力图控件 */
-.heatmap-grid {
-    display: flex;
-    overflow-x: auto;
-    gap: 4px;
-}
-.week-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.heat-cell, .legend-dot {
-    width: 14px; height: 14px;
-    border-radius: 3px;
-}
+/* 活跃度热力图控件 — 铺满宽度 */
+.heatmap-wrapper { width: 100%; }
+.heatmap-x-row { align-items: flex-end; }
+.y-axis-spacer { width: 18px; flex-shrink: 0; margin-right: 4px; }
+.heatmap-x-labels { gap: 3px; overflow: hidden; }
+.x-label-cell { min-width: 0; text-align: left; }
+.axis-text { font-size: 9px; color: #71717a; font-family: monospace; }
+.heatmap-main { align-items: stretch; }
+.y-axis { width: 18px; flex-shrink: 0; margin-right: 4px; }
+.y-cell { height: 18px; margin-bottom: 3px; display: flex; align-items: center; }
+.y-cell:last-child { margin-bottom: 0; }
+.heatmap-grid { gap: 3px; align-items: stretch; }
+.week-col { gap: 3px; min-width: 0; }
+.heat-cell { width: 100%; height: 18px; border-radius: 3px; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 .lvl-0 { background-color: #18181b; border: 1px solid #27272a; }
 .lvl-1 { background-color: var(--theme-bg-highlight); }
 .lvl-2 { background-color: var(--theme-shadow-primary); }
-.lvl-3 { background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary); }
+.lvl-3 { background-color: var(--theme-primary); box-shadow: 0 0 6px var(--theme-shadow-primary); }
 
 .legend-text { font-size: 10px; color: #a1a1aa; }
-.analysis-hint { font-size: 12px; color: var(--theme-primary); margin-top: 16px; font-weight: 500;}
+.analysis-hint { font-size: 12px; color: var(--theme-primary); margin-top: 16px; font-weight: 500; }
 
-/* 徽章列表 */
-.badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 16px; margin-left: -10px; padding-left: 10px; }
-::-webkit-scrollbar { display: none; width: 0; height: 0; }
 /* 徽章列表容器 */
-.badge-scroll-view { width: 100%; white-space: nowrap; padding-bottom: 30px; margin-left: -10px; padding-left: 10px; }
+.badge-scroll-view { width: 100%; white-space: nowrap; padding-top: 15px; padding-bottom: 30px; margin-left: -10px; padding-left: 10px; }
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .badge-list { padding-right: 20px; }
 /* ==== 徽章本身的复杂 CSS 均已抽离至 NeuroBadge.vue 中 ==== */

@@ -41,6 +41,7 @@
       <view v-if="currentTab === 0" class="fade-in-up">
         <RoomCard 
           v-for="room in filteredPublicRooms" :key="room.id"
+          :roomId="room.id"
           :roomType="room.type"
           :roomName="room.name"
           :description="room.description"
@@ -60,6 +61,7 @@
         
         <RoomCard 
           v-for="dm in filteredDeathMatches" :key="dm.id"
+          :roomId="dm.id"
           :roomType="dm.type"
           :roomName="dm.name"
           :description="dm.description"

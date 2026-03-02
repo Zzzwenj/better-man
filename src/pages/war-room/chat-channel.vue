@@ -29,6 +29,14 @@
       <GlobalResonance />
     </view>
 
+    <!-- 战区宣言横条 (只读展示，从 warzoneStore 读取当前战区宣言) -->
+    <view class="slogan-banner px-4" v-if="currentRoomSlogan">
+      <view class="slogan-banner-inner flex items-center">
+        <text class="slogan-banner-label">战役宣言</text>
+        <text class="slogan-banner-text flex-1">“ {{ currentRoomSlogan }} ”</text>
+      </view>
+    </view>
+
     <!-- Chat Area -->
     <scroll-view 
       scroll-y 
@@ -137,6 +145,14 @@
       :showCancel="true"
       @confirm="dialog.confirmAction"
     />
+
+    <!-- 自定义操作菜单，替代原生 uni.showActionSheet -->
+    <CyberActionSheet
+      v-model:show="actionSheet.show"
+      :title="actionSheet.title"
+      :itemList="actionSheet.list"
+      @select="onActionSelect"
+    />
   </view>
 </template>
 
@@ -148,6 +164,7 @@ import GlobalResonance from '../../components/war-room/GlobalResonance.vue'
 import { useThemeStore } from '../../store/theme.js'
 import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
 
 const themeStore = useThemeStore()
 import { useUserStore } from '../../store/user.js'
@@ -162,6 +179,10 @@ const avatarInitial = ref('我')
 const showRenameModal = ref(false)
 const dialog = ref({ show: false, title: '', content: '', confirmAction: () => {} })
 
+// 自定义 ActionSheet 状态
+const actionSheet = ref({ show: false, title: '', list: [], type: '' })
+const pendingReportMsg = ref(null) // 暂存待举报的消息对象
+
 import { useWarzoneStore } from '../../store/warzone.js'
 const warzoneStore = useWarzoneStore()
 
@@ -174,6 +195,20 @@ const currentOnlineCount = computed(() => {
   const deathMatch = warzoneStore.deathMatches.find(r => r.id === chatStore.roomId.replace('room_', ''))
   if (deathMatch) return deathMatch.onlineCount
   return Math.floor(Math.random() * 50) + 10 // Mock fallback
+})
+
+/**
+ * 当前战区宣言 — 从 warzoneStore 读取，展示在聊天页顶部
+ * 同时匹配公频和生死局
+ */
+const currentRoomSlogan = computed(() => {
+  if (!chatStore.roomId) return ''
+  const roomKey = chatStore.roomId.replace('room_', '')
+  const pubMatch = warzoneStore.publicRooms.find(r => r.id === roomKey)
+  if (pubMatch && pubMatch.slogan) return pubMatch.slogan
+  const deathMatch = warzoneStore.deathMatches.find(r => r.id === roomKey)
+  if (deathMatch && deathMatch.slogan) return deathMatch.slogan
+  return ''
 })
 
 // 获取云端数据
@@ -289,61 +324,71 @@ const leaveRoom = () => {
 // 模拟群组管理与举报流程
 const isOwner = computed(() => true) // 临时模拟: 当前登录人即为战区负责人
 
+/**
+ * 右上角三点菜单 — 使用自定义 CyberActionSheet 替代原生弹窗
+ */
 const handleMoreAction = () => {
-  const itemList = isOwner.value 
+  const itemList = isOwner.value
     ? ['撤离当前通讯网络', '修改本战区代号/密码', '清除所有叛逃者记录', '举报违规言论/洗脑信息']
     : ['撤离当前通讯网络', '举报违规言论/洗脑信息', '屏蔽该战区']
-  uni.showActionSheet({
-    itemList,
-    itemColor: '#ef4444',
-    success: (res) => {
-      // 第一项统一为撤离
-      if (res.tapIndex === 0) {
-        leaveRoom()
-        return
-      }
-
-      // 其他分支根据房主判断索引偏移
-      if (isOwner.value) {
-         if (res.tapIndex === 1) {
-            showRenameModal.value = true
-         } else if (res.tapIndex === 2) {
-            dialog.value = {
-                show: true,
-                title: '格式化确认',
-                content: '即将清除本场所有本地通讯记录，此操作不可撤销。是否继续？',
-                confirmAction: () => {
-                   chatStore.messages = [] // 前端软清空
-                   uni.showToast({ title: '格式化完成' })
-                }
-            }
-         } else {
-            uni.showToast({ title: '记录已锚定，等待秩序庭空降验证。', icon: 'none' })
-         }
-      } else {
-         if (res.tapIndex === 1 || res.tapIndex === 2) {
-             uni.showToast({ title: '系统已接到反馈，将派驻特工核实', icon: 'none' })
-         }
-      }
-    }
-  })
+  actionSheet.value = {
+    show: true,
+    title: '战区战术指令',
+    list: itemList,
+    type: 'more'
+  }
 }
 
-// 提取单条消息鉴察权 (长按举报模式)
+/**
+ * 长按消息举报 — 使用自定义 CyberActionSheet 替代原生弹窗
+ * @param {Object} msg - 被长按的消息对象
+ */
 const handleReportMsg = (msg) => {
-  if (msg.user_id === currentUid.value) return // 过滤自己
-  
-  uni.showActionSheet({
-    itemList: ['举报该条言论', '屏蔽此特工'],
-    itemColor: '#ef4444',
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        uni.showToast({ title: '已将违规指令抄送纠察队', icon: 'none' })
-      } else if (res.tapIndex === 1) {
-        uni.showToast({ title: '已切断与该个体的底层信号', icon: 'none' })
+  if (msg.user_id === currentUid.value) return // 过滤自己的消息
+  pendingReportMsg.value = msg
+  actionSheet.value = {
+    show: true,
+    title: '探员交互操作',
+    list: ['举报该条言论', '屏蔽此特工'],
+    type: 'msg'
+  }
+}
+
+/**
+ * ActionSheet 选项回调统一处理
+ * @param {number} index - 被点击的选项索引
+ */
+const onActionSelect = (index) => {
+  if (actionSheet.value.type === 'more') {
+    if (index === 0) {
+      leaveRoom()
+    } else if (isOwner.value) {
+      if (index === 1) {
+        showRenameModal.value = true
+      } else if (index === 2) {
+        dialog.value = {
+          show: true,
+          title: '格式化确认',
+          content: '即将清除本场所有本地通讯记录，此操作不可撤销。是否继续？',
+          confirmAction: () => {
+            chatStore.messages = []
+            uni.showToast({ title: '格式化完成' })
+          }
+        }
+      } else {
+        uni.showToast({ title: '记录已锚定，等待秩序庭空降验证。', icon: 'none' })
       }
+    } else {
+      uni.showToast({ title: '系统已接到反馈，将派驻特工核实', icon: 'none' })
     }
-  })
+  } else if (actionSheet.value.type === 'msg') {
+    if (index === 0) {
+      uni.showToast({ title: '已将违规指令抄送纠察队', icon: 'none' })
+    } else if (index === 1) {
+      uni.showToast({ title: '已切断与该个体的底层信号', icon: 'none' })
+    }
+    pendingReportMsg.value = null
+  }
 }
 
 // 富文本渲染：替换指令为 emoji, 广播消息增加强调发光 
@@ -746,4 +791,36 @@ page {
 .btn-send.disabled { background: #27272a; opacity: 0.6; box-shadow: none;}
 .send-icon { color: #fff; font-size: 16px; font-weight: 900; }
 .btn-send.disabled .send-icon { color: #52525b; }
+
+/* 战区宣言横条 — 紧凑单行，不抢焦点 */
+.slogan-banner {
+  padding-top: 8px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+}
+.slogan-banner-inner {
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.06) 0%, transparent 100%);
+  border-left: 2px solid rgba(0, 229, 255, 0.5);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 10px;
+  gap: 8px;
+}
+.slogan-banner-label {
+  font-size: 9px;
+  color: #00e5ff;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.slogan-banner-text {
+  font-size: 12px;
+  color: #a1a1aa;
+  font-style: italic;
+  /* 超长截断 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>

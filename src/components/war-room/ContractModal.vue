@@ -1,17 +1,21 @@
 <template>
-  <view class="modal-mask flex items-center justify-center fade-in" v-if="show" @click.stop="closeModal">
-    <view class="modal-content pop-in flex-col" @click.stop="">
+  <!--
+    双层结构：
+    - mask-bg: 全屏背景层，负责点击关闭，与内容平级
+    - modal-content: 内容层，父链上无任何 @click/@tap 拦截，input 可正常聚焦
+  -->
+  <view class="modal-mask flex items-center justify-center fade-in" v-if="show">
+    <!-- 蒙层背景：单独负责点击关闭，不作为 input 的祖先节点 -->
+    <view class="mask-bg" @click="closeModal"></view>
+    <!-- 内容层：不再包在任何有事件拦截的父层里 -->
+    <view class="modal-content pop-in flex-col">
       <view class="modal-header flex justify-between items-center pb-3">
         <text class="modal-title">⚔️ 发起生死局</text>
         <text class="close-btn" @click="closeModal">✕</text>
       </view>
       
-      <scroll-view scroll-y class="modal-body py-4">
-        <view class="form-group mb-4">
-          <text class="label">战役代号</text>
-          <input class="styled-input" v-model="form.name" placeholder="请输入战役名称..." placeholder-class="placeholder-text" />
-        </view>
-        
+      <view class="modal-body py-4">
+
         <view class="form-group mb-4">
           <text class="label">目标天数 (Days)</text>
           <view class="flex items-center space-x-2">
@@ -24,8 +28,16 @@
 
         <view class="form-group mb-4">
           <text class="label">个人保密金 (神经币)</text>
-          <input class="styled-input" type="number" v-model="form.deposit" placeholder="如: 500" placeholder-class="placeholder-text" />
-          <text class="hint-text mt-1 text-xs block">⚠️ 破戒出局将输掉全部保密金入公池</text>
+          <view class="flex items-center space-x-2">
+            <view
+              v-for="amt in depositOptions"
+              :key="amt"
+              class="day-btn"
+              :class="{ active: form.deposit === amt }"
+              @click="form.deposit = amt"
+            >{{ amt }}</view>
+          </view>
+          <text class="hint-text mt-1 text-xs block">⚠️ 破戒出局将全额没收保密金</text>
         </view>
         
         <view class="form-group mb-2">
@@ -54,7 +66,7 @@
           </view>
           <text class="hint-text mt-1 text-xs block">⏰ 若在此时限内未满员，对决将失效并退回保密金</text>
         </view>
-      </scroll-view>
+      </view><!-- /modal-body -->
 
       <view class="modal-footer pt-3 flex justify-between items-center">
         <view class="total-pool flex-col">
@@ -86,16 +98,18 @@ const emit = defineEmits(['update:show', 'confirm'])
 
 const rangeArray = [2, 3, 5, 8, 10]
 
+/** 保密金预设档位 (神经币) */
+const depositOptions = [100, 300, 500, 1000, 2000, 5000]
+
 const closeModal = () => {
   emit('update:show', false)
 }
 
 const form = reactive({
-  name: '',
   days: 21,
-  deposit: 500,
+  deposit: 500,  // 默认选中 500 档
   maxUsers: 2,
-  recruitDeadline: 6 // 默认6小时
+  recruitDeadline: 6
 })
 
 const expectedPool = computed(() => {
@@ -104,10 +118,11 @@ const expectedPool = computed(() => {
 })
 
 const submitContract = () => {
-  if (!form.name.trim()) return uni.showToast({ title: '引子不能为空', icon: 'none' })
-  if (form.deposit <= 0) return uni.showToast({ title: '保密金须大于0', icon: 'none' })
-  
-  emit('confirm', { ...form })
+  const dep = Number(form.deposit) || 0
+  if (dep <= 0) {
+    return uni.showToast({ title: '请选择保密金档位', icon: 'none' })
+  }
+  emit('confirm', { ...form, deposit: dep })
   closeModal()
 }
 </script>
@@ -116,9 +131,18 @@ const submitContract = () => {
 .modal-mask {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+/* 蒙层背景：绝对定位，与内容层平级，专职处理点击关闭 */
+.mask-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(5px);
-  z-index: 999;
+  -webkit-backdrop-filter: blur(5px);
 }
 .modal-content {
   width: 85%;
@@ -128,11 +152,13 @@ const submitContract = () => {
   border-radius: 20px;
   padding: 24px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(239, 68, 68, 0.05);
+  position: relative; /* 层叠上下文，确保在 mask-bg 之上 */
+  z-index: 1;
 }
 .modal-header { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .modal-title { font-size: 18px; font-weight: 900; color: #ef4444; letter-spacing: 1px; }
 .close-btn { color: #52525b; font-size: 20px; padding: 4px; }
-.modal-body { max-height: 50vh; }
+.modal-body { width: 100%; box-sizing: border-box; }
 .label { font-size: 13px; color: #a1a1aa; margin-bottom: 8px; display: block; }
 .styled-input {
   background: #09090b;
