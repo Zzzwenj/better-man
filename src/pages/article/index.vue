@@ -23,12 +23,8 @@
                    </view>
                </view>
             </view>
-
-            <!-- 注入原生广告信号：每隔 5 条数据插入一个 -->
-            <view v-if="(index + 1) % 5 === 0" class="ad-insertion">
-              <CyberAdCard adpid="1111111111" />
-            </view>
           </template>
+
        </view>
        
        <view class="empty-state flex-col items-center justify-center mt-12" v-if="loading && page === 1">
@@ -56,8 +52,6 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
-import CyberAdCard from '@/components/common/CyberAdCard.vue'
-
 const themeStore = useThemeStore()
 const pageType = ref('')
 
@@ -319,7 +313,4 @@ const openExternal = (link) => {
 .flex-col { display: flex; flex-direction: column; }
 .align-stretch { align-items: stretch; }
 
-.ad-insertion {
-  margin-bottom: 24px;
-}
 </style>

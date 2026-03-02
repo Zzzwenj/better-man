@@ -1,0 +1,17 @@
+{
+    "name": "ai-cron-job",
+    "version": "1.0.0",
+    "description": "AI 自动编撰引擎与库管防腐任务",
+    "main": "index.js",
+    "cloudfunction-config": {
+        "memorySize": 512,
+        "timeout": 900,
+        "triggers": [
+            {
+                "name": "generate_articles_trigger",
+                "type": "timer",
+                "config": "0 0 3 1/3 * ? *"
+            }
+        ]
+    }
+}
