@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col" :style="themeStore.themeCssVars">
+  <view class="container flex-col" :class="{ 'war-mode': currentTab === 1 }" :style="themeStore.themeCssVars">
     <view class="header flex-col">
       <view class="flex justify-between items-center mb-4">
         <view class="room-info flex-col">
@@ -90,6 +90,7 @@
       :color="dialog.color"
     />
 
+    <CyberFloatBall />
     <CustomTabBar :current="2" />
   </view>
 </template>
@@ -102,6 +103,7 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import RoomCard from '../../components/war-room/RoomCard.vue'
 import ContractModal from '../../components/war-room/ContractModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
@@ -278,4 +280,23 @@ page { height: 100%; }
 .ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
 .pb-safe { height: calc(88px + env(safe-area-inset-bottom)); }
+
+/* 生死血契 战时氛围 */
+.war-mode {
+  transition: all 0.5s ease-in-out;
+  background-image: 
+    radial-gradient(circle at 100% 0%, rgba(239, 68, 68, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 0% 100%, rgba(185, 28, 28, 0.1) 0%, transparent 60%);
+  
+  .room-title {
+    color: #ef4444 !important;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
+    animation: textFlicker 2s infinite;
+  }
+}
+
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+  50% { opacity: 0.8; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+}
 </style>

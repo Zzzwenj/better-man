@@ -70,6 +70,9 @@
         </view>
     </view>
     
+    <!-- 5. 荣誉资产长廊 (资产化展示) -->
+    <HonorCarousel />
+    
     <!-- 3. 整合列表区：资料与设置 -->
     <ProfileSettingsList 
       title="" 
@@ -77,7 +80,22 @@
       :hideNative="isModalOpen || showThemeSheet"
       @itemClick="handleSettingClick" 
     />
+
+    <!-- 4. 系统底层控制区 (视觉隔离) -->
+    <view class="system-control-zone mt-4">
+      <view class="divider mx-4"></view>
+      <view class="flex-col items-center py-4">
+        <view class="control-item mb-2" @click="handleSettingClick({id: 'wipe'})" hover-class="text-glow">
+          <text class="control-text">中断神经连接 (退出登录)</text>
+        </view>
+        <view class="control-item" @click="handleSettingClick({id: 'delete_account'})" hover-class="text-glow">
+          <text class="control-text secondary">完全焚毁档案 (注销账号)</text>
+        </view>
+        <text class="version-text mt-3">OS Version: Better-Man 2026.3.2</text>
+      </view>
+    </view>
     
+    <CyberFloatBall />
     <CustomTabBar :current="3" />
     
     <!-- 全局主题色选择弹窗 -->
@@ -110,9 +128,11 @@ import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
+import HonorCarousel from '../../components/profile/HonorCarousel.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -171,9 +191,7 @@ let localProfileData = {}
 const integratedList = ref([
   { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
   { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
-  { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
-  { id: 'wipe', icon: '🔥', label: '执行终端数据焚毁 (退登)', type: 'arrow' },
-  { id: 'delete_account', icon: '⚠️', label: '深渊销毁 (注销账号)', type: 'arrow' }
+  { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' }
 ])
 
 // --- 初始化钩子 ---
@@ -440,7 +458,7 @@ page {
   overflow-x: hidden;
   background-color: #09090b;
   box-sizing: border-box;
-  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -596,4 +614,38 @@ page {
 .timer-text { font-size: 16px; color: #00e5ff; font-family: monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,229,255,0.5);}
 .progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
 .progress-fill { height: 100%; background: #00e5ff; box-shadow: 0 0 10px #00e5ff; border-radius: 3px; transition: width 0.5s ease-out; }
+
+/* 系统控制区 */
+.system-control-zone {
+  margin-bottom: 0px;
+}
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+}
+.control-item {
+  padding: 10px 20px;
+}
+.control-text {
+  font-size: 13px;
+  color: #71717a;
+  letter-spacing: 1px;
+  transition: all 0.3s;
+  
+  &.secondary {
+    font-size: 11px;
+    opacity: 0.6;
+  }
+}
+.text-glow {
+  .control-text {
+    color: #f4f4f5;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  }
+}
+.version-text {
+  font-size: 10px;
+  color: #3f3f46;
+  font-family: monospace;
+}
 </style>

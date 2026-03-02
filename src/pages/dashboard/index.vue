@@ -7,9 +7,10 @@
           <text class="title tracking-wider">核心中枢</text>
           <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
         </view>
-        <view class="user-chip flex items-center justify-center">
-          <text class="chip-dot"></text>
-          <text class="chip-text ml-1">#8972</text>
+        <view v-if="warzoneStore.activeDeathMatchId" class="quick-action flex items-center justify-center" @click="goToChat" hover-class="action-hover">
+          <view class="battle-pulse"></view>
+          <text class="action-icon">⚔️</text>
+          <text class="action-text">通讯中</text>
         </view>
       </view>
       
@@ -25,16 +26,14 @@
           </view>
         </view>
         
-        <!-- 底部紧急阻断按钮 -->
-        <view class="action-area px-4 pb-8 fade-in-up" style="animation-delay: 0.4s;">
-          <view class="panic-btn flex justify-center items-center" hover-class="panic-hover" @click="triggerPanic">
-            <text class="panic-icon mr-2">⚠️</text>
-            <text class="panic-text">紧急干预系统</text>
-            <view class="btn-ripple"></view>
-          </view>
-          <text class="panic-hint block mt-3 text-center">渴求来袭？点击进入 60秒 强制神经阻断</text>
+        <!-- 底部已由全域悬浮球 + HUD 提示取代 -->
+        <view class="action-area pb-2 flex justify-center fade-in-up" style="animation-delay: 0.4s;">
+          <!-- 文案已移除，改为悬浮球自动弹出提示 -->
         </view>
       </view>
+      
+      <!-- 全域控制球 -->
+      <CyberFloatBall :show="!isPanicMode" />
 
       <!-- 阻断模式全屏覆盖层 -->
       <PanicOverlay 
@@ -57,9 +56,12 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import EnergyCore from '../../components/dashboard/EnergyCore.vue'
 import DataCards from '../../components/dashboard/DataCards.vue'
 import PanicOverlay from '../../components/dashboard/PanicOverlay.vue'
+import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import { useThemeStore } from '../../store/theme.js'
+import { useWarzoneStore } from '../../store/warzone.js'
 
 const themeStore = useThemeStore()
+const warzoneStore = useWarzoneStore()
 
 const hoursClean = ref(0)
 const hoursSaved = ref(0)
@@ -69,6 +71,9 @@ let timeInterval = null
 
 onMounted(() => {
   uni.hideTabBar()
+  
+  // 拉取最新战区数据，确保监控条实时更新
+  warzoneStore.fetchRooms()
   
   // 拦截鉴权
   const token = uni.getStorageSync('uni_id_token')
@@ -107,6 +112,19 @@ onMounted(() => {
   
   updateTimer()
   timeInterval = setInterval(updateTimer, 60000)
+  
+  // 建立全域监听：物理摇晃或悬浮球双击都会触发
+  uni.$on('TRIGGER_PANIC_SYSTEM', () => {
+    if (!isPanicMode.value) {
+      triggerPanic()
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (panicInterval) clearInterval(panicInterval)
+  if (timeInterval) clearInterval(timeInterval)
+  uni.$off('TRIGGER_PANIC_SYSTEM')
 })
 
 const isPanicMode = ref(false)
@@ -140,6 +158,16 @@ const triggerPanic = () => {
     }
     uni.vibrateLong()
   }, 1000)
+}
+
+const goToWarzone = () => {
+  uni.vibrateShort()
+  uni.navigateTo({ url: '/pages/war-room/index' })
+}
+
+const goToChat = () => {
+  uni.vibrateShort()
+  uni.navigateTo({ url: '/pages/war-room/chat-channel' })
 }
 
 const doAction = () => {
@@ -227,31 +255,50 @@ page {
 
 /* 顶部状态栏 */
 .header {
-  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
-  background: rgba(9, 9, 11, 0.65);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  padding: calc(var(--status-bar-height) + 16px) 20px 8px 20px;
+  background: rgba(9, 9, 11, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   box-sizing: border-box;
   width: 100%;
 }
 .title-wrap { animation: fadeInUp 0.5s ease-out forwards; }
 .title { font-size: 24px; font-weight: 900; color: var(--theme-primary); text-shadow: 0 0 15px var(--theme-shadow-primary); }
-.subtitle { font-size: 11px; color: #a1a1aa; letter-spacing: 1px;}
-.user-chip { 
-  background: rgba(255,255,255,0.05); 
-  border: 1px solid rgba(255,255,255,0.1); 
-  padding: 4px 10px; 
+.subtitle { font-size: 11px; color: #71717a; letter-spacing: 1px;}
+
+.quick-action {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 6px 14px;
   border-radius: 12px;
-  backdrop-filter: blur(10px);
-  animation: popIn 0.5s ease-out forwards 0.2s;
-  opacity: 0;
+  transition: all 0.3s;
+  position: relative;
 }
-.chip-dot { width: 6px; height: 6px; border-radius: 3px; background-color: var(--theme-primary); box-shadow: 0 0 8px var(--theme-shadow-primary);}
-.chip-text { font-size: 12px; color: #e4e4e7; font-family: monospace;}
+.action-hover { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); transform: scale(0.96); }
+.action-icon { font-size: 14px; margin-right: 4px; }
+.action-text { font-size: 12px; color: #ef4444; font-weight: 900; letter-spacing: 1px;}
+
+.battle-pulse {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ef4444;
+  animation: active-pulse 1.5s infinite;
+}
+
+@keyframes active-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
 
 
 /* 紧急阻断按钮 */

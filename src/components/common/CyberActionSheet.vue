@@ -58,44 +58,51 @@ const handleSelect = (index) => {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
   z-index: 3000;
 }
 .action-sheet-content {
   width: 100%;
   background: #09090b;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px 20px 0 0;
+  border-radius: 28px 28px 0 0;
   overflow: hidden;
   position: relative;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
 }
 .glow-bar {
   position: absolute;
-  top: 0; left: 0; right: 0; height: 1px;
+  top: 0; left: 15%; right: 15%; height: 2px;
   background: linear-gradient(90deg, transparent, #ef4444, transparent);
-  box-shadow: 0 0 10px #ef4444;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+  filter: blur(1px);
 }
-.sheet-header { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.sheet-title { font-size: 13px; color: #52525b; letter-spacing: 2px; text-transform: uppercase; }
+.sheet-header { 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+  background: rgba(255, 255, 255, 0.02);
+}
+.sheet-title { font-size: 13px; color: #52525b; letter-spacing: 3px; font-weight: 600; }
 
-.options-list { border-bottom: 8px solid rgba(255, 255, 255, 0.03); }
-.option-item { border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+.options-list { 
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+}
+.option-item { border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
 .option-item:last-child { border-bottom: none; }
-.option-text { font-size: 16px; font-weight: bold; letter-spacing: 1px; }
+.option-text { font-size: 16px; font-weight: 900; letter-spacing: 1px; }
 
-.cancel-btn { background: #18181b; }
-.cancel-text { font-size: 16px; color: #a1a1aa; }
+.cancel-btn { background: transparent; }
+.cancel-text { font-size: 16px; color: #71717a; font-weight: 500; }
 
 .item-hover { background: rgba(255, 255, 255, 0.05); }
 
 .flex { display: flex; }
 .items-end { align-items: flex-end; }
 .justify-center { justify-content: center; }
-.py-4 { padding-top: 16px; padding-bottom: 16px; }
-.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.py-4 { padding-top: 18px; padding-bottom: 18px; }
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
 
-.fade-in { animation: fadeIn 0.2s forwards; }
-.slide-up { animation: slideUp 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+.fade-in { animation: fadeIn 0.25s ease-out forwards; }
+.slide-up { animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 </style>

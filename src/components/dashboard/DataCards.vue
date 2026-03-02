@@ -1,12 +1,14 @@
 <template>
   <view class="data-cards flex justify-between mt-8 px-4 w-full">
     <view class="data-card flex-col items-center" hover-class="card-hover">
-      <view class="glow-bg"></view>
+      <view class="glass-bg"></view>
+      <view class="light-sweep"></view>
       <text class="data-val">{{ hoursSaved }}h</text>
       <text class="data-label mt-1">夺回专注力</text>
     </view>
     <view class="data-card flex-col items-center" hover-class="card-hover">
-      <view class="glow-bg"></view>
+      <view class="glass-bg"></view>
+      <view class="light-sweep delayed-sweep"></view>
       <text class="data-val">{{ dopamineIndex }}%</text>
       <text class="data-label mt-1">多巴胺修复率</text>
     </view>
@@ -14,11 +16,6 @@
 </template>
 
 <script setup>
-/**
- * @component DataCards
- * @description 数据统计卡片组件，负责在觉醒空间展示戒断省下的时间、多巴胺恢复指数等关键指标。
- */
-
 import { defineProps } from 'vue'
 
 const props = defineProps({
@@ -48,36 +45,52 @@ const props = defineProps({
 .data-card {
   flex: 1;
   position: relative;
-  background: rgba(255, 255, 255, 0.02); 
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.04); 
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.03); 
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-top-color: rgba(255, 255, 255, 0.2);
+  border-left-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 0 10px rgba(255, 255, 255, 0.05);
   border-radius: 16px;
-  padding: 18px 0;
+  padding: 22px 0;
   transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-  overflow: hidden; /* 控制内发光不出界 */
+  overflow: hidden;
 }
 
-.glow-bg {
+.glass-bg {
   position: absolute;
-  top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: radial-gradient(circle at 50% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
   pointer-events: none;
 }
 
-.card-hover {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.3);
+/* 动态扫掠光影 */
+.light-sweep {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: skewX(-20deg);
+  animation: sweep 4s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.card-hover .glow-bg {
-  opacity: 1;
+.delayed-sweep { animation-delay: 2s; }
+
+@keyframes sweep {
+  0% { left: -100%; }
+  50% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.card-hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .data-val { 

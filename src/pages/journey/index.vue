@@ -7,12 +7,16 @@
       </view>
     </view>
     
-    <!-- 里程碑 (移至置顶，强化正向反馈) -->
-    <view class="benefits-container mx-4 mt-6">
+    <!-- 1. 神经战报雷达图 (核心资产置顶) -->
+    <view class="radar-section-wrap mt-4">
+      <NeuroRadarChart />
+    </view>
+    
+    <!-- 2. 里程碑 (紧随其后) -->
+    <view class="benefits-container mx-4 mt-2">
        <view class="badges-area">
            <text class="section-title block mb-4">神经重塑里程碑</text>
            <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
-               <!-- 使用被抽离的独立徽章组件 -->
                <NeuroBadge 
                  v-for="badge in milestoneBadges" 
                  :key="badge.day"
@@ -26,7 +30,7 @@
        </view>
     </view>
 
-    <!-- 热力图模块 -->
+    <!-- 3. 热力图模块 (修行为径) -->
     <view class="card-outline mt-2 mx-4">
       <view class="flex justify-between items-center mb-4">
         <text class="section-title">重塑突触</text>
@@ -74,13 +78,13 @@
       <text class="analysis-hint block mt-3">▶ 连续 14 天未熔断，基底神经节逐渐脱敏。</text>
     </view>
     
-    <!-- 评估数据模块 -->
+    <!-- 4. 评估数据模块 -->
     <view class="card-outline mt-4 mx-4">
       <text class="section-title block mb-4">临床生理学预估</text>
       
       <view class="stat-row flex items-center justify-between mb-4">
         <view class="flex-col">
-            <text class="stat-label">前额叶皮层受体修复率 (根据持续天数换算)</text>
+            <text class="stat-label">前额极皮层受体修复率 (根据持续天数换算)</text>
             <view class="progress-bar mt-2">
                 <view class="progress-fill" :style="{ width: repairRate + '%', background: 'linear-gradient(90deg, var(--theme-primary-grad-start) 0%, var(--theme-primary-grad-end) 100%)' }"></view>
             </view>
@@ -104,12 +108,10 @@
       </view>
     </view>
     
-    <!-- 神经战报雷达图 (从 Profile 迁移至此) -->
-    <NeuroRadarChart />
-    
     <!-- 全屏高光分享卡片组件 -->
     <MilestoneShareCard :show="showShareOverlay" :milestone="selectedMilestone" @close="closeShareOverlay" />
     
+    <CyberFloatBall />
     <CustomTabBar :current="1" />
   </view>
 </template>
@@ -120,6 +122,7 @@ import MilestoneShareCard from '../../components/journey/MilestoneShareCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import NeuroBadge from '../../components/journey/NeuroBadge.vue'
 import NeuroRadarChart from '../../components/profile/NeuroRadarChart.vue' /* 借用已有的组件路径 */
+import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()
@@ -356,6 +359,9 @@ page {
 ::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .badge-list { padding-right: 20px; }
 /* ==== 徽章本身的复杂 CSS 均已抽离至 NeuroBadge.vue 中 ==== */
+.radar-section-wrap {
+  margin-top: -10px; /* 紧贴 Header 阴影边界 */
+}
 .stat-row { width: 100%; }
 .stat-label { font-size: 12px; color: #a1a1aa; }
 .progress-bar { width: 200px; height: 6px; background-color: #27272a; border-radius: 3px; overflow: hidden;}
