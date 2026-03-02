@@ -18,7 +18,7 @@
         <view class="corner bottom-right" :style="{ borderColor: color }"></view>
       </view>
 
-      <view class="dialog-footer pt-3 flex gap-3">
+      <view class="dialog-footer pt-3 flex gap-4">
         <view v-if="showCancel" class="btn cancel-btn flex-1 flex justify-center items-center" @click="handleCancel">
           <text class="btn-text-cancel">{{ cancelText || '取消' }}</text>
         </view>
@@ -67,13 +67,13 @@ const handleConfirm = () => {
   z-index: 2000;
 }
 .dialog-content {
-  width: 80%;
-  max-width: 300px;
-  background: #09090b;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  width: 85%;
+  max-width: 320px;
+  background: linear-gradient(145deg, #18181b 0%, #09090b 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 16px;
   padding: 24px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(239, 68, 68, 0.05);
   position: relative;
   overflow: hidden;
 }
@@ -104,14 +104,14 @@ const handleConfirm = () => {
 .bottom-right { bottom: 0; right: 0; border-left: none; border-top: none; }
 
 .dialog-footer { border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; }
-.btn { height: 42px; border-radius: 2px; transition: all 0.2s; }
+.btn { height: 42px; border-radius: 8px; transition: all 0.2s; font-size: 14px; font-weight: bold; }
 .btn:active { transform: scale(0.96); opacity: 0.8; }
 
 .cancel-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
-.confirm-btn { box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+.confirm-btn { box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); }
 
-.btn-text-confirm { color: #000; font-size: 13px; font-weight: 900; letter-spacing: 1px; }
-.btn-text-cancel { color: #a1a1aa; font-size: 13px; }
+.btn-text-confirm { color: #fff; font-size: 14px; letter-spacing: 1px; }
+.btn-text-cancel { color: #d4d4d8; font-size: 14px; }
 
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }

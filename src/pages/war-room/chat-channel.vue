@@ -314,15 +314,26 @@ const leaveRoom = () => {
     show: true,
     title: '撤离警告',
     content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区。是否继续？',
-    confirmAction: () => {
-        warzoneStore.clearActivePublicRoom()
-        uni.switchTab({ url: '/pages/war-room/index' })
+    confirmAction: async () => {
+        const success = await warzoneStore.leaveRoomAction(chatStore.roomId)
+        if (success) {
+            uni.switchTab({ url: '/pages/war-room/index' })
+        }
     }
   }
 }
 
-// 模拟群组管理与举报流程
-const isOwner = computed(() => true) // 临时模拟: 当前登录人即为战区负责人
+// 获取房间真实创建者判断是否为所有者
+const isOwner = computed(() => {
+    if (!chatStore.roomId) return false;
+    const roomKey = chatStore.roomId.replace('room_', ''); // 这里可能是公共房或者真实DM房间id
+    const deathMatch = warzoneStore.deathMatches.find(r => r.id === roomKey);
+    if (deathMatch && deathMatch.creator_id === currentUid.value) {
+        return true;
+    }
+    // TODO: 公共频道权限这里以后可能判断管理员，现在默认false
+    return false;
+})
 
 /**
  * 右上角三点菜单 — 使用自定义 CyberActionSheet 替代原生弹窗
@@ -454,9 +465,11 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
   const nickname = profile.nickname || '匿名特工'
   const avatar = profile.avatar || ''
 
-  // 乐观更新
+  // 乐观更新，使用随机长效 ID 保证不重影
+  const randomLocalId = 'local_' + Date.now().toString() + '_' + Math.random().toString(36).substring(2, 6)
+
   chatStore.pushMessage({
-    _id: Date.now().toString(),
+    _id: randomLocalId,
     user_id: currentUid.value,
     content: content,
     nickname: nickname,
@@ -489,8 +502,17 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     })
     
     // 我们已经在发送前采用乐观更新，不再重复推入
-    if (res.result.code !== 0 && res.result.code !== 403) {
+    if (res.result.code === 0) {
+        // 请求发走且落库成功了，替换为云端的真 ID
+        chatStore.updateMessageId(randomLocalId, res.result.data._id)
+    } else if (res.result.code === 403) {
+        // 关键补丁：侦测到屏蔽词，剥夺该气泡的原始词句，修正为红色的警告！
+        uni.vibrateLong()
+        chatStore.updateMessageStatus(randomLocalId, '***[通讯屏蔽]***', true)
+        uni.showToast({ title: '侦测到神经递质异常', icon: 'error' })
+    } else {
         uni.showToast({ title: '发送失败', icon: 'none' })
+        // 可以考虑增加标记“发送失败”的样式，目前先不删
     }
   } catch(e) {
     uni.showToast({ title: '发送失败', icon: 'none' })

@@ -20,9 +20,15 @@ exports.main = async (event, context) => {
         case 'getRooms':
             // 获取大厅分类房间列表
             return await getRooms()
+        case 'getRoomMembers':
+            // 获取某房间内存活者名单
+            return await getRoomMembers(payload)
         case 'createDeathMatch':
             // 创建生死局血契
             return await createDeathMatch(uid, payload)
+        case 'leaveRoom':
+            // 撤离/解散房间
+            return await leaveRoom(uid, payload)
         case 'getHistoryLogs':
             // 获取当前聊天室的历史消息
             return await getHistoryLogs(uid, payload)
@@ -70,6 +76,17 @@ async function getRooms() {
         publicRooms = await roomsCollection.where({ type: 'public', status: 'active' }).orderBy('created_date', 'asc').get()
     }
 
+    // === 新增：惰性结算超时且未满员的生死局 ===
+    const now = Date.now()
+    await roomsCollection.where({
+        type: 'death-match',
+        status: 'waiting',
+        expiry_time: dbCmd.lte(now)
+    }).update({
+        status: 'closed',
+        close_reason: 'timeout_流局退款'
+    })
+
     // 拉取活跃或等待中的生死局 (展示最新的 20 个即可)
     const deathMatches = await roomsCollection.where({
         type: 'death-match',
@@ -93,6 +110,7 @@ async function createDeathMatch(uid, payload) {
     // 检查用户是否已在其他房间 (这里简化处理，允许创建并自动切过去)
     const shortId = Math.random().toString(36).substring(2, 8).toUpperCase()
     const roomId = `dm_${shortId}`
+    const expiry_time = Date.now() + (payload.recruitDeadline || 6) * 3600 * 1000
 
     const newRoom = {
         room_id: roomId, // 唯一通道ID
@@ -106,7 +124,8 @@ async function createDeathMatch(uid, payload) {
         prizePool: deposit,
         status: 'waiting', // 先进入等待组排阶段
         created_date: Date.now(),
-        creator_id: uid
+        creator_id: uid,
+        expiry_time: expiry_time
     }
 
     await roomsCollection.add(newRoom)
@@ -270,4 +289,63 @@ async function getHistoryLogs(uid, payload) {
     }).orderBy('created_date', 'desc').limit(20).get()
 
     return { code: 0, data: logs.data.reverse() }
+}
+
+async function leaveRoom(uid, payload) {
+    const { room_id } = payload
+    if (!room_id) return { code: 400, msg: '缺少战区标识' }
+
+    const roomsCollection = db.collection('chat_rooms')
+    const usersCollection = db.collection('uni-id-users')
+
+    // 1. 获取房间信息
+    const roomRes = await roomsCollection.where({ room_id }).limit(1).get()
+    if (roomRes.data.length === 0) {
+        // 清理异常状态
+        await usersCollection.doc(uid).update({ current_room_id: '' })
+        return { code: 0, msg: '已清空连接信号' }
+    }
+
+    const room = roomRes.data[0]
+
+    // 2. 特判生死局的房主解散逻辑
+    if (room.type === 'death-match' && room.status === 'waiting') {
+        if (room.creator_id === uid) {
+            // 房主退出，直接将状态置为 closed (后续流局结算脚本会自动处理退款)
+            await roomsCollection.doc(room._id).update({
+                status: 'closed',
+                close_reason: 'creator_left_解散'
+            })
+            await usersCollection.doc(uid).update({ current_room_id: '' })
+            return { code: 0, msg: '由于第一缔约人撤离，本局已强制解散并进入退款队列' }
+        }
+    }
+
+    // 3. 其他成员退出，或公共大厅退出，仅对 member_count 减 1 即可
+    await roomsCollection.doc(room._id).update({
+        member_count: dbCmd.inc(-1)
+    })
+    await usersCollection.doc(uid).update({ current_room_id: '' })
+
+    return { code: 0, msg: '你已断开该战区的神经网络共振' }
+}
+
+async function getRoomMembers(payload) {
+    const { room_id } = payload
+    if (!room_id) return { code: 400, msg: '缺少战区标识' }
+
+    // 聚合查询获取当前属于该房间的存活用户及其基本信息
+    const usersCollection = db.collection('uni-id-users')
+    const membersList = await usersCollection.where({
+        current_room_id: room_id
+    }).field({
+        _id: true,
+        nickname: true,
+        avatar: true
+    }).limit(100).get()
+
+    return {
+        code: 0,
+        data: membersList.data
+    }
 }

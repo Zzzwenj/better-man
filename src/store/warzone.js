@@ -155,6 +155,59 @@ export const useWarzoneStore = defineStore('warzone', {
         clearActiveDeathMatch() {
             this.activeDeathMatchId = ''
             uni.removeStorageSync('neuro_active_dm_room')
+        },
+        async leaveRoomAction(roomId) {
+            try {
+                const token = uni.getStorageSync('uni_id_token')
+                if (!token) return false
+
+                uni.showLoading({ title: '断开脑机连接...' })
+                const res = await uniCloud.callFunction({
+                    name: 'chat-hub',
+                    data: {
+                        action: 'leaveRoom',
+                        token,
+                        payload: { room_id: roomId }
+                    }
+                })
+                uni.hideLoading()
+
+                if (res.result.code === 0) {
+                    uni.showToast({ title: res.result.msg || '已撤离', icon: 'none' })
+                    this.clearActivePublicRoom()
+                    this.clearActiveDeathMatch()
+                    return true
+                } else {
+                    uni.showToast({ title: res.result.msg || '撤离失败', icon: 'none' })
+                    return false
+                }
+            } catch (error) {
+                uni.hideLoading()
+                console.error('撤离战区失败:', error)
+                uni.showToast({ title: '神经递质断开异常', icon: 'none' })
+                return false
+            }
+        },
+        async fetchRoomMembers(roomId) {
+            try {
+                const token = uni.getStorageSync('uni_id_token')
+                if (!token) return []
+                const res = await uniCloud.callFunction({
+                    name: 'chat-hub',
+                    data: {
+                        action: 'getRoomMembers',
+                        token,
+                        payload: { room_id: roomId }
+                    }
+                })
+                if (res.result.code === 0) {
+                    return res.result.data || []
+                }
+                return []
+            } catch (e) {
+                console.error('拉取成员名单失败:', e)
+                return []
+            }
         }
     }
 })

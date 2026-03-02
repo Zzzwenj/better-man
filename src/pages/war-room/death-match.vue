@@ -52,24 +52,37 @@
         </view>
       </view>
 
-      <view class="participant-list">
-        <view class="flex justify-between items-center mb-4">
-          <text class="list-title">生还名单 ({{ dmRoom.onlineCount }} / {{ dmRoom.maxUsers }})</text>
-          <!-- 征召令：所有成员均可生成，促进病毒式引流 -->
-          <view class="invite-chip flex items-center" @click="handleInvite" hover-class="invite-chip-hover">
-            <text class="invite-chip-icon">📡</text>
-            <text class="invite-chip-text">生成征召令</text>
+        <view class="participant-list">
+          <view class="flex justify-between items-center mb-4">
+            <text class="list-title">生还名单 ({{ dmRoom.onlineCount }} / {{ dmRoom.maxUsers }})</text>
+            <!-- 征召令：所有成员均可生成，促进病毒式引流 -->
+            <view class="invite-chip flex items-center" @click="handleInvite" hover-class="invite-chip-hover">
+              <text class="invite-chip-icon">📡</text>
+              <text class="invite-chip-text">生成征召令</text>
+            </view>
           </view>
-        </view>
-        <!-- 占位假数据 -->
-        <view class="user-row flex justify-between items-center mb-3" @longpress="handleUserLongPress">
-          <view class="flex items-center">
-            <view class="user-avatar bg-primary text-black font-bold flex items-center justify-center">我</view>
-            <text class="user-name ml-2">特工 #当前你</text>
+          
+          <view v-if="memberLoading" class="text-center py-4 text-xs text-gray-500">神经链接扫描中...</view>
+          
+          <view v-else>
+            <view 
+              v-for="user in currentMembers" 
+              :key="user._id"
+              class="user-row flex justify-between items-center mb-3" 
+              @longpress="handleUserLongPress(user)"
+            >
+              <view class="flex items-center">
+                <view class="user-avatar bg-primary text-black font-bold flex items-center justify-center overflow-hidden">
+                   <image v-if="user.avatar" :src="user.avatar" mode="aspectFill" style="width: 100%; height: 100%;" />
+                   <text v-else>{{ user.nickname ? user.nickname.substring(0,1) : '?' }}</text>
+                </view>
+                <text class="user-name ml-2">{{ user.nickname || '匿名特工' }} <text v-if="user._id === currentUid" class="text-xs text-primary">(我)</text></text>
+              </view>
+              <text class="status-alive text-green">存活</text>
+            </view>
           </view>
-          <text class="status-alive text-green">存活</text>
+
         </view>
-      </view>
     </view>
     
     <!-- 分享/引流 赛博征召海报蒙层 -->
@@ -165,11 +178,22 @@ const dmRoom = computed(() => {
   }
 })
 
-// 模拟群主判定 (未来接入实际建房人 UID 判断)
-const isOwner = computed(() => true) 
+const isOwner = computed(() => {
+  const token = uni.getStorageSync('uni_id_token')
+  const currentUid = token ? token.split('_').pop() : ''
+  return dmRoom.value.creator_id === currentUid
+})
 
 const displayRoomNum = computed(() => {
   return roomId.value
+})
+
+const currentMembers = ref([])
+const memberLoading = ref(true)
+
+const currentUid = computed(() => {
+  const token = uni.getStorageSync('uni_id_token')
+  return token ? token.split('_').pop() : ''
 })
 
 onLoad(async (options) => {
@@ -178,6 +202,14 @@ onLoad(async (options) => {
 
   // 先拉取云端数据，保证 expiryTime 就绪，再启动倒计时
   await warzoneStore.fetchRooms()
+  
+  // 拉取真实存活名单
+  if (dmRoom.value && dmRoom.value.room_id) {
+     const members = await warzoneStore.fetchRoomMembers(dmRoom.value.room_id)
+     currentMembers.value = members
+     memberLoading.value = false
+  }
+
   startCountdown()
   
   // 预加载二维码以提升海报生成速度
@@ -253,16 +285,26 @@ const goBack = () => {
 }
 
 const leaveRoom = () => {
-  dialog.value = {
-    show: true,
-    title: '撤离警告',
-    content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区。是否继续？'
+  if (isOwner.value && dmRoom.value.status === 'waiting') {
+      dialog.value = {
+        show: true,
+        title: '解散战区确认',
+        content: '作为第一缔约人，此时撤离将判定为[本局流局]，战区将被立即解散，保密金将进入退款队列。是否继续解散？'
+      }
+  } else {
+      dialog.value = {
+        show: true,
+        title: '撤离警告',
+        content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区甚至违约没收押金。是否继续？'
+      }
   }
 }
 
-const executeLeave = () => {
-  warzoneStore.clearActiveDeathMatch()
-  uni.switchTab({ url: '/pages/war-room/index' })
+const executeLeave = async () => {
+  const success = await warzoneStore.leaveRoomAction(dmRoom.value.room_id)
+  if (success) {
+    uni.switchTab({ url: '/pages/war-room/index' })
+  }
 }
 
 // 举报 / 更多交互
