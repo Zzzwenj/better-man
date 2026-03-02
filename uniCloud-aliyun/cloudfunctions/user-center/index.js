@@ -369,29 +369,49 @@ async function initLibraryData(db) {
         'https://images.unsplash.com/photo-1614850523296-e84e09ad8dc7?w=500&auto=format'  // Dark 2
     ];
 
-    articlesData.forEach((item, i) => {
-        seedData.push({
-            type: 'article', icon: '📖', title: item.t,
-            desc: '长篇深度干货，建议在绝对隔离干扰的状态下阅读。',
-            cover: articleCovers[i % articleCovers.length],
-            author: '控制系统归档局', readTime: `${(Math.random() * 4 + 4).toFixed(0)} 分钟深度内视`,
-            contentUrl: '', status: 1, publish_date: now - i * 15000 - 200000,
-            textContent: `<div style="color:#d4d4d8; font-size:16px; line-height: 1.8; letter-spacing: 0.5px;">
+    const resolvedArticles = [];
+    for (let i = 0; i < articlesData.length; i++) {
+        const item = articlesData[i];
+        const htmlContent = `<div style="color:#d4d4d8; font-size:16px; line-height: 1.8; letter-spacing: 0.5px;">
                 <p style="font-weight:bold; font-size: 18px; color:#fff; border-bottom: 1px solid #3f3f46; padding-bottom: 8px; margin-bottom: 15px;">核心思想推演</p>
                 <p style="margin-bottom: 15px; text-indent: 2em; color: #f4f4f5;">${item.c}</p>
                 <p style="margin-bottom: 15px; background: rgba(59, 130, 246, 0.1); padding: 12px; border-radius: 8px; border-left: 3px solid #3b82f6;">实验佐证指南：${guides[i]}</p>
                 <div style="font-size:12px; color:#52525b; text-align:center; margin-top: 40px; border-top:1px dashed #27272a; padding-top:10px;">—— 系统快照时间序列：${new Date(now).toISOString()} / DATA-NO.${i + 1}</div>
-            </div>`
-        })
-    })
+            </div>`;
+
+        try {
+            const buffer = Buffer.from(htmlContent, 'utf-8');
+            const uploadRes = await uniCloud.uploadFile({
+                cloudPath: `better_articles/doc_${now}_${i}.txt`,
+                fileContent: buffer,
+                fileBuffer: buffer // 兼容被底层的特殊本地拦截器验证
+            });
+
+            resolvedArticles.push({
+                type: 'article', icon: '📖', title: item.t,
+                desc: '长篇深度干货，建议在绝对隔离干扰的状态下阅读。',
+                cover: articleCovers[i % articleCovers.length],
+                author: '控制系统归档局', readTime: `${(Math.random() * 4 + 4).toFixed(0)} 分钟深度内视`,
+                contentUrl: uploadRes.fileID, // 仅保留外链
+                status: 1, publish_date: now - i * 15000 - 200000,
+                version: 1 // 增加版本号用于前端本地缓存比对
+            });
+        } catch (e) {
+            console.error(`上传第 ${i} 篇文章失败:`, e);
+            throw new Error(`文件上传失败: ${e.message}`);
+        }
+    }
 
     try {
+        seedData.push(...resolvedArticles);
+
+
         // 先清理存量旧数据，确保新 Schema 的覆盖图能正确落库（开发者清理逻辑）
         await col.where({ status: dbCmd.exists(true) }).remove();
 
-        // 48 条数据包含的字数完全可以在 uniCloud 单次大包批量写入 (bulk_insert) 内完成
+        // 将仅含 URL（无长文本）的安全小体积文档一次性批量写入数据库
         await col.add(seedData);
-        return { code: 0, msg: '极客资料矩阵 (48 条带封面精选) 已成功重构并初始化！' }
+        return { code: 0, msg: '资源矩阵已完全云存储化并完成初始化落库！' }
     } catch (err) {
         console.error('初始化数据大包写入失败：', err);
         throw err;

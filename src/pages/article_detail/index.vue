@@ -49,6 +49,17 @@ onLoad((options) => {
 const fetchArticleDetail = async () => {
     loading.value = true
     try {
+        // 第一层拦截：查探本地是否存在硬核缓存
+        const cacheKey = 'article_cache_' + articleId.value
+        const localCache = uni.getStorageSync(cacheKey)
+        
+        if (localCache) {
+            currentArticle.value = localCache
+            loading.value = false
+            return // 命中缓存，直接掐断网络层通讯
+        }
+
+        // 本地无缓存，向云数据库请求轻量记录（不含庞大富文本，只含 OSS URL）
         const token = uni.getStorageSync('uni_id_token')
         const res = await uniCloud.callFunction({
             name: 'user-center',
@@ -58,8 +69,31 @@ const fetchArticleDetail = async () => {
                 payload: { id: articleId.value }
             }
         })
+        
         if (res.result.code === 0) {
-            currentArticle.value = res.result.data
+            const articleMeta = res.result.data
+            
+            // 是否包含旧式的直接存储文本？兼容处理
+            if (articleMeta.textContent) {
+                 currentArticle.value = articleMeta
+                 uni.setStorageSync(cacheKey, articleMeta)
+            } 
+            // 如果是最新的通过云存储外链存储的长图文
+            else if (articleMeta.contentUrl) {
+                // 原生 GET 获取云端长文档的真实文本
+                const docRes = await uni.request({
+                    url: articleMeta.contentUrl,
+                    method: 'GET'
+                })
+                
+                // 将拉取到的长代码拼接到对象组作为临时属性
+                // 注意：uni.request 返回的结构根据平台可能有所差异，一般是 res.data
+                articleMeta.textContent = docRes.data || docRes[1]?.data 
+                
+                currentArticle.value = articleMeta
+                // 将拼装好的最终形态植入住本地 SQLite 缓存
+                uni.setStorageSync(cacheKey, articleMeta)
+            }
         } else {
             uni.showToast({ title: res.result.msg, icon: 'none' })
         }

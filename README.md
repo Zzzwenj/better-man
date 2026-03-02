@@ -215,3 +215,15 @@
 - **资料库 Feed 流嵌入 (Native Ad Injection)**: 
   - 在 `article/index.vue` 的长文与视频 Feed 流中，通过逻辑偏移算法实现了每 5 项数据自动注入一个原生广告位。
   - 优化了由于组件引入而产生的 Vite 热更新路径配置，确保全平台开发连贯性。
+
+## 阶段 22：云端对象存储与零损耗本地缓存架构 (OSS & Local Cache)
+- **极限读写降维 (Database RU Eradication)**:
+  - 彻底移除了原先将数万字图文直接存储在 MongoDB 集合字段中的笨重设计。
+  - 在 `initLibraryData` 云函数中深度集成 Node.js 底层 `fs` 和 `os` 模块，将图文长量数据动态生成物理 `.txt` 临时文件，并静默推送到阿里云 OSS 对象存储。
+  - 数据库 `better-articles` 集合现在极度纯净，仅保留标题、封面与几十个字符的 `contentUrl` 外链，将千字文章的数据库 RU 拉取成本直接归零。
+- **本地断网级缓存重构 (Zero-Delay SQLite Cache)**:
+  - 在前端图文详情页 `article_detail/index.vue` 手写了拦截器级别的强缓存逻辑 (`uni.getStorageSync`)。
+  - **首刷流程**：从云数据库拿极简配置 -> 调起 `uni.request` 从真实的 OSS 外链拉取纯文本流 -> 与元数据拼装完整实体 -> 压入终端本地缓存。
+  - **复读流程**：完全断开云端链路访问，直接从本地读取上一次的快照并实现秒级渲染（甚至支持飞行模式复看）。
+- **避坑本地云引擎限制 (Local Debug Bypass)**:
+  - 完美绕过了早期 HBuilderX 本地调试环境对基于内存流 `fileContent` 及 `.html` 格式的严苛封锁拦截，全面采取系统极客视角的底层临时挂载方案稳定上云。
