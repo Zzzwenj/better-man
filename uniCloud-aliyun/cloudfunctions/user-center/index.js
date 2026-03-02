@@ -292,10 +292,20 @@ async function initLibraryData(db) {
         'https://www.w3schools.com/html/horse.mp4'
     ];
 
+    const videoCovers = [
+        'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=500&auto=format', // Brain
+        'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=500&auto=format', // Lab
+        'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&auto=format', // Cyber 1
+        'https://images.unsplash.com/photo-1518770660439-4636190af475?w=500&auto=format', // Chip
+        'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=500&auto=format', // Robot
+        'https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?w=500&auto=format'  // Dark 1
+    ];
+
     videoTitles.forEach((t, i) => {
         seedData.push({
             type: 'video', icon: '🎥', title: t,
-            desc: `时长 ${(Math.random() * 10 + 5).toFixed(0)} 分钟 · 硬核神经科学原理解析，打破行为幻象模型。`,
+            desc: `时长 ${(Math.random() * 10 + 5).toFixed(0)} 分钟 · 硬核神经科学原理解析。`,
+            cover: videoCovers[i % videoCovers.length],
             author: videoAuths[i % videoAuths.length], readTime: '实录视频流',
             contentUrl: realVideoUrls[i % realVideoUrls.length],
             status: 1, publish_date: now - i * 10000
@@ -350,10 +360,20 @@ async function initLibraryData(db) {
         { t: "冥想时你的大脑皮层究竟发生了怎样的物理形变", c: "fMRI扫描显示，正念会导致大脑结构实质改变：掌管理的'前额叶皮层'灰质变厚，而掌管恐惧和冲动的'杏仁核'体积变小。冥想不是玄学，它是针对大脑灰质的重量训练。每天专注呼吸其实就是在宏观层面上物理重塑你的神经韧带与抗击打能力。" }
     ];
 
+    const articleCovers = [
+        'https://images.unsplash.com/photo-1518331191131-75a730d85197?w=500&auto=format', // Focus
+        'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=500&auto=format', // Code
+        'https://images.unsplash.com/photo-1484417894907-623942c8ee29?w=500&auto=format', // Laptop
+        'https://images.unsplash.com/photo-1453928582365-b6ad33cbcf64?w=500&auto=format', // Work
+        'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?w=500&auto=format', // Abstract 1
+        'https://images.unsplash.com/photo-1614850523296-e84e09ad8dc7?w=500&auto=format'  // Dark 2
+    ];
+
     articlesData.forEach((item, i) => {
         seedData.push({
             type: 'article', icon: '📖', title: item.t,
-            desc: '长篇深度干货，强烈建议在绝对隔离干扰的断网状态下阅读。',
+            desc: '长篇深度干货，建议在绝对隔离干扰的状态下阅读。',
+            cover: articleCovers[i % articleCovers.length],
             author: '控制系统归档局', readTime: `${(Math.random() * 4 + 4).toFixed(0)} 分钟深度内视`,
             contentUrl: '', status: 1, publish_date: now - i * 15000 - 200000,
             textContent: `<div style="color:#d4d4d8; font-size:16px; line-height: 1.8; letter-spacing: 0.5px;">
@@ -366,10 +386,12 @@ async function initLibraryData(db) {
     })
 
     try {
-        // 放弃之前的 for 循环分片写入，uniCloud 对免费版高频操作极其敏感！
-        // 48 条数据包含的字数完全可以在 uniCloud 单次大包批量写入 (bulk_insert) 内完成，仅消耗 1 次写操作
+        // 先清理存量旧数据，确保新 Schema 的覆盖图能正确落库（开发者清理逻辑）
+        await col.where({ status: dbCmd.exists(true) }).remove();
+
+        // 48 条数据包含的字数完全可以在 uniCloud 单次大包批量写入 (bulk_insert) 内完成
         await col.add(seedData);
-        return { code: 0, msg: '极客资料矩阵 (48 条独立精选) 已单次打包成功初始化完毕！' }
+        return { code: 0, msg: '极客资料矩阵 (48 条带封面精选) 已成功重构并初始化！' }
     } catch (err) {
         console.error('初始化数据大包写入失败：', err);
         throw err;

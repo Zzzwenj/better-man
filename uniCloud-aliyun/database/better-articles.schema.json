@@ -63,6 +63,10 @@
         "publish_date": {
             "bsonType": "timestamp",
             "description": "发布时间"
+        },
+        "cover": {
+            "bsonType": "string",
+            "description": "封面图 URL"
         }
     }
 }
