@@ -177,11 +177,21 @@ async function assignRoom(uid) {
 }
 
 async function sendMessage(uid, payload) {
-    const { room_id, content } = payload
+    const {
+        room_id,
+        content,
+        nickname,
+        avatar,
+        is_vanguard,
+        equipped_title,
+        equipped_avatar,
+        is_broadcast,
+        is_emp
+    } = payload
 
     if (!content || !room_id) return { code: 400, msg: '空信道' }
 
-    // [简易过滤] - 此处应接入阿里云内容安全 API，由于无法配置秘钥，先做简易违禁词替换
+    // [简易过滤] - 此处应接入阿里云内容安全 API
     const blockWords = ['色情', '敏感', '/v/']
     let safeContent = content
     let isBlocked = false
@@ -199,6 +209,13 @@ async function sendMessage(uid, payload) {
         room_id,
         user_id: uid,
         content: safeContent,
+        nickname: nickname || '匿名特工',
+        avatar: avatar || '',
+        is_vanguard: !!is_vanguard,
+        equipped_title: equipped_title || null,
+        equipped_avatar: equipped_avatar || null,
+        is_broadcast: !!is_broadcast,
+        is_emp: !!is_emp,
         type: 'user',
         is_blocked: isBlocked,
         created_date: Date.now()

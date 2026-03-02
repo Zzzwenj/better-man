@@ -80,7 +80,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useThemeStore } from '@/store/theme.js'
-import CyberNavBar from '@/components/common/CyberNavBar.vue'
 
 const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'

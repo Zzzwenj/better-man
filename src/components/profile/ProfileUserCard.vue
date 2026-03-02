@@ -220,8 +220,9 @@ const saveProfile = () => {
 }
 .avatar-img { width: 100%; height: 100%; border-radius: 20px; }
 .avatar-text { font-family: monospace; color: #a1a1aa; font-weight: bold; font-size: 14px;}
-.name-row { width: 100%; overflow: hidden; min-width: 0; }
+.user-info { min-width: 0; }
 .username { font-size: 20px; color: #f4f4f5; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
+.name-row { width: 100%; overflow: hidden; min-width: 0; flex: 1; }
 .flex-shrink-0 { flex-shrink: 0; }
 .edit-icon { font-size: 14px; color: #52525b; }
 .signature-text { font-size: 11px; color: #a1a1aa; font-family: monospace; }
@@ -287,7 +288,7 @@ const saveProfile = () => {
 
 /* 神经币快捷入口 (头像栏右侧内嵌) */
 .wallet-chip {
-  margin-left: auto;
+  margin-left: 12px;
   flex-shrink: 0;
   background: rgba(139, 92, 246, 0.08);
   border: 1px solid rgba(139, 92, 246, 0.2);
@@ -296,7 +297,7 @@ const saveProfile = () => {
   transition: all 0.2s;
 }
 .wallet-hover { background: rgba(139, 92, 246, 0.15); transform: scale(0.95); }
-.wallet-val { font-size: 12px; color: #e4e4e7; font-family: monospace; font-weight: 900; }
+.wallet-val { font-size: 12px; color: #e4e4e7; font-family: monospace; font-weight: 900; white-space: nowrap; }
 .wallet-arrow { font-size: 14px; color: #71717a; font-weight: bold; }
 
 /* 修改资料弹窗 */

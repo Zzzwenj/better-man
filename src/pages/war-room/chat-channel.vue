@@ -48,20 +48,28 @@
         :class="{'justify-end': msg.user_id === currentUid}"
       >
         <!-- 其他人发送的消息，头像在气泡左侧 -->
-        <view class="avatar other-avatar flex items-center justify-center mr-2 mt-1" v-if="msg.user_id !== currentUid">
-          <text class="user-icon">{{ msg.user_id ? msg.user_id.substring(msg.user_id.length - 2).toUpperCase() : '?' }}</text>
+        <view class="avatar other-avatar flex items-center justify-center mr-2 mt-1" 
+              :class="{
+                 'frame-plasma': msg.equipped_avatar === 'f_01',
+                 'frame-glitch': msg.equipped_avatar === 'f_02'
+              }" 
+              v-if="msg.user_id !== currentUid">
+          <image v-if="msg.avatar" :src="msg.avatar" class="avatar-img" mode="aspectFill"></image>
+          <text v-else class="user-icon">{{ msg.nickname ? msg.nickname.substring(msg.nickname.length - 2) : '?' }}</text>
         </view>
 
         <!-- 消息内容主轴 -->
         <view class="msg-content-wrapper flex-col" :class="[msg.user_id === currentUid ? 'align-end' : 'align-start']">
           
-          <!-- 贴紧气泡的名称与徽章 (仅他人显示) -->
-          <view class="name-tag-row flex items-center" v-if="msg.user_id !== currentUid">
-            <text class="vanguard-crown mr-1" v-if="msg.is_vanguard">👑</text>
-            <text class="mr-1 title-tag" v-if="msg.equipped_title">
-              {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
-            </text>
-            <text class="user-name-tag">{{ msg.nickname || '匿名特工' + (msg.user_id ? msg.user_id.substring(0,4) : '') }}</text>
+          <!-- 贴紧气泡的名称与徽章 (他人与自己均显示以实现闭环) -->
+          <view class="name-tag-row flex-col" :class="[msg.user_id === currentUid ? 'align-end' : 'align-start']">
+            <view class="flex items-center" v-if="msg.is_vanguard || msg.equipped_title">
+              <text class="vanguard-crown mr-1" v-if="msg.is_vanguard">👑</text>
+              <text class="title-tag ellipsis">
+                {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
+              </text>
+            </view>
+            <text class="user-name-tag ellipsis">{{ (msg.user_id === currentUid ? '我' : '') + (msg.nickname || '匿名特工') }}</text>
           </view>
 
           <view class="msg-bubble" :class="[
@@ -77,11 +85,11 @@
         <!-- 本人发送的消息，头像在气泡右侧 -->
         <view class="avatar my-avatar flex items-center justify-center ml-2 mt-1" 
               :class="{
-                 'frame-plasma': userStore.equipped.avatarFrame === 'f_01' || (msg.user_id === currentUid && userStore.equipped.avatarFrame === 'f_01'),
-                 'frame-glitch': userStore.equipped.avatarFrame === 'f_02' || (msg.user_id === currentUid && userStore.equipped.avatarFrame === 'f_02')
+                 'frame-plasma': msg.equipped_avatar === 'f_01',
+                 'frame-glitch': msg.equipped_avatar === 'f_02'
               }" 
               v-if="msg.user_id === currentUid">
-          <image v-if="userAvatar" :src="userAvatar" class="avatar-img" mode="aspectFill"></image>
+          <image v-if="msg.avatar || userAvatar" :src="msg.avatar || userAvatar" class="avatar-img" mode="aspectFill"></image>
           <text v-else class="user-icon">{{ avatarInitial }}</text>
         </view>
       </view>
@@ -386,11 +394,20 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
       userStore.consumeEMP()
   }
 
+  // 获取当前最新的本地档案以同步推送
+  const baselineStr = uni.getStorageSync('neuro_baseline')
+  const profile = baselineStr ? JSON.parse(baselineStr) : {}
+  const nickname = profile.nickname || '匿名特工'
+  const avatar = profile.avatar || ''
+
   // 乐观更新
   chatStore.pushMessage({
     _id: Date.now().toString(),
     user_id: currentUid.value,
     content: content,
+    nickname: nickname,
+    avatar: avatar,
+    is_vanguard: userStore.hasBlackGoldCrown,
     is_broadcast: isBroadcast,
     is_emp: isEMP,
     equipped_title: userStore.equipped.title,
@@ -408,6 +425,9 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
             content: payloadContent || content, 
             is_broadcast: isBroadcast,
             is_emp: isEMP,
+            nickname: nickname,
+            avatar: avatar,
+            is_vanguard: userStore.hasBlackGoldCrown,
             equipped_title: userStore.equipped.title,
             equipped_avatar: userStore.equipped.avatarFrame
         } 
@@ -456,6 +476,7 @@ page {
 .flex-col { display: flex; flex-direction: column; }
 .flex-1 { flex: 1; overflow: hidden; }
 .justify-between { justify-content: space-between; }
+.justify-start { justify-content: flex-start; }
 .justify-center { justify-content: center; }
 .justify-end { justify-content: flex-end; }
 .items-center { align-items: center; }
@@ -520,9 +541,10 @@ page {
 }
 .align-start { align-items: flex-start; }
 .align-end { align-items: flex-end; }
-.name-tag-row { margin-bottom: 4px; padding-left: 2px; }
-.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; }
+.name-tag-row { margin-bottom: 4px; padding: 0 4px; }
+.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; max-width: 120px; }
 .vanguard-crown { font-size: 13px; line-height: 1; }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
 .msg-bubble {
   padding: 12px 16px;
@@ -574,6 +596,7 @@ page {
   font-weight: bold;
   font-family: monospace;
   text-shadow: 0 0 5px rgba(139, 92, 246, 0.4);
+  max-width: 100px;
 }
 
 /* 战区聊天头像样式 */

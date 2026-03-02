@@ -69,10 +69,6 @@
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
-import StoreItemCard from '@/components/store/StoreItemCard.vue'
-import CyberTransactionModal from '@/components/store/CyberTransactionModal.vue'
-import CyberNavBar from '@/components/common/CyberNavBar.vue'
-import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const userStore = useUserStore()
 
