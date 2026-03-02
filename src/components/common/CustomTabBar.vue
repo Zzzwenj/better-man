@@ -36,8 +36,8 @@ const isAnimating = ref(-1)
 
 const list = [
   { pagePath: '/pages/dashboard/index', text: '主控' },
-  { pagePath: '/pages/war-room/index', text: '战区' },
   { pagePath: '/pages/journey/index', text: '图谱' },
+  { pagePath: '/pages/war-room/index', text: '战区' },
   { pagePath: '/pages/profile/index', text: '系统' }
 ]
 

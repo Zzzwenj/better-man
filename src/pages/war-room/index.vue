@@ -90,7 +90,7 @@
       :color="dialog.color"
     />
 
-    <CustomTabBar :current="1" />
+    <CustomTabBar :current="2" />
   </view>
 </template>
 

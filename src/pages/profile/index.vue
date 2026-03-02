@@ -15,7 +15,7 @@
     <!-- 1.5 神经元 AI 导师入口 (NEW) -->
     <view class="ai-mentor-card mx-4" @click="goToAI" hover-class="card-hover">
       <view class="ai-glow"></view>
-      <view class="flex items-center justify-between relative z-10">
+      <view class="flex items-center justify-between relative z-10 w-full">
         <view class="flex items-center">
           <view class="ai-avatar-wrap">
             <text class="ai-icon">⎔</text>
@@ -88,6 +88,19 @@
       @close="showThemeSheet = false"
       @select="onThemeSelect"
     />
+
+    <!-- 通用赛博弹窗 -->
+    <CyberDialog 
+      v-model:show="dialogState.show"
+      :title="dialogState.title"
+      :content="dialogState.content"
+      :confirmText="dialogState.confirmText"
+      :cancelText="dialogState.cancelText"
+      :showCancel="dialogState.showCancel"
+      :color="dialogState.color"
+      @confirm="handleDialogConfirm"
+      @cancel="handleDialogCancel"
+    />
   </view>
 </template>
 
@@ -99,10 +112,52 @@ import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
 const showThemeSheet = ref(false)
+
+// --- 弹窗状态管理 ---
+const dialogState = ref({
+  show: false,
+  title: '',
+  content: '',
+  confirmText: '',
+  cancelText: '',
+  showCancel: false,
+  color: '#ef4444',
+  onConfirm: null,
+  onCancel: null
+})
+
+const showDialog = (options) => {
+  dialogState.value = {
+    show: true,
+    title: options.title || '💀 系统警告',
+    content: options.content || '',
+    confirmText: options.confirmText || '确认接收',
+    cancelText: options.cancelText || '取消',
+    showCancel: options.showCancel || false,
+    color: options.color || '#ef4444',
+    onConfirm: options.success || null,
+    onCancel: options.cancel || null
+  }
+}
+
+const handleDialogConfirm = () => {
+  if (dialogState.value.onConfirm) {
+    dialogState.value.onConfirm({ confirm: true, cancel: false })
+  }
+  dialogState.value.show = false
+}
+
+const handleDialogCancel = () => {
+  if (dialogState.value.onCancel) {
+    dialogState.value.onCancel({ confirm: false, cancel: true })
+  }
+  dialogState.value.show = false
+}
 
 // --- 用户状态 ---
 const userName = ref('探索者_8972')
@@ -117,7 +172,8 @@ const integratedList = ref([
   { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
   { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
   { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
-  { id: 'wipe', icon: '🔥', label: '执行终端数据焚毁', type: 'arrow' }
+  { id: 'wipe', icon: '🔥', label: '执行终端数据焚毁 (退登)', type: 'arrow' },
+  { id: 'delete_account', icon: '⚠️', label: '深渊销毁 (注销账号)', type: 'arrow' }
 ])
 
 // --- 初始化钩子 ---
@@ -211,12 +267,12 @@ const onUpdateProfile = async ({ newName, newAvatar, newSignature }) => {
           
           uni.showToast({ title: '档案已合法覆写', icon: 'success' })
       } else {
-          uni.showModal({
+          showDialog({
               title: '系统级阻断',
               content: res.result.msg,
               showCancel: false,
               confirmText: '明确',
-              confirmColor: '#ef4444'
+              color: '#ef4444'
           })
           fetchCloudProfile() // 回滚
       }
@@ -234,12 +290,13 @@ const onModalStateChange = (state) => {
 // 点击解锁特权（测试质押入口）
 const upgradePremium = () => {
     if (userStore.isProActive) {
-        uni.showModal({
+        showDialog({
             title: '重制契约违约',
             content: '你正在履行 30 天的绝对意志契约。如果此时放弃，你的 50 元质押金将被立即扣除！',
             confirmText: '我要放弃',
             cancelText: '继续坚持',
-            confirmColor: '#ef4444',
+            showCancel: true,
+            color: '#ef4444',
             success: (res) => {
                 if (res.confirm) {
                     userStore.failContract()
@@ -250,12 +307,13 @@ const upgradePremium = () => {
         return
     }
 
-    uni.showModal({
+    showDialog({
         title: '签署神经重铸生死状',
         content: '预付 50 元。\n30天后未破戒，全额原路退还并奖励 10000 神经币 + 黑金皇冠荣耀。\n破戒或中途放弃，不予退还。',
         confirmText: '确认微信支付',
         cancelText: '我再想想',
-        confirmColor: themeStore.activeThemeData.primary,
+        showCancel: true,
+        color: themeStore.activeThemeData.primary,
         success: (res) => {
             if (res.confirm) {
                 // 模拟支付成功
@@ -272,12 +330,13 @@ const upgradePremium = () => {
 
 // 模拟看广告体验一天
 const watchAdForTrial = () => {
-    uni.showModal({
+    showDialog({
         title: '拦截：非安全频段',
         content: '这是本系统唯一一次开放底层漏洞的机会。\n是否授权接入视网膜 30 秒 (观看视频广告) ?\n我们将为你无损注入 24 小时的大模型降维打击权限。',
         confirmText: '建立连接',
         cancelText: '拒绝接入',
-        confirmColor: '#10b981',
+        showCancel: true,
+        color: '#10b981',
         success: (res) => {
             if (res.confirm) {
                 uni.showLoading({ title: '解析影像中...' })
@@ -306,15 +365,54 @@ const handleSettingClick = (originItem) => {
     uni.showToast({ title: '日志网络节点未接通', icon: 'none' })
   } else if (id === 'wipe') {
     // 本地数据焚毁
-    uni.showModal({
+    showDialog({
         title: '警告：自毁协议',
         content: '这将抹除本地所有神经连接痕迹，断开总服务器，并将你强制踢回登录舱。',
         confirmText: '确认焚毁',
-        confirmColor: '#ef4444',
+        showCancel: true,
+        color: '#ef4444',
         success: (res) => {
             if (res.confirm) {
                 uni.clearStorageSync()
                 uni.reLaunch({ url: '/pages/login/index' })
+            }
+        }
+    })
+  } else if (id === 'delete_account') {
+    // 云端数据彻底销毁
+    showDialog({
+        title: '高危警告：深渊销毁',
+        content: '该操作将永久删除您的云端神经连接档案及所有数字资产（包含不可逆的重铸史和神经币）。是否确认完全销毁本账号？',
+        confirmText: '坚决销毁',
+        cancelText: '撤回指令',
+        showCancel: true,
+        color: '#ef4444',
+        success: async (res) => {
+            if (res.confirm) {
+                uni.showLoading({ title: '执行云端粉碎...' })
+                try {
+                    const token = uni.getStorageSync('uni_id_token')
+                    const r = await uniCloud.callFunction({
+                        name: 'user-center',
+                        data: {
+                            action: 'deleteAccount',
+                            token
+                        }
+                    })
+                    if (r.result.code === 0) {
+                        uni.showToast({ title: '档案已从深渊抹除', icon: 'success' })
+                        setTimeout(() => {
+                            uni.clearStorageSync()
+                            uni.reLaunch({ url: '/pages/login/index' })
+                        }, 1000)
+                    } else {
+                        uni.showToast({ title: r.result.msg || '销毁失败', icon: 'none' })
+                    }
+                } catch (e) {
+                    uni.showToast({ title: '网络异常，未销毁', icon: 'none' })
+                } finally {
+                    uni.hideLoading()
+                }
             }
         }
     })
@@ -342,7 +440,7 @@ page {
   overflow-x: hidden;
   background-color: #09090b;
   box-sizing: border-box;
-  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -362,24 +460,27 @@ page {
 
 /* AI 导师卡片样式 */
 .ai-mentor-card {
-  margin-top: 24px;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(9, 9, 11, 0.8) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(9, 9, 11, 0.9) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
   border-radius: 16px;
-  padding: 16px 20px;
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
 }
 
 .ai-glow {
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at center, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
-  animation: rotateGlow 10s linear infinite;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 @keyframes rotateGlow {

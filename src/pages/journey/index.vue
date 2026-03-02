@@ -7,8 +7,27 @@
       </view>
     </view>
     
+    <!-- 里程碑 (移至置顶，强化正向反馈) -->
+    <view class="benefits-container mx-4 mt-6">
+       <view class="badges-area">
+           <text class="section-title block mb-4">神经重塑里程碑</text>
+           <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
+               <!-- 使用被抽离的独立徽章组件 -->
+               <NeuroBadge 
+                 v-for="badge in milestoneBadges" 
+                 :key="badge.day"
+                 :badge="badge"
+                 :status="getBadgeStatus(badge.day)"
+                 :progress="getGoalProgress(badge.day)"
+                 :currentDays="daysClean"
+                 @clickBadge="handleBadgeClick"
+               />
+           </scroll-view>
+       </view>
+    </view>
+
     <!-- 热力图模块 -->
-    <view class="card-outline mt-6 mx-4">
+    <view class="card-outline mt-2 mx-4">
       <view class="flex justify-between items-center mb-4">
         <text class="section-title">重塑突触</text>
         <view class="flex items-center">
@@ -85,29 +104,13 @@
       </view>
     </view>
     
-    <!-- 里程碑 -->
-    <view class="benefits-container mx-4 mt-6">
-       <view class="badges-area">
-           <text class="section-title block mb-4">神经重塑里程碑</text>
-           <scroll-view scroll-x class="badge-scroll-view" :show-scrollbar="false">
-               <!-- 使用被抽离的独立徽章组件 -->
-               <NeuroBadge 
-                 v-for="badge in milestoneBadges" 
-                 :key="badge.day"
-                 :badge="badge"
-                 :status="getBadgeStatus(badge.day)"
-                 :progress="getGoalProgress(badge.day)"
-                 :currentDays="daysClean"
-                 @clickBadge="handleBadgeClick"
-               />
-           </scroll-view>
-       </view>
-    </view>
+    <!-- 神经战报雷达图 (从 Profile 迁移至此) -->
+    <NeuroRadarChart />
     
     <!-- 全屏高光分享卡片组件 -->
     <MilestoneShareCard :show="showShareOverlay" :milestone="selectedMilestone" @close="closeShareOverlay" />
     
-    <CustomTabBar :current="2" />
+    <CustomTabBar :current="1" />
   </view>
 </template>
 
@@ -116,6 +119,7 @@ import { ref, onMounted, computed } from 'vue'
 import MilestoneShareCard from '../../components/journey/MilestoneShareCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import NeuroBadge from '../../components/journey/NeuroBadge.vue'
+import NeuroRadarChart from '../../components/profile/NeuroRadarChart.vue' /* 借用已有的组件路径 */
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()

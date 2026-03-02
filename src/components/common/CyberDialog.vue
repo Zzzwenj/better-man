@@ -6,7 +6,6 @@
       
       <view class="dialog-header flex justify-between items-center pb-3">
         <text class="dialog-title">{{ title || '💀 系统警告' }}</text>
-        <text class="close-btn" @click="handleCancel">✕</text>
       </view>
       
       <view class="dialog-body py-6">
@@ -120,6 +119,7 @@ const handleConfirm = () => {
 .items-center { align-items: center; }
 .justify-center { justify-content: center; }
 .gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
 .pb-3 { padding-bottom: 12px; }
 .pt-3 { padding-top: 12px; }
 .py-6 { padding-top: 24px; padding-bottom: 24px; }
