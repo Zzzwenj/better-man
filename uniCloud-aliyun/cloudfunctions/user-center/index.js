@@ -39,6 +39,9 @@ exports.main = async (event, context) => {
         case 'getRankings':
             // 获取天梯榜单 (通过离线计算防抖版)
             return await getRankings(db, uid)
+        case 'deleteAccount':
+            // 全域云端档案彻底销毁
+            return await deleteAccount(usersCollection, uid)
         case 'initLibraryData':
             // 初始化内置的精选正向数据（仅用作系统种子数据，开发者调用）
             return await initLibraryData(db)
@@ -67,6 +70,16 @@ async function getRankings(db, uid) {
                 ]
             }
         }
+    }
+}
+
+async function deleteAccount(collection, uid) {
+    try {
+        await collection.doc(uid).remove()
+        // MVP 阶段仅移除主表，拓展可顺带清空 chat_history 等关联数据
+        return { code: 0, msg: '账号及对应档案已彻底抹除' }
+    } catch (e) {
+        return { code: 500, msg: '深渊抹除失败: ' + e.message }
     }
 }
 

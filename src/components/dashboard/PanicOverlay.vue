@@ -1,6 +1,10 @@
 <template>
   <view class="panic-overlay" v-if="show" catchtouchmove="preventTouchMove">
     <view class="panic-bg-pulse"></view>
+    <!-- 2026 赛博特效层 -->
+    <view class="scan-line"></view>
+    <view class="noise-overlay"></view>
+    <view class="vignette"></view>
     
     <view class="panic-content flex-col items-center justify-center">
       <!-- 带有故障视效的警告圈 -->
@@ -35,11 +39,6 @@
 </template>
 
 <script setup>
-/**
- * @component PanicOverlay
- * @description 紧急阻断全屏遮罩组件，触发后提供随机物理行为验证并开启 60 秒强制倒计时。
- */
-
 import { computed, defineProps, defineEmits } from 'vue'
 
 const props = defineProps({
@@ -54,16 +53,14 @@ const props = defineProps({
 
 const emit = defineEmits(['doAction'])
 
-// 格式化时间保留两位数
 const formattedTimeLeft = computed(() => {
   return props.timeLeft.toString().padStart(2, '0')
 })
 
-const preventTouchMove = () => {
-    // 拦截滚动穿透
-}
+const preventTouchMove = () => {}
 
 const emitDoAction = () => {
+  uni.vibrateShort()
   emit('doAction')
 }
 </script>
@@ -72,24 +69,54 @@ const emitDoAction = () => {
 .panic-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: rgba(9, 9, 11, 0.95);
+  background-color: #050505;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn glitch-in 0.4s ease-out;
+  overflow: hidden;
 }
 
-/* 红色压迫感呼吸背景 */
+/* 扫描线 */
+.scan-line {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 4px;
+  background: rgba(239, 68, 68, 0.1);
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+  z-index: 2;
+  animation: scan 3s linear infinite;
+  pointer-events: none;
+}
+
+/* 噪点覆盖 */
+.noise-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: url('https://base-utils.oss-cn-shanghai.aliyuncs.com/noise.png');
+  opacity: 0.03;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 晕影 */
+.vignette {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
 .panic-bg-pulse {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   width: 150vw;
   height: 150vh;
-  background: radial-gradient(circle, rgba(220, 38, 38, 0.15) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(220, 38, 38, 0.2) 0%, transparent 60%);
   animation: bgPulse 2s ease-in-out infinite;
   pointer-events: none;
 }
@@ -101,7 +128,6 @@ const emitDoAction = () => {
   max-width: 400px;
 }
 
-/* 警告环带点赛博感 */
 .warning-ring {
   position: relative;
   width: 100px; height: 100px;
@@ -125,76 +151,63 @@ const emitDoAction = () => {
   color: #fff;
   font-weight: 900;
   text-shadow: 0 0 10px rgba(255,255,255,0.8);
-  /* 抵消外层旋转 */
   animation: spin-reverse 10s linear infinite;
 }
 
-/* 抖音视效的故障文字 */
 .glitch-text {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 900;
-  color: #ef4444;
+  color: #fff;
   letter-spacing: 4px;
   position: relative;
-  text-shadow: 2px 2px 10px rgba(239,68,68,0.5);
+  text-shadow: 
+    2px 0 #ef4444, 
+    -2px 0 #06b6d4;
+  animation: glitch-anim 2s infinite linear alternate-reverse;
 }
 
 .intervention-box {
-  background: rgba(239, 68, 68, 0.05);
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 16px;
   width: 100%;
   box-sizing: border-box;
 }
 
-.intervention-type { font-size: 20px; color: #fef2f2; font-weight: bold; letter-spacing: 2px;}
+.intervention-type { font-size: 20px; color: #fff; font-weight: bold; letter-spacing: 2px;}
 .overlay-desc { color: #fca5a5; font-size: 14px; line-height: 1.6;}
 
 .timer-wrapper {
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   padding: 10px 30px;
   border-radius: 40px;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.3);
 }
+
 .overlay-timer { 
   font-size: 72px; 
   font-family: monospace; 
   color: #ef4444; 
   font-weight: 900; 
-  text-shadow: 0 0 20px rgba(239,68,68,0.6);
+  text-shadow: 0 0 25px rgba(239,68,68,0.8);
   line-height: 1;
 }
 
-.pushup-counter {
-  align-items: baseline;
-}
-.pushup-val { font-size: 48px; font-weight: 900; color: #fff; font-family: monospace; text-shadow: 0 0 10px rgba(255,255,255,0.5);}
+.pushup-val { font-size: 48px; font-weight: 900; color: #fff; font-family: monospace; text-shadow: 0 0 15px rgba(255,255,255,0.5);}
 .pushup-target { font-size: 24px; color: #ef4444; font-weight: bold; font-family: monospace; margin-left: 8px;}
 
-/* 炫酷打卡按钮 */
 .verify-btn {
   position: relative;
   width: 240px;
   height: 64px;
   border-radius: 32px;
   background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.3);
   overflow: hidden;
   transition: all 0.2s;
-}
-.verify-hover {
-  transform: scale(0.96);
-  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.6);
-}
-.verify-text { 
-  font-size: 18px; 
-  color: #fff; 
-  font-weight: 900; 
-  letter-spacing: 2px;
-  z-index: 2;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
 }
 
 .btn-ripple {
@@ -205,9 +218,17 @@ const emitDoAction = () => {
   animation: slide 2s infinite;
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: scale(1); } }
-@keyframes slide { 100% { left: 200%; } }
-@keyframes bgPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes scan { 0% { transform: translateY(-100vh); } 100% { transform: translateY(100vh); } }
+@keyframes glitch-in { 0% { transform: scale(1.1) skew(5deg); filter: hue-rotate(90deg); } 100% { transform: scale(1) skew(0); filter: hue-rotate(0); } }
+@keyframes glitch-anim {
+  0% { text-shadow: 2px 0 #ef4444, -2px 0 #06b6d4; transform: translate(0); }
+  20% { text-shadow: -2px 0 #ef4444, 2px 0 #06b6d4; transform: translate(-1px, 1px); }
+  40% { text-shadow: 2px 0 #ef4444, -2px 0 #06b6d4; transform: translate(-1px, -1px); }
+  60% { text-shadow: -2px 0 #ef4444, 2px 0 #06b6d4; transform: translate(1px, 1px); }
+  80% { text-shadow: 2px 0 #ef4444, -2px 0 #06b6d4; transform: translate(1px, -1px); }
+  100% { text-shadow: -2px 0 #ef4444, 2px 0 #06b6d4; transform: translate(0); }
+}
+@keyframes bgPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); opacity: 0.7; }
   15% { transform: scale(1.4); opacity: 1; }
@@ -216,6 +237,7 @@ const emitDoAction = () => {
 }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+@keyframes slide { 100% { left: 200%; } }
 
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
@@ -225,6 +247,6 @@ const emitDoAction = () => {
 .mt-4 { margin-top: 16px; }
 .mt-6 { margin-top: 24px; }
 .mt-8 { margin-top: 32px; }
-.text-center { text-align: center; }
 .relative { position: relative; }
+.items-baseline { align-items: baseline; }
 </style>

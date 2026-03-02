@@ -1,5 +1,5 @@
 <template>
-  <view class="container flex-col" :style="themeStore.themeCssVars">
+  <view class="container flex-col" :class="{ 'war-mode': currentTab === 1 }" :style="themeStore.themeCssVars">
     <view class="header flex-col">
       <view class="flex justify-between items-center mb-4">
         <view class="room-info flex-col">
@@ -41,6 +41,7 @@
       <view v-if="currentTab === 0" class="fade-in-up">
         <RoomCard 
           v-for="room in filteredPublicRooms" :key="room.id"
+          :roomId="room.id"
           :roomType="room.type"
           :roomName="room.name"
           :description="room.description"
@@ -60,6 +61,7 @@
         
         <RoomCard 
           v-for="dm in filteredDeathMatches" :key="dm.id"
+          :roomId="dm.id"
           :roomType="dm.type"
           :roomName="dm.name"
           :description="dm.description"
@@ -75,14 +77,21 @@
       <view class="pb-safe"></view>
     </scroll-view>
 
-    <!-- 生死局创建弹窗 -->
     <ContractModal 
       :show="showContractModal" 
       @update:show="showContractModal = $event"
       @confirm="onContractCreated"
     />
 
-    <CustomTabBar :current="1" />
+    <CyberDialog
+      v-model:show="dialog.show"
+      :title="dialog.title"
+      :content="dialog.content"
+      :color="dialog.color"
+    />
+
+    <CyberFloatBall />
+    <CustomTabBar :current="2" />
   </view>
 </template>
 
@@ -93,6 +102,8 @@ import { useWarzoneStore } from '../../store/warzone.js'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import RoomCard from '../../components/war-room/RoomCard.vue'
 import ContractModal from '../../components/war-room/ContractModal.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
@@ -101,6 +112,22 @@ const warzoneStore = useWarzoneStore()
 const currentTab = ref(0)
 const showContractModal = ref(false)
 const searchQuery = ref('')
+
+const dialog = ref({
+  show: false,
+  title: '',
+  content: '',
+  color: '#ef4444'
+})
+
+const showWarning = (title, content) => {
+  dialog.value = {
+    show: true,
+    title,
+    content,
+    color: '#ef4444'
+  }
+}
 
 onShow(() => {
   // 每次进入大厅，静默拉取一下最新数据
@@ -140,12 +167,7 @@ const totalOnline = computed(() => {
 
 const handleCreateDeathMatch = () => {
   if (warzoneStore.activeDeathMatchId) {
-     uni.showModal({
-       title: '警告：身负血契',
-       content: '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。',
-       showCancel: false,
-       confirmColor: '#ef4444'
-     })
+     showWarning('警告：身负血契', '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。')
      return
   }
   showContractModal.value = true
@@ -157,12 +179,7 @@ const enterRoom = (room) => {
   const typeName = isPublic ? '公共战区' : '生死血契战役'
 
   if (currentActive && currentActive !== room.id) {
-     uni.showModal({
-       title: '侦测到并行的神经驻留',
-       content: `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`,
-       showCancel: false,
-       confirmColor: '#ef4444'
-     })
+     showWarning('侦测到并行的神经驻留', `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`)
      return
   }
 
@@ -229,7 +246,7 @@ page { height: 100%; }
   border-color: var(--theme-primary);
   box-shadow: 0 0 10px var(--theme-shadow-primary);
 }
-.search-icon { font-size: 16px; opacity: 0.6; }
+.search-icon { font-size: 16px; opacity: 0.6; padding-left: 10px;}
 .search-input { color: #fff; font-size: 14px; height: 100%; border: none; background: transparent;}
 .search-placeholder { color: #52525b; font-size: 13px; }
 .clear-btn { padding: 4px 10px; }
@@ -263,4 +280,23 @@ page { height: 100%; }
 .ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
 .pb-safe { height: calc(88px + env(safe-area-inset-bottom)); }
+
+/* 生死血契 战时氛围 */
+.war-mode {
+  transition: all 0.5s ease-in-out;
+  background-image: 
+    radial-gradient(circle at 100% 0%, rgba(239, 68, 68, 0.15) 0%, transparent 60%),
+    radial-gradient(circle at 0% 100%, rgba(185, 28, 28, 0.1) 0%, transparent 60%);
+  
+  .room-title {
+    color: #ef4444 !important;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
+    animation: textFlicker 2s infinite;
+  }
+}
+
+@keyframes textFlicker {
+  0%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+  50% { opacity: 0.8; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
+}
 </style>

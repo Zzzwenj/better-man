@@ -4,9 +4,10 @@
     <view class="cyber-nav-content flex items-center justify-between px-4">
       <view class="nav-left flex items-center" @click="handleBack">
         <view v-if="showBack" class="back-btn flex items-center justify-center" hover-class="back-hover">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+          <image 
+            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTUgMThMOSAxMkwxNSA2IiBzdHJva2U9IiNlNGU0ZTciIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=" 
+            class="back-icon" 
+          />
         </view>
         <slot name="left"></slot>
       </view>
@@ -91,12 +92,16 @@ const handleBack = () => {
   min-width: 60px;
 }
 
+.back-icon {
+  width: 20px;
+  height: 20px;
+}
+
 .back-btn {
   width: 36px;
   height: 36px;
   border-radius: 10px;
   transition: all 0.2s;
-  color: #e4e4e7;
   display: flex;
   align-items: center;
   justify-content: center;

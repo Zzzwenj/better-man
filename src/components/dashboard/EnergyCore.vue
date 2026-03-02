@@ -7,6 +7,7 @@
     <view class="orbit orbit-1"></view>
     <view class="orbit orbit-2"></view>
     <view class="orbit orbit-3"></view>
+    <view class="orbit orbit-4"></view>
     
     <!-- 核心脉冲星 -->
     <view class="core-pulse flex items-center justify-center">
@@ -28,11 +29,6 @@
 </template>
 
 <script setup>
-/**
- * @component EnergyCore
- * @description 觉醒空间能量环核心组件，基于戒断时间渲染不同阶段及动态光效环。
- */
-
 import { defineProps } from 'vue'
 
 const props = defineProps({
@@ -77,7 +73,7 @@ const props = defineProps({
   width: 280px; height: 280px;
   border-top-color: rgba(139, 92, 246, 0.4);
   border-bottom-color: rgba(0, 229, 255, 0.2);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.1), inset 0 0 20px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.2), inset 0 0 20px rgba(139, 92, 246, 0.2);
   animation: rotate3d-1 15s linear infinite;
   z-index: 1;
 }
@@ -86,7 +82,7 @@ const props = defineProps({
   width: 240px; height: 240px;
   border-left-color: rgba(0, 229, 255, 0.5);
   border-right-color: rgba(139, 92, 246, 0.2);
-  box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
   animation: rotate3d-2 20s linear infinite reverse;
   z-index: 2;
 }
@@ -99,9 +95,19 @@ const props = defineProps({
   border-right-color: transparent;
   border-width: 2px;
   border-style: dashed;
-  animation: spin 10s linear infinite;
-  opacity: 0.6;
+  animation: spin 8s linear infinite;
+  opacity: 0.8;
+  filter: drop-shadow(0 0 8px var(--theme-primary));
   z-index: 3;
+}
+
+.orbit-4 {
+  width: 140px; height: 140px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-right-color: #fff;
+  animation: spin 2s linear infinite;
+  filter: blur(1px);
+  z-index: 5;
 }
 
 /* 核心脉冲星 */
@@ -120,32 +126,35 @@ const props = defineProps({
   width: 130px;
   height: 130px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(9, 9, 11, 0.8) 0%, rgba(9, 9, 11, 0.4) 100%);
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  backdrop-filter: blur(4px);
-  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.2);
+  background: radial-gradient(circle, rgba(9, 9, 11, 0.9) 0%, rgba(9, 9, 11, 0.6) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 30px rgba(139, 92, 246, 0.3);
 }
 
 /* 数据层 */
 .time-display {
   text-align: center;
   z-index: 10;
-  text-shadow: 0 0 20px rgba(0,0,0,0.8);
+  text-shadow: 0 0 20px rgba(0,0,0,0.9);
 }
 
 .hours-val {
-  font-size: 78px; /* 加大尺寸 */
+  font-size: 88px;
   font-weight: 900;
   color: #ffffff;
   font-family: 'Courier New', Courier, monospace;
-  text-shadow: 0 0 30px var(--theme-primary), 0 0 10px rgba(255,255,255,0.5); /* 更强的发光 */
+  text-shadow: 
+    0 0 20px var(--theme-primary), 
+    0 0 40px var(--theme-shadow-primary),
+    0 0 10px rgba(255,255,255,0.8); 
   line-height: 1;
-  letter-spacing: -2px;
+  letter-spacing: -3px;
 }
 
 .hours-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.8);
   letter-spacing: 4px;
   font-weight: 600;
   margin-top: 4px;
@@ -153,18 +162,18 @@ const props = defineProps({
 }
 
 .level-badge {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(79, 70, 229, 0.15));
-  border: 1px solid rgba(139, 92, 246, 0.5);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(79, 70, 229, 0.25));
+  border: 1px solid rgba(139, 92, 246, 0.6);
   padding: 4px 16px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: bold;
-  color: var(--theme-primary);
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+  color: #fff;
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
   backdrop-filter: blur(10px);
 }
 
-/* CSS 粒子特效 (利用 box-shadow 绘制多个小圆点随核心旋转) */
+/* CSS 粒子特效 */
 .particles {
   position: absolute;
   width: 100%; height: 100%;
@@ -180,7 +189,6 @@ const props = defineProps({
   width: 4px; height: 4px;
   background: transparent;
   border-radius: 50%;
-  /* 手指写几个坐标位置的点并发光 */
   box-shadow: 
     80px -90px 4px 1px rgba(0, 229, 255, 0.8),
     -100px 70px 3px 0px rgba(139, 92, 246, 0.9),

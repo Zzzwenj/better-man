@@ -1,29 +1,31 @@
 <template>
   <view class="room-card" :class="{ 'is-active-card': isActive }" hover-class="room-card-hover" @click="onClick">
     <view class="flex justify-between items-center mb-2">
-      <view class="flex items-center">
-        <!-- Icon based on type -->
-        <view class="room-icon flex items-center justify-center" :class="roomType">
+      <view class="flex items-center flex-1 overflow-hidden">
+        <!-- 图标 -->
+        <view class="room-icon flex items-center justify-center flex-shrink-0" :class="roomType">
           <text v-if="roomType === 'public'">📡</text>
           <text v-else>⚔️</text>
         </view>
         <text class="room-name ml-2">{{ roomName }}</text>
+        <!-- 唯一ID标签，点击可复制 -->
+        <text class="room-id ml-2 flex-shrink-0" v-if="roomId" @click.stop="copyId">#{{ roomId }}</text>
       </view>
-      <view class="status-badge" :class="statusClass">
+      <view class="status-badge flex-shrink-0 ml-2" :class="statusClass">
         <text class="status-text">{{ statusText }}</text>
       </view>
     </view>
-    
+
     <!-- 激活驻留状态的特殊横幅提示 -->
     <view class="active-banner flex items-center justify-center mb-2" v-if="isActive">
       <text class="active-icon mr-1">📍</text>
       <text class="active-banner-text">神经已连接 · 点击立即折跃</text>
     </view>
-    
+
     <view class="room-desc mb-2">
       <text class="desc-text">{{ description }}</text>
     </view>
-    
+
     <view class="room-footer flex justify-between items-center mt-2">
       <view class="flex items-center">
         <text class="metric-icon">👥</text>
@@ -40,46 +42,54 @@
 <script setup>
 /**
  * @component RoomCard
- * @description 战区大厅模块房间列表卡片组件，独立渲染单个竞技场/防线基站的各项入场信息。
+ * @description 战区大厅模块房间列表卡片组件。
+ * @prop roomId    - 房间唯一ID，显示为标签并支持点击复制
+ * @prop roomType  - 'public' | 'death-match'
+ * @prop roomName  - 房间名称
+ * @prop description - 房间描述
+ * @prop onlineCount - 在线人数
+ * @prop maxUsers  - 最大人数
+ * @prop prizePool - 奖金池 (仅 death-match)
+ * @prop status    - 'active' | 'waiting' | 'closed'
+ * @prop isActive  - 当前用户是否已连接该房间
  */
-
 import { computed } from 'vue'
 
 const props = defineProps({
-  roomType: { type: String, default: 'public' }, // 'public' | 'death-match'
-  roomName: { type: String, default: '' },
-  description: { type: String, default: '' },
-  onlineCount: { type: Number, default: 0 },
-  maxUsers: { type: Number, default: null }, // null means infinite
-  prizePool: { type: Number, default: 0 },
-  status: { type: String, default: 'active' }, // 'active' | 'waiting' | 'closed'
-  isActive: { type: Boolean, default: false } // 此战区是否为当前用户驻留状态
+  roomId:       { type: String,  default: '' },
+  roomType:     { type: String,  default: 'public' },
+  roomName:     { type: String,  default: '' },
+  description:  { type: String,  default: '' },
+  onlineCount:  { type: Number,  default: 0 },
+  maxUsers:     { type: Number,  default: null },
+  prizePool:    { type: Number,  default: 0 },
+  status:       { type: String,  default: 'active' },
+  isActive:     { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['click'])
 
-const onClick = () => {
-  emit('click')
+const onClick = () => emit('click')
+
+/** 点击 ID 标签复制到剪贴板 */
+const copyId = () => {
+  if (!props.roomId) return
+  uni.setClipboardData({
+    data: props.roomId,
+    success: () => uni.showToast({ title: '战局口令已提取', icon: 'none' })
+  })
 }
 
 const statusText = computed(() => {
   if (props.roomType === 'public') return '信号流畅'
-  switch (props.status) {
-    case 'active': return '激战中'
-    case 'waiting': return '招募中'
-    case 'closed': return '已结算'
-    default: return '未知'
-  }
+  const map = { active: '激战中', waiting: '招募中', closed: '已结算' }
+  return map[props.status] || '未知'
 })
 
 const statusClass = computed(() => {
   if (props.roomType === 'public') return 'status-public'
-  switch (props.status) {
-    case 'active': return 'status-active'
-    case 'waiting': return 'status-waiting'
-    case 'closed': return 'status-closed'
-    default: return ''
-  }
+  const map = { active: 'status-active', waiting: 'status-waiting', closed: 'status-closed' }
+  return map[props.status] || ''
 })
 </script>
 
@@ -97,18 +107,11 @@ const statusClass = computed(() => {
   position: relative;
   overflow: hidden;
 }
-/* 外层追加激活时的呼吸灯与高光边框 */
-.room-card[v-cloak] { display: none; }
-
 .is-active-card {
   background: rgba(39, 39, 42, 0.7);
   border-color: rgba(239, 68, 68, 0.4);
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.1) inset;
 }
-
-/* 通过 Vue 作用域我们把组件根直接绑个类名会更好，所以稍后这里其实可以直接用动态class。
- * 先做基础的激活特效：
- */
 .active-banner {
   background: linear-gradient(90deg, transparent 0%, rgba(239, 68, 68, 0.2) 50%, transparent 100%);
   padding: 4px 0;
@@ -118,7 +121,6 @@ const statusClass = computed(() => {
 }
 .active-icon { font-size: 14px; animation: bounce 1s infinite alternate; }
 .active-banner-text { font-size: 11px; font-weight: 900; color: #ef4444; letter-spacing: 2px; }
-
 @keyframes bgPulse { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.3; } }
 @keyframes bounce { from { transform: translateY(-1px); } to { transform: translateY(2px); } }
 
@@ -129,8 +131,7 @@ const statusClass = computed(() => {
   box-shadow: 0 4px 15px rgba(0, 229, 255, 0.1);
 }
 .room-icon {
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 8px;
   font-size: 16px;
 }
@@ -143,45 +144,39 @@ const statusClass = computed(() => {
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 .room-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: bold;
   color: #fff;
   letter-spacing: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-}
-.status-text {
+/* 房间ID徽章：点击可复制 */
+.room-id {
   font-size: 10px;
-  font-weight: bold;
+  color: #00e5ff;
+  font-family: monospace;
+  background: rgba(0, 229, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  white-space: nowrap;
 }
-.status-public {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
+.room-id:active { opacity: 0.5; }
+
+.status-badge { padding: 4px 8px; border-radius: 12px; }
+.status-text { font-size: 10px; font-weight: bold; }
+.status-public { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); }
 .status-public .status-text { color: #10b981; }
-
-.status-active {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  animation: pulse 2s infinite;
-}
+.status-active { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); animation: pulse 2s infinite; }
 .status-active .status-text { color: #ef4444; }
-
-.status-waiting {
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
+.status-waiting { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); }
 .status-waiting .status-text { color: #f59e0b; }
-
-.status-closed {
-  background: rgba(113, 113, 122, 0.1);
-  border: 1px solid rgba(113, 113, 122, 0.2);
-}
+.status-closed { background: rgba(113, 113, 122, 0.1); border: 1px solid rgba(113, 113, 122, 0.2); }
 .status-closed .status-text { color: #71717a; }
 
-.room-desc {  margin-top: 8px; }
+.room-desc { margin-top: 8px; }
 .desc-text { font-size: 12px; color: #a1a1aa; line-height: 1.4; }
 .room-footer { border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; }
 .metric-icon { font-size: 12px; color: #a1a1aa; }
@@ -189,12 +184,17 @@ const statusClass = computed(() => {
 .prize-text { color: #facc15; font-weight: bold; }
 
 .flex { display: flex; }
+.flex-1 { flex: 1; }
+.flex-shrink-0 { flex-shrink: 0; }
+.overflow-hidden { overflow: hidden; }
 .justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
 .items-center { align-items: center; }
 .mb-2 { margin-bottom: 8px; }
 .mt-2 { margin-top: 8px; }
 .ml-1 { margin-left: 4px; }
 .ml-2 { margin-left: 8px; }
+.mr-1 { margin-right: 4px; }
 .mt-px { margin-top: 1px; }
 
 @keyframes pulse {

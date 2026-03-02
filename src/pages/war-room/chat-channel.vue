@@ -29,6 +29,14 @@
       <GlobalResonance />
     </view>
 
+    <!-- 战区宣言横条 (只读展示，从 warzoneStore 读取当前战区宣言) -->
+    <view class="slogan-banner px-4" v-if="currentRoomSlogan">
+      <view class="slogan-banner-inner flex items-center">
+        <text class="slogan-banner-label">战役宣言</text>
+        <text class="slogan-banner-text flex-1">“ {{ currentRoomSlogan }} ”</text>
+      </view>
+    </view>
+
     <!-- Chat Area -->
     <scroll-view 
       scroll-y 
@@ -69,7 +77,10 @@
                 {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
               </text>
             </view>
-            <text class="user-name-tag ellipsis">{{ (msg.user_id === currentUid ? '我' : '') + (msg.nickname || '匿名特工') }}</text>
+            <view class="flex items-center">
+              <text class="user-name-tag">{{ (msg.user_id === currentUid ? '我' : '') + (msg.nickname || '匿名特工') }}</text>
+              <text class="time-tag ml-1">{{ formatTimeAgo(msg.created_date) }}</text>
+            </view>
           </view>
 
           <view class="msg-bubble" :class="[
@@ -121,6 +132,30 @@
         </view>
       </view>
     </view>
+    
+    <!-- 弹窗：战区名重排 (自定义组件) -->
+    <SloganEditModal 
+      v-model:show="showRenameModal" 
+      title="📡 战区重排"
+      placeholder="输入新的战区识别代号..."
+      @confirm="onRenameConfirm"
+    />
+
+    <CyberDialog
+      v-model:show="dialog.show"
+      :title="dialog.title"
+      :content="dialog.content"
+      :showCancel="true"
+      @confirm="dialog.confirmAction"
+    />
+
+    <!-- 自定义操作菜单，替代原生 uni.showActionSheet -->
+    <CyberActionSheet
+      v-model:show="actionSheet.show"
+      :title="actionSheet.title"
+      :itemList="actionSheet.list"
+      @select="onActionSelect"
+    />
   </view>
 </template>
 
@@ -130,6 +165,9 @@ import { onHide } from '@dcloudio/uni-app'
 import { useChatStore } from '../../store/chat.js'
 import GlobalResonance from '../../components/war-room/GlobalResonance.vue'
 import { useThemeStore } from '../../store/theme.js'
+import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
 
 const themeStore = useThemeStore()
 import { useUserStore } from '../../store/user.js'
@@ -141,6 +179,12 @@ const scrollTop = ref(0)
 const currentUid = ref('')
 const userAvatar = ref('')
 const avatarInitial = ref('我')
+const showRenameModal = ref(false)
+const dialog = ref({ show: false, title: '', content: '', confirmAction: () => {} })
+
+// 自定义 ActionSheet 状态
+const actionSheet = ref({ show: false, title: '', list: [], type: '' })
+const pendingReportMsg = ref(null) // 暂存待举报的消息对象
 
 import { useWarzoneStore } from '../../store/warzone.js'
 const warzoneStore = useWarzoneStore()
@@ -154,6 +198,20 @@ const currentOnlineCount = computed(() => {
   const deathMatch = warzoneStore.deathMatches.find(r => r.id === chatStore.roomId.replace('room_', ''))
   if (deathMatch) return deathMatch.onlineCount
   return Math.floor(Math.random() * 50) + 10 // Mock fallback
+})
+
+/**
+ * 当前战区宣言 — 从 warzoneStore 读取，展示在聊天页顶部
+ * 同时匹配公频和生死局
+ */
+const currentRoomSlogan = computed(() => {
+  if (!chatStore.roomId) return ''
+  const roomKey = chatStore.roomId.replace('room_', '')
+  const pubMatch = warzoneStore.publicRooms.find(r => r.id === roomKey)
+  if (pubMatch && pubMatch.slogan) return pubMatch.slogan
+  const deathMatch = warzoneStore.deathMatches.find(r => r.id === roomKey)
+  if (deathMatch && deathMatch.slogan) return deathMatch.slogan
+  return ''
 })
 
 // 获取云端数据
@@ -198,14 +256,8 @@ onMounted(async () => {
         data: { token, action: 'getHistoryLogs', payload: { room_id: assignRes.result.roomId } }
       })
       if (historyRes.result.code === 0) {
-        // Mock: 假设云端返回的数据有时丢了 is_broadcast 字段，但是世界公屏喊话内容有特有的 [BROADCAST] 前缀标识
-        const formattedLogs = historyRes.result.data.map(m => {
-          if (m.content && m.content.startsWith('[BROADCAST]')) {
-             return { ...m, is_broadcast: true, content: m.content.replace('[BROADCAST]', '').trim() }
-          }
-          return m
-        })
-        chatStore.setHistory(formattedLogs)
+        // 直接使用云端下发的结构数据，服务端已经洗净处理好了 `is_broadcast` 等标记
+        chatStore.setHistory(historyRes.result.data)
         scrollToBottom()
       }
     }
@@ -255,82 +307,106 @@ const goBack = () => {
 }
 
 const leaveRoom = () => {
-  uni.showModal({
-    title: '撤离通讯网络',
-    content: '撤离后当前的通讯链接将被阻断，是否确认重返大厅？',
-    confirmText: '执行撤离',
-    confirmColor: '#ef4444',
-    success: (res) => {
-      if (res.confirm) {
-        warzoneStore.clearActivePublicRoom()
-        uni.switchTab({ url: '/pages/war-room/index' })
-      }
+  dialog.value = {
+    show: true,
+    title: '撤离警告',
+    content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区。是否继续？',
+    confirmAction: async () => {
+        const success = await warzoneStore.leaveRoomAction(chatStore.roomId)
+        if (success) {
+            uni.switchTab({ url: '/pages/war-room/index' })
+        }
     }
-  })
+  }
 }
 
-// 模拟群组管理与举报流程
-const isOwner = computed(() => true) // 临时模拟: 当前登录人即为战区负责人
+// 获取房间真实创建者判断是否为所有者，或者是否是公频的管理员权限
+const isOwner = computed(() => {
+    if (!chatStore.roomId) return false;
+    const roomKey = chatStore.roomId.replace('room_', ''); // 这里可能是公共房或者真实DM房间id
+    const deathMatch = warzoneStore.deathMatches.find(r => r.id === roomKey);
+    // 生死局判定：创建者拥有绝对权限
+    if (deathMatch && deathMatch.creator_id === currentUid.value) {
+        return true;
+    }
+    
+    // 公频判定：如果是公频（没在 deathMatch 且能在 publicRooms 找到）
+    const pubMatch = warzoneStore.publicRooms.find(r => r.id === roomKey);
+    if (pubMatch) {
+       // 如果持有黑金桂冠，或是极端称号 [深渊行者][绝命赌徒]，则临时赋予战区纠察队管理员权限
+       if (userStore.hasBlackGoldCrown || userStore.equipped.title === 't_01' || userStore.equipped.title === 't_02') {
+           return true;
+       }
+    }
+    
+    return false;
+})
 
+/**
+ * 右上角三点菜单 — 使用自定义 CyberActionSheet 替代原生弹窗
+ */
 const handleMoreAction = () => {
-  const itemList = isOwner.value 
+  const itemList = isOwner.value
     ? ['撤离当前通讯网络', '修改本战区代号/密码', '清除所有叛逃者记录', '举报违规言论/洗脑信息']
     : ['撤离当前通讯网络', '举报违规言论/洗脑信息', '屏蔽该战区']
-  uni.showActionSheet({
-    itemList,
-    itemColor: '#ef4444',
-    success: (res) => {
-      // 第一项统一为撤离
-      if (res.tapIndex === 0) {
-        leaveRoom()
-        return
-      }
-
-      // 其他分支根据房主判断索引偏移
-      if (isOwner.value) {
-         if (res.tapIndex === 1) {
-            uni.showModal({
-              title: '战区重组', content: '输入新的战区名称（扣除 100 神经币）', editable: true, placeholderText: '新的纪元...',
-              success: (mRes) => {
-                if (mRes.confirm && mRes.content) {
-                   uni.showToast({ title: '战区名称部署完毕', icon: 'success' })
-                }
-              }
-            })
-         } else if (res.tapIndex === 2) {
-            uni.showModal({ title: '警告', content: '将清除本场所有通讯记录？', confirmColor: '#ef4444', success: (mRes) => {
-              if (mRes.confirm) {
-                 chatStore.messages = [] // 前端软清空
-                 uni.showToast({ title: '格式化完成' })
-              }
-            }})
-         } else {
-            uni.showToast({ title: '记录已锚定，等待秩序庭空降验证。', icon: 'none' })
-         }
-      } else {
-         if (res.tapIndex === 1 || res.tapIndex === 2) {
-             uni.showToast({ title: '系统已接到反馈，将派驻特工核实', icon: 'none' })
-         }
-      }
-    }
-  })
+  actionSheet.value = {
+    show: true,
+    title: '战区战术指令',
+    list: itemList,
+    type: 'more'
+  }
 }
 
-// 提取单条消息鉴察权 (长按举报模式)
+/**
+ * 长按消息举报 — 使用自定义 CyberActionSheet 替代原生弹窗
+ * @param {Object} msg - 被长按的消息对象
+ */
 const handleReportMsg = (msg) => {
-  if (msg.user_id === currentUid.value) return // 过滤自己
-  
-  uni.showActionSheet({
-    itemList: ['举报该条言论', '屏蔽此特工'],
-    itemColor: '#ef4444',
-    success: (res) => {
-      if (res.tapIndex === 0) {
-        uni.showToast({ title: '已将违规指令抄送纠察队', icon: 'none' })
-      } else if (res.tapIndex === 1) {
-        uni.showToast({ title: '已切断与该个体的底层信号', icon: 'none' })
+  if (msg.user_id === currentUid.value) return // 过滤自己的消息
+  pendingReportMsg.value = msg
+  actionSheet.value = {
+    show: true,
+    title: '探员交互操作',
+    list: ['举报该条言论', '屏蔽此特工'],
+    type: 'msg'
+  }
+}
+
+/**
+ * ActionSheet 选项回调统一处理
+ * @param {number} index - 被点击的选项索引
+ */
+const onActionSelect = (index) => {
+  if (actionSheet.value.type === 'more') {
+    if (index === 0) {
+      leaveRoom()
+    } else if (isOwner.value) {
+      if (index === 1) {
+        showRenameModal.value = true
+      } else if (index === 2) {
+        dialog.value = {
+          show: true,
+          title: '格式化确认',
+          content: '即将清除本场所有本地通讯记录，此操作不可撤销。是否继续？',
+          confirmAction: () => {
+            chatStore.messages = []
+            uni.showToast({ title: '格式化完成' })
+          }
+        }
+      } else {
+        uni.showToast({ title: '记录已锚定，等待秩序庭空降验证。', icon: 'none' })
       }
+    } else {
+      uni.showToast({ title: '系统已接到反馈，将派驻特工核实', icon: 'none' })
     }
-  })
+  } else if (actionSheet.value.type === 'msg') {
+    if (index === 0) {
+      uni.showToast({ title: '已将违规指令抄送纠察队', icon: 'none' })
+    } else if (index === 1) {
+      uni.showToast({ title: '已切断与该个体的底层信号', icon: 'none' })
+    }
+    pendingReportMsg.value = null
+  }
 }
 
 // 富文本渲染：替换指令为 emoji, 广播消息增加强调发光 
@@ -365,24 +441,20 @@ const sendText = () => {
 }
 
 const triggerBroadcast = () => {
-  uni.showModal({
-    title: '全境系统广播 (500 神经币)',
-    content: '本次广播将无视战区区服，强行推送给所有在线探员，且携带红色震屏发光特效。',
-    confirmText: '豪掷发送',
-    confirmColor: themeStore.activeThemeData.primary,
-    success: (res) => {
-        if (res.confirm) {
+    dialog.value = {
+        show: true,
+        title: '全境广播确认',
+        content: '本次广播将无视战区区服，强行推送给所有在线探员，将消耗 500 神经币。',
+        confirmAction: () => {
             if (userStore.spendCoins(500, '购买高能世界广播')) {
                 const txt = inputVal.value.trim() || '🔥 战区最高意志者在此！'
                 inputVal.value = ''
-                // 为了演示持久化保留，可以在真正发给后端时带上特征码前缀
                 executeSend(txt, true, `[BROADCAST] ${txt}`)
             } else {
                 uni.showToast({ title: '神经币储备不足', icon: 'error' })
             }
         }
     }
-  })
 }
 
 const executeSend = async (content, isBroadcast = false, payloadContent = null) => {
@@ -400,9 +472,11 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
   const nickname = profile.nickname || '匿名特工'
   const avatar = profile.avatar || ''
 
-  // 乐观更新
+  // 乐观更新，使用随机长效 ID 保证不重影
+  const randomLocalId = 'local_' + Date.now().toString() + '_' + Math.random().toString(36).substring(2, 6)
+
   chatStore.pushMessage({
-    _id: Date.now().toString(),
+    _id: randomLocalId,
     user_id: currentUid.value,
     content: content,
     nickname: nickname,
@@ -411,7 +485,8 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     is_broadcast: isBroadcast,
     is_emp: isEMP,
     equipped_title: userStore.equipped.title,
-    equipped_avatar: userStore.equipped.avatarFrame
+    equipped_avatar: userStore.equipped.avatarFrame,
+    created_date: Date.now()
   })
   
   try {
@@ -435,13 +510,49 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     })
     
     // 我们已经在发送前采用乐观更新，不再重复推入
-    if (res.result.code !== 0 && res.result.code !== 403) {
+    if (res.result.code === 0) {
+        // 请求发走且落库成功了，替换为云端的真 ID
+        chatStore.updateMessageId(randomLocalId, res.result.data._id)
+    } else if (res.result.code === 403) {
+        // 关键补丁：侦测到屏蔽词，剥夺该气泡的原始词句，修正为红色的警告！
+        uni.vibrateLong()
+        chatStore.updateMessageStatus(randomLocalId, '***[通讯屏蔽]***', true)
+        uni.showToast({ title: '侦测到神经递质异常', icon: 'error' })
+    } else {
         uni.showToast({ title: '发送失败', icon: 'none' })
+        // 可以考虑增加标记“发送失败”的样式，目前先不删
     }
   } catch(e) {
     uni.showToast({ title: '发送失败', icon: 'none' })
   }
 }
+const onRenameConfirm = (newName) => {
+  if (userStore.spendCoins(100, '重组战区命名')) {
+    uni.showLoading({ title: '通讯号波段重设中...' })
+    setTimeout(() => {
+      uni.hideLoading()
+      uni.showToast({ title: '战区名称部署完毕', icon: 'success' })
+    }, 1000)
+  } else {
+    uni.showToast({ title: '神经币不足，无法覆盖指令', icon: 'none' })
+  }
+}
+
+/**
+ * 时间相对格式化工具
+ * @param {Number|String} timestamp 
+ */
+const formatTimeAgo = (timestamp) => {
+  if (!timestamp) return ''
+  const now = Date.now()
+  const diff = now - timestamp
+
+  if (diff < 60000) return '刚刚' // 1 分钟内
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm' // 1 小时内返回 m
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h' // 24 小时内返回 h
+  return Math.floor(diff / 86400000) + 'd' // 天数计算
+}
+
 </script>
 
 <style lang="scss" scoped>
@@ -542,7 +653,8 @@ page {
 .align-start { align-items: flex-start; }
 .align-end { align-items: flex-end; }
 .name-tag-row { margin-bottom: 4px; padding: 0 4px; }
-.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; max-width: 120px; }
+.user-name-tag { font-size: 11px; color: #71717a; font-family: monospace; max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.time-tag { font-size: 9px; color: #52525b; font-family: monospace; margin-top: 1px; }
 .vanguard-crown { font-size: 13px; line-height: 1; }
 .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 
@@ -726,4 +838,36 @@ page {
 .btn-send.disabled { background: #27272a; opacity: 0.6; box-shadow: none;}
 .send-icon { color: #fff; font-size: 16px; font-weight: 900; }
 .btn-send.disabled .send-icon { color: #52525b; }
+
+/* 战区宣言横条 — 紧凑单行，不抢焦点 */
+.slogan-banner {
+  padding-top: 8px;
+  padding-bottom: 4px;
+  flex-shrink: 0;
+}
+.slogan-banner-inner {
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.06) 0%, transparent 100%);
+  border-left: 2px solid rgba(0, 229, 255, 0.5);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 10px;
+  gap: 8px;
+}
+.slogan-banner-label {
+  font-size: 9px;
+  color: #00e5ff;
+  font-weight: bold;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+.slogan-banner-text {
+  font-size: 12px;
+  color: #a1a1aa;
+  font-style: italic;
+  /* 超长截断 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>

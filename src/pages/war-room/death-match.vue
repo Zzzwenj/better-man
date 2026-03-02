@@ -22,39 +22,67 @@
     <view class="px-4 mt-4 flex-1 fade-in-up" style="animation-delay: 0.1s;">
       <view class="status-card mb-6">
         <text class="status-label">奖金池 (神经币)</text>
-        <view class="prize-pool mt-2 flex items-center">
-          <text class="prize-icon">💰</text>
-          <text class="prize-amount">{{ dmRoom.prizePool }}</text>
+        <view class="prize-pool mt-2 flex justify-between items-center">
+          <view class="flex items-center">
+            <text class="prize-icon">💰</text>
+            <text class="prize-amount">{{ dmRoom.prizePool }}</text>
+          </view>
+          <view class="flex-col items-end" v-if="dmRoom.onlineCount < dmRoom.maxUsers">
+            <text class="text-xs text-red-500 font-bold">征召倒计时</text>
+            <text class="countdown-val">{{ countdownText || '计算中...' }}</text>
+          </view>
         </view>
         <text class="status-desc mt-2">存活者将平分全部奖金。破戒者当即出局并扣除保密金进入公池。</text>
       </view>
+
+      <!-- 战役宣言展示区 (置顶加强) -->
+      <view class="slogan-card mb-6 flex-col">
+        <view class="flex items-center mb-2">
+          <text class="slogan-tag">战役宣言</text>
+          <view class="tag-line flex-1 ml-2"></view>
+        </view>
+        <text class="slogan-text">“ {{ dmRoom.slogan }} ”</text>
+      </view>
       
-      <!-- 群主干预台 -->
+      <!-- 群主干预台（只保留编辑宣言，征召令移至全员可见区） -->
       <view class="admin-panel mb-6" v-if="isOwner">
-        <text class="panel-title flex items-center mb-3"><text class="text-xl mr-1">👑</text>一号位权限</text>
-        <view class="btn-group flex flex-col gap-3">
-          <view class="admin-btn edit-btn flex justify-center items-center" @click="editSlogan">
-            <text class="btn-text">修改战役宣言 / 公告</text>
-          </view>
+        <view class="flex justify-between items-center">
+          <text class="panel-title flex items-center"><text class="text-xl mr-1">👑</text>一号位权限</text>
+          <text class="edit-link" @click="editSlogan">编辑宣言 ✎</text>
         </view>
       </view>
 
-      <view class="participant-list">
-        <view class="flex justify-between items-center mb-4">
-          <text class="list-title">生还名单 ({{ dmRoom.onlineCount }} / {{ dmRoom.maxUsers }})</text>
-          <view class="invite-action-btn flex items-center p-2" @click="handleInvite" v-if="dmRoom.onlineCount < dmRoom.maxUsers">
-             <text class="text-sm font-bold text-primary">✚ 招收战友</text>
+        <view class="participant-list">
+          <view class="flex justify-between items-center mb-4">
+            <text class="list-title">生还名单 ({{ dmRoom.onlineCount }} / {{ dmRoom.maxUsers }})</text>
+            <!-- 征召令：所有成员均可生成，促进病毒式引流 -->
+            <view class="invite-chip flex items-center" @click="handleInvite" hover-class="invite-chip-hover">
+              <text class="invite-chip-icon">📡</text>
+              <text class="invite-chip-text">生成征召令</text>
+            </view>
           </view>
-        </view>
-        <!-- 占位假数据 -->
-        <view class="user-row flex justify-between items-center mb-3">
-          <view class="flex items-center">
-            <view class="user-avatar bg-primary text-black font-bold flex items-center justify-center">我</view>
-            <text class="user-name ml-2">特工 #当前你</text>
+          
+          <view v-if="memberLoading" class="text-center py-4 text-xs text-gray-500">神经链接扫描中...</view>
+          
+          <view v-else>
+            <view 
+              v-for="user in currentMembers" 
+              :key="user._id"
+              class="user-row flex justify-between items-center mb-3" 
+              @longpress="handleUserLongPress(user)"
+            >
+              <view class="flex items-center">
+                <view class="user-avatar bg-primary text-black font-bold flex items-center justify-center overflow-hidden">
+                   <image v-if="user.avatar" :src="user.avatar" mode="aspectFill" style="width: 100%; height: 100%;" />
+                   <text v-else>{{ user.nickname ? user.nickname.substring(0,1) : '?' }}</text>
+                </view>
+                <text class="user-name ml-2">{{ user.nickname || '匿名特工' }} <text v-if="user._id === currentUid" class="text-xs text-primary">(我)</text></text>
+              </view>
+              <text class="status-alive text-green">存活</text>
+            </view>
           </view>
-          <text class="status-alive text-green">存活</text>
+
         </view>
-      </view>
     </view>
     
     <!-- 分享/引流 赛博征召海报蒙层 -->
@@ -67,12 +95,20 @@
         </view>
         
         <view class="qr-container flex-col items-center justify-center p-4 mb-4">
-          <!-- 模拟高级渐变边界与扫码框 -->
+          <!-- 采用云端合成的真二维码 (2026 方案: 动态接口渲染) -->
           <view class="qr-mock flex justify-center items-center relative">
-            <view class="scan-line"></view>
-            <text class="text-xs text-gray-800 font-bold relative z-10 text-center">📱<br/>微信/相机扫码<br/>一键加入战局</text>
+            <view class="scan-line" v-if="!qrLoading"></view>
+            <view class="qr-placeholder flex items-center justify-center" v-if="qrLoading">
+               <text class="loading-icon">⚡</text>
+            </view>
+            <image 
+              class="qr-real-img" 
+              :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://app.betterman.vip/join/${dmRoom.id}&bgcolor=ffffff&color=000000`"
+              mode="aspectFit"
+              @load="onQrLoad"
+            ></image>
           </view>
-          <text class="text-xs text-gray-500 mt-2">DeepLink: app.betterman.vip/join/{{ dmRoom.id }}</text>
+          <text class="text-xs text-gray-500 mt-2">感知链接: app.betterman.vip/join/{{ dmRoom.id }}</text>
         </view>
 
         <view class="code-box flex-col items-center justify-center w-full mb-6">
@@ -90,6 +126,33 @@
         </view>
       </view>
     </view>
+
+    <!-- 弹窗：宣言修改 (自定义组件) -->
+    <SloganEditModal 
+      v-model:show="showSloganModal" 
+      :value="dmRoom.slogan"
+      @confirm="onSloganConfirm"
+    />
+
+    <CyberDialog
+      v-model:show="dialog.show"
+      :title="dialog.title"
+      :content="dialog.content"
+      :showCancel="true"
+      confirmText="确定撤离"
+      @confirm="executeLeave"
+    />
+
+    <!-- 自定义操作菜单 -->
+    <CyberActionSheet
+      v-model:show="actionSheet.show"
+      :title="actionSheet.title"
+      :itemList="actionSheet.list"
+      @select="onActionSelect"
+    />
+
+    <!-- 离屏画布：用于合成海报 -->
+    <canvas canvas-id="posterCanvas" style="width: 750px; height: 1334px; position: absolute; left: -9999px; visibility: hidden;"></canvas>
   </view>
 </template>
 
@@ -98,33 +161,117 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
 import { useWarzoneStore } from '../../store/warzone.js'
+import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
+import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
 
 const themeStore = useThemeStore()
 const warzoneStore = useWarzoneStore()
 
-let roomId = ''
+const roomId = ref('')
 const showShareModal = ref(false)
+const showSloganModal = ref(false)
 
 const dmRoom = computed(() => {
-  return warzoneStore.deathMatches.find(r => r.id === roomId) || {
-    id: '??????', name: '未知对局', maxUsers: 0, onlineCount: 0, prizePool: 0
+  return warzoneStore.deathMatches.find(r => r.id === roomId.value) || {
+    id: '??????', name: '未知对局', maxUsers: 0, onlineCount: 0, prizePool: 0, slogan: '绝不退缩...', expiryTime: 0
   }
 })
 
-// 模拟群主判定 (未来接入实际建房人 UID 判断)
-const isOwner = computed(() => true) 
+const isOwner = computed(() => {
+  const token = uni.getStorageSync('uni_id_token')
+  const currentUid = token ? token.split('_').pop() : ''
+  return dmRoom.value.creator_id === currentUid
+})
 
 const displayRoomNum = computed(() => {
-  // 原有的截取逻辑不再需要，因为已经是短id，我们备用直接展示短id
-  return roomId
+  return roomId.value
 })
 
-onLoad((options) => {
-  roomId = options.id || ''
-  uni.hideTabBar()
+const currentMembers = ref([])
+const memberLoading = ref(true)
+
+const currentUid = computed(() => {
+  const token = uni.getStorageSync('uni_id_token')
+  return token ? token.split('_').pop() : ''
 })
+
+onLoad(async (options) => {
+  roomId.value = options.id || ''
+  uni.hideTabBar()
+
+  // 先拉取云端数据，保证 expiryTime 就绪，再启动倒计时
+  await warzoneStore.fetchRooms()
+  
+  // 拉取真实存活名单
+  if (dmRoom.value && dmRoom.value.room_id) {
+     const members = await warzoneStore.fetchRoomMembers(dmRoom.value.room_id)
+     currentMembers.value = members
+     memberLoading.value = false
+  }
+
+  startCountdown()
+  
+  // 预加载二维码以提升海报生成速度
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://app.betterman.vip/join/${roomId.value}&bgcolor=ffffff&color=000000`
+  uni.getImageInfo({ 
+    src: qrUrl,
+    success: (res) => {
+      cachedQrPath.value = res.path
+    }
+  })
+})
+
+const cachedQrPath = ref('')
+
+const dialog = ref({ show: false, title: '', content: '' })
+const actionSheet = ref({ show: false, title: '', list: [], type: '' })
+const qrLoading = ref(true)
+const countdownText = ref('')
+
+/**
+ * 启动征召倒计时
+ * 首次立即计算，之后每秒更新，避免进入页面时空白 1 秒
+ */
+const startCountdown = () => {
+  // 内联计算函数，首次调用 + interval 复用
+  const tick = () => {
+    if (!dmRoom.value.expiryTime) {
+      // 数据仍未就绪（极端情况兜底）
+      countdownText.value = '计算中...'
+      return
+    }
+    const now = Date.now()
+    const diff = dmRoom.value.expiryTime - now
+    if (diff <= 0) {
+      clearInterval(timer)
+      countdownText.value = '征召已强制终结'
+      return
+    }
+    const h = Math.floor(diff / (3600 * 1000))
+    const m = Math.floor((diff % (3600 * 1000)) / (60 * 1000))
+    const s = Math.floor((diff % (60 * 1000)) / 1000)
+    countdownText.value = `${h}h ${m}m ${s}s`
+  }
+  tick() // 立即执行一次，不等 1 秒
+  const timer = setInterval(tick, 1000)
+}
+
+const onQrLoad = () => {
+  qrLoading.value = false
+}
+
+/** 复制当前房间 ID 到剪贴板 */
+const copyId = () => {
+  if (!dmRoom.value.id) return
+  uni.setClipboardData({
+    data: String(dmRoom.value.id),
+    success: () => uni.showToast({ title: '战局口令已提取', icon: 'none' })
+  })
+}
 
 const goBack = () => {
+
   const pages = getCurrentPages()
   if (pages.length <= 1) {
     uni.switchTab({ url: '/pages/dashboard/index' })
@@ -138,51 +285,74 @@ const goBack = () => {
 }
 
 const leaveRoom = () => {
-  uni.showModal({
-    title: '撤离警告',
-    content: '撤离后你将断开与该战役的通讯链接。是否继续撤离？',
-    confirmText: '坚决撤离',
-    confirmColor: '#ef4444',
-    success: (res) => {
-      if (res.confirm) {
-        warzoneStore.clearActiveDeathMatch()
-        uni.switchTab({ url: '/pages/war-room/index' })
+  if (isOwner.value && dmRoom.value.status === 'waiting') {
+      dialog.value = {
+        show: true,
+        title: '解散战区确认',
+        content: '作为第一缔约人，此时撤离将判定为[本局流局]，战区将被立即解散，保密金将进入退款队列。是否继续解散？'
       }
-    }
-  })
+  } else {
+      dialog.value = {
+        show: true,
+        title: '撤离警告',
+        content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区甚至违约没收押金。是否继续？'
+      }
+  }
+}
+
+const executeLeave = async () => {
+  const success = await warzoneStore.leaveRoomAction(dmRoom.value.room_id)
+  if (success) {
+    uni.switchTab({ url: '/pages/war-room/index' })
+  }
 }
 
 // 举报 / 更多交互
 const handleMoreAction = () => {
-  uni.showActionSheet({
-    itemList: ['撤离当前生死局', '举报违背契约精神行为', '投诉不良内容', '屏蔽此战局'],
-    itemColor: '#ef4444',
-    success: (res) => {
-      if (res.tapIndex === 0) {
-         leaveRoom()
-      } else if (res.tapIndex === 1 || res.tapIndex === 2) {
-        uni.showToast({ title: '已将证据锚定并上报肃清委员会', icon: 'none' })
-      } else {
-        uni.showToast({ title: '已切断与该对决的共振', icon: 'none' })
-      }
+  actionSheet.value = {
+    show: true,
+    title: '战区战术指令',
+    list: ['撤离当前生死局', '举报违背契约精神行为', '投诉不良内容', '屏蔽此战局'],
+    type: 'more'
+  }
+}
+
+const handleUserLongPress = () => {
+  actionSheet.value = {
+    show: true,
+    title: '探员交互操作',
+    list: ['举报该探员违规', '屏蔽此探员通讯'],
+    type: 'user'
+  }
+}
+
+const onActionSelect = (index) => {
+  if (actionSheet.value.type === 'more') {
+    if (index === 0) {
+       leaveRoom()
+    } else if (index === 1 || index === 2) {
+      uni.showToast({ title: '已将证据锚定并上报肃清委员会', icon: 'none' })
+    } else {
+      uni.showToast({ title: '已切断与该对决的共振', icon: 'none' })
     }
-  })
+  } else if (actionSheet.value.type === 'user') {
+    uni.showToast({ title: '投诉已提交，正在同步至治安局', icon: 'none' })
+  }
 }
 
 // 修改宣言
 const editSlogan = () => {
-  uni.showModal({
-    title: '修改宣言',
-    content: '新宣言将通过推流同步给所有参战者',
-    editable: true,
-    placeholderText: '绝不退缩...',
-    confirmColor: themeStore.activeThemeData.primary,
-    success: (res) => {
-      if (res.confirm && res.content) {
-        uni.showToast({ title: '战役密码已更替', icon: 'success' })
-      }
-    }
-  })
+  showSloganModal.value = true
+}
+
+const onSloganConfirm = (newSlogan) => {
+  uni.showLoading({ title: '加密传输中...' })
+  setTimeout(() => {
+    // 调用 store 的 saveSlogan，同时更新内存 + 就算重进页面也能恢复
+    warzoneStore.saveSlogan(roomId.value, newSlogan)
+    uni.hideLoading()
+    uni.showToast({ title: '战役口令已更替', icon: 'success' })
+  }, 1000)
 }
 
 const handleInvite = () => {
@@ -201,14 +371,84 @@ const copyLink = () => {
     })
 }
 
-// 保存合成海报到相册
-const savePoster = () => {
-    uni.showLoading({ title: '正在渲染通缉令...' })
-    setTimeout(() => { 
-      uni.hideLoading()
-      uni.showToast({ title: '已将高能海报封存到画廊', icon: 'success' })
-      showShareModal.value = false 
-    }, 1200)
+// 保存合成海报到相册 (真正实现)
+const savePoster = async () => {
+    uni.showLoading({ title: '神经网络渲染中...' })
+    
+    try {
+        const ctx = uni.createCanvasContext('posterCanvas')
+        
+        let localQrPath = cachedQrPath.value
+        if (!localQrPath) {
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://app.betterman.vip/join/${roomId.value}&bgcolor=ffffff&color=000000`
+            const qrRes = await uni.getImageInfo({ src: qrUrl })
+            localQrPath = qrRes.path
+        }
+
+        // 2. 绘制背景
+        ctx.setFillStyle('#09090b')
+        ctx.fillRect(0, 0, 750, 1334)
+        
+        // 3. 绘制赛博噪点背景 (模拟)
+        ctx.setGlobalAlpha(0.1)
+        ctx.setFillStyle('#00e5ff')
+        for(let i=0; i<100; i++) {
+            ctx.fillRect(Math.random()*750, Math.random()*1334, 2, 2)
+        }
+        ctx.setGlobalAlpha(1.0)
+
+        // 4. 绘制文字
+        ctx.setFillStyle('#00e5ff')
+        ctx.setFontSize(24)
+        ctx.fillText('=== BETTER MAN ===', 240, 100)
+        
+        ctx.setFillStyle('#ffffff')
+        ctx.setFontSize(48)
+        ctx.fillText('觉醒者强制征召令', 180, 200)
+        
+        ctx.setFillStyle('#a1a1aa')
+        ctx.setFontSize(28)
+        ctx.fillText(`第 ${roomId} 号战区正在集结`, 230, 280)
+
+        // 5. 绘制二维码
+        ctx.setFillStyle('#ffffff')
+        ctx.fillRect(225, 400, 300, 300) // QR 背景
+        ctx.drawImage(localQrPath, 235, 410, 280, 280)
+
+        // 6. 绘制入场标识
+        ctx.setFillStyle('#00e5ff')
+        ctx.setFontSize(80)
+        ctx.fillText(roomId, 240, 900)
+        
+        ctx.setFillStyle('#52525b')
+        ctx.setFontSize(20)
+        ctx.fillText('扫描上方神经连接 或 输入口令', 230, 980)
+
+        ctx.draw(false, () => {
+            setTimeout(() => {
+                uni.canvasToTempFilePath({
+                    canvasId: 'posterCanvas',
+                    success: (res) => {
+                        uni.saveImageToPhotosAlbum({
+                            filePath: res.tempFilePath,
+                            success: () => {
+                                uni.hideLoading()
+                                uni.showToast({ title: '已存入神经图库', icon: 'success' })
+                                showShareModal.value = false
+                            },
+                            fail: () => {
+                                uni.hideLoading()
+                                uni.showToast({ title: '保存失败，请检查权限', icon: 'none' })
+                            }
+                        })
+                    }
+                })
+            }, 300)
+        })
+    } catch (e) {
+        uni.hideLoading()
+        uni.showToast({ title: '渲染引擎载荷异常', icon: 'none' })
+    }
 }
 </script>
 
@@ -274,6 +514,8 @@ page { height: 100%; }
   backdrop-filter: blur(10px);
 }
 .panel-title { font-size: 14px; font-weight: bold; color: #facc15; }
+.edit-link { font-size: 12px; color: #00e5ff; text-decoration: underline; opacity: 0.8; }
+.edit-link:active { opacity: 1; }
 .text-xl { font-size: 18px; }
 .gap-3 { gap: 12px; }
 .admin-btn { border-radius: 12px; padding: 12px 0; transition: transform 0.2s; }
@@ -327,7 +569,11 @@ page { height: 100%; }
   border: 4px solid var(--theme-primary); 
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+.qr-real-img { width: 120px; height: 120px; z-index: 2; }
 .scan-line {
   position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--theme-primary);
   box-shadow: 0 0 10px 2px var(--theme-primary);
@@ -352,5 +598,33 @@ page { height: 100%; }
 .border-btn { border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
 .border-btn .btn-text { color: #fff; font-size: 14px; font-weight: bold; }
 .primary-btn { background: var(--theme-primary, #00e5ff); box-shadow: 0 4px 15px rgba(0, 229, 255, 0.3); }
-.primary-btn .btn-text { color: #000; font-weight: 900; font-size: 14px; }
+.text-red-500 { color: #ef4444; }
+.countdown-val { font-size: 14px; color: #ef4444; font-family: monospace; font-weight: bold; }
+.qr-placeholder { position: absolute; inset: 0; background: #000; z-index: 3; }
+.loading-icon { animation: blink 1s infinite; font-size: 24px; }
+
+/* 宣言卡片样式 — 增强视觉重量，让用户明显感知 */
+.slogan-card {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.06) 0%, rgba(0, 100, 120, 0.04) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.08), inset 0 0 12px rgba(0, 229, 255, 0.03);
+}
+.slogan-tag { font-size: 10px; color: #00e5ff; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7; }
+.tag-line { height: 1px; background: linear-gradient(90deg, rgba(0, 229, 255, 0.3), transparent); }
+.slogan-text { font-size: 16px; color: #e4e4e7; font-weight: 500; font-style: italic; line-height: 1.6; text-align: center; text-shadow: 0 0 12px rgba(0, 229, 255, 0.3); }
+
+/* 征召令小按钮 — 全员可见，紧凑内联在生还名单标题行 */
+.invite-chip {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 20px;
+  padding: 4px 10px;
+  gap: 4px;
+  transition: all 0.2s;
+}
+.invite-chip-hover { background: rgba(0, 229, 255, 0.2); }
+.invite-chip-icon { font-size: 12px; }
+.invite-chip-text { font-size: 11px; color: #00e5ff; font-weight: bold; letter-spacing: 0.5px; }
 </style>

@@ -112,7 +112,11 @@ const props = defineProps({
 const emit = defineEmits(['updateProfile', 'modalStateChange'])
 
 const goStore = () => {
-    uni.navigateTo({ url: '/pages/store/index' })
+    uni.vibrateShort()
+    // 延迟 50ms 跳转，确保视觉反馈（点击态）与物理反馈（震动）优先处理，消除感官卡顿
+    setTimeout(() => {
+        uni.navigateTo({ url: '/pages/store/index' })
+    }, 50)
 }
 
 const showModal = ref(false)

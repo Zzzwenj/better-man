@@ -142,16 +142,16 @@
                 "selectedIconPath": "static/icons/tab_home_active.svg"
             },
             {
-                "pagePath": "pages/war-room/index",
-                "text": "战区",
-                "iconPath": "static/icons/tab_war.svg",
-                "selectedIconPath": "static/icons/tab_war_active.svg"
-            },
-            {
                 "pagePath": "pages/journey/index",
                 "text": "图谱",
                 "iconPath": "static/icons/tab_journey.svg",
                 "selectedIconPath": "static/icons/tab_journey_active.svg"
+            },
+            {
+                "pagePath": "pages/war-room/index",
+                "text": "战区",
+                "iconPath": "static/icons/tab_war.svg",
+                "selectedIconPath": "static/icons/tab_war_active.svg"
             },
             {
                 "pagePath": "pages/profile/index",

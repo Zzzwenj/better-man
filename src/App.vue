@@ -31,6 +31,9 @@ export default {
   },
   onShow: function () {
     console.log('App Show')
+    // 开启“物理干预”——摇一摇唤起紧急阻断
+    this.initShakeDetection()
+    
     // 每日打卡热力图计算 (位图字符串法)
     const lastCheckin = uni.getStorageSync('neuro_last_checkin_date')
     const todayStr = new Date().toDateString()
@@ -87,6 +90,30 @@ export default {
             }
             uni.reLaunch({ url: '/pages/login/index' })
         }
+    },
+    initShakeDetection() {
+        let lastTime = 0
+        let lastX = 0, lastY = 0, lastZ = 0
+        const shakeThreshold = 80 // 2026 年优化的体感阈值
+
+        uni.onAccelerometerChange((res) => {
+            const currentTime = Date.now()
+            if ((currentTime - lastTime) > 100) {
+                const diffTime = currentTime - lastTime
+                lastTime = currentTime
+                const x = res.x, y = res.y, z = res.z
+                const speed = Math.abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000
+
+                if (speed > shakeThreshold) {
+                    console.warn('检测到生理应激防护需求 (摇一摇)')
+                    uni.vibrateLong()
+                    // 广播全域紧急干预指令
+                    uni.$emit('TRIGGER_PANIC_SYSTEM')
+                }
+                lastX = x; lastY = y; lastZ = z
+            }
+        })
+        uni.startAccelerometer({ interval: 'normal' })
     }
   }
 }
