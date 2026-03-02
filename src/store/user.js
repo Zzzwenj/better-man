@@ -44,7 +44,11 @@ export const useUserStore = defineStore('user', {
                 avatarFrame: null, // 当前装备的头像框ID
                 title: null,       // 当前装备的战区称号ID
                 empActive: false   // EMP 脉冲是否激活(单次消耗)
-            }
+            },
+
+            // --- 信号拦截(广告)统计 ---
+            lastAdTime: uni.getStorageSync('neuro_last_ad_time') || 0,
+            dailyAdCount: Number(uni.getStorageSync('neuro_daily_ad_count')) || 0
         }
     },
     getters: {
@@ -212,6 +216,35 @@ export const useUserStore = defineStore('user', {
             this.hasUsedTrial = true
             uni.setStorageSync('neuro_has_used_trial', 'true')
             console.log('[Store] 已发放一次性临时越权体验。')
+        },
+
+        // 处理广告奖励发放
+        earnAdReward() {
+            const now = new Date()
+            const todayStr = now.toDateString()
+            const lastDate = new Date(this.lastAdTime).toDateString()
+
+            // 如果是新的一天，重置计数器
+            if (todayStr !== lastDate) {
+                this.dailyAdCount = 0
+            }
+
+            // 限制每日上限
+            if (this.dailyAdCount >= 5) {
+                uni.showToast({ title: '今日能源补给已达上限', icon: 'none' })
+                return false
+            }
+
+            const reward = 100 // 每次补给 100 神经币
+            this.earnCoins(reward, '外部能源补给')
+            this.dailyAdCount++
+            this.lastAdTime = Date.now()
+
+            uni.setStorageSync('neuro_daily_ad_count', this.dailyAdCount)
+            uni.setStorageSync('neuro_last_ad_time', this.lastAdTime)
+
+            uni.showToast({ title: `能源注入成功: +${reward}`, icon: 'success' })
+            return true
         },
 
         // 从云端恢复资产 (登录或启动时调用)

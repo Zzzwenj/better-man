@@ -11,6 +11,13 @@
           <NeuroCoinIcon :size="40" class="mr-3" />
           <text class="coin-amount">{{ formattedCoins }}</text>
         </view>
+        
+        <!-- 激励视频入口：能源补给 -->
+        <view class="ad-reward-box mt-4 flex items-center justify-center" @click="handleAdReward">
+          <text class="ad-icon mr-2">⚡</text>
+          <text class="ad-btn-text">信号拦截：获取能源补给 ({{ userStore.dailyAdCount }}/5)</text>
+        </view>
+
         <text class="warning-text mt-4">>> 规则：黑市交易不退不换，量力而为。纯视觉与炫耀属性，无算力加持。 <<</text>
       </view>
 
@@ -66,18 +73,35 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import { useUserStore } from '@/store/user'
+import { adManager } from '@/utils/adManager'
 
 const userStore = useUserStore()
 
 const formattedCoins = computed(() => userStore.formattedCoins)
 
-onUnload(() => {
-   // 退出黑市页面时，由于大概率发生过消费，静默进行一波 T+1 资产上报对账以节约 RU
-   userStore.syncAssetsToCloud()
+onMounted(() => {
+  // 预加载广告信号
+  adManager.initRewardedVideo()
+  
+  // 监听奖励发放
+  uni.$on('ad-reward-success', () => {
+    userStore.earnAdReward()
+  })
 })
+
+onUnload(() => {
+  uni.$off('ad-reward-success')
+  // 退出黑市页面时，由于大概率发生过消费，静默进行一波 T+1 资产上报对账以节约 RU
+  userStore.syncAssetsToCloud()
+})
+
+const handleAdReward = () => {
+  uni.vibrateShort()
+  adManager.showRewardedVideo()
+}
 
 const goBack = () => {
   uni.navigateBack()
@@ -218,6 +242,21 @@ const executeTransaction = async (product) => {
   line-height: 1.6;
   padding: 0 10px;
 }
+
+.ad-reward-box {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 8px 16px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.ad-reward-box:active {
+  transform: scale(0.95);
+  background: rgba(245, 158, 11, 0.2);
+}
+.ad-icon { color: #f59e0b; font-size: 14px; }
+.ad-btn-text { color: #f59e0b; font-size: 12px; font-weight: bold; font-family: monospace; letter-spacing: 1px;}
 
 .tab-scroll {
   width: 100%;

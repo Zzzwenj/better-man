@@ -5,23 +5,30 @@
     <scroll-view class="content-scroll" scroll-y @scrolltolower="loadMore">
        <view class="pt-header px-4">
           <!-- Feed-style Cards -->
-          <view class="article-card flex-col align-stretch" v-for="(link, index) in currentLinks" :key="index" @click="openExternal(link)" hover-class="card-hover">
-             <view class="card-cover-wrap">
-               <image v-if="link.cover" :src="link.cover" mode="aspectFill" class="card-cover" />
-               <view v-else class="card-cover-placeholder flex items-center justify-center">
-                 <text class="placeholder-icon">{{ link.icon }}</text>
-               </view>
-               <view class="card-badge" :class="link.type">{{ link.type === 'video' ? 'VIDEO' : 'ARTICLE' }}</view>
-             </view>
-             <view class="card-content">
-                 <text class="card-title block">{{ link.title }}</text>
-                 <view class="card-meta flex items-center mt-2">
-                   <text class="meta-item">{{ link.author }}</text>
-                   <text class="meta-divider">·</text>
-                   <text class="meta-item">{{ link.readTime }}</text>
+          <template v-for="(link, index) in currentLinks" :key="index">
+            <view class="article-card flex-col align-stretch" @click="openExternal(link)" hover-class="card-hover">
+               <view class="card-cover-wrap">
+                 <image v-if="link.cover" :src="link.cover" mode="aspectFill" class="card-cover" />
+                 <view v-else class="card-cover-placeholder flex items-center justify-center">
+                   <text class="placeholder-icon">{{ link.icon }}</text>
                  </view>
-             </view>
-          </view>
+                 <view class="card-badge" :class="link.type">{{ link.type === 'video' ? 'VIDEO' : 'ARTICLE' }}</view>
+               </view>
+               <view class="card-content">
+                   <text class="card-title block">{{ link.title }}</text>
+                   <view class="card-meta flex items-center mt-2">
+                     <text class="meta-item">{{ link.author }}</text>
+                     <text class="meta-divider">·</text>
+                     <text class="meta-item">{{ link.readTime }}</text>
+                   </view>
+               </view>
+            </view>
+
+            <!-- 注入原生广告信号：每隔 5 条数据插入一个 -->
+            <view v-if="(index + 1) % 5 === 0" class="ad-insertion">
+              <CyberAdCard adpid="1111111111" />
+            </view>
+          </template>
        </view>
        
        <view class="empty-state flex-col items-center justify-center mt-12" v-if="loading && page === 1">
@@ -49,6 +56,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
+import CyberAdCard from '@/components/common/CyberAdCard.vue'
 
 const themeStore = useThemeStore()
 const pageType = ref('')
@@ -310,4 +318,8 @@ const openExternal = (link) => {
 .justify-center { justify-content: center; }
 .flex-col { display: flex; flex-direction: column; }
 .align-stretch { align-items: stretch; }
+
+.ad-insertion {
+  margin-bottom: 24px;
+}
 </style>
