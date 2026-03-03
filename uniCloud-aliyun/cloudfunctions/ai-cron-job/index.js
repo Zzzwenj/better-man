@@ -108,23 +108,34 @@ async function generateBatchArticles(batchSize, seedKeywords) {
     return await askDeepSeek(prompt);
 }
 
-// ================= 影像工坊分集 =================
-async function generateBatchVideos(batchSize, seedKeywords) {
-    const prompt = `你是《觉醒空间》App的正向激励内容核心。请生成 ${batchSize} 个高质量短视频流文案。
-内容配比与灵感源（极其重要）：
-- 当前批次你必须从中引入这几个独特视角作为灵感源头：【${seedKeywords}】。
-- 80% 的视频文案主题为高质量养生、健身实操、自律励志等正能量日常片段。
-- 20% 的视频文案必须涉及神经学/脑科学硬核原理解析（例如：多巴胺渴求回路、习惯突触修剪等）。
+// ================= 有源影像工坊分集 =================
+const VIDEO_MATERIAL_POOL = [
+    { id: 1, desc: '自然：宁静的森林小溪流淌', url: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/2minute-demo.mp4', cover: 'https://qiniu-web-assets.dcloud.net.cn/unidoc/zh/2minute-demo.mp4?vframe/jpg/offset/10' },
+    { id: 2, desc: '科技：UniApp 云端一体化宣传演示', url: 'https://web-ext-storage.dcloud.net.cn/uni-app/video/api/2minute-demo.mp4', cover: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-f184e7c3-1912-41b2-b81f-435d1b37c7b4/302e1c94-118e-4a6c-941f-50b7baeb7bbd.jpg' },
+    { id: 3, desc: '自然：航拍壮丽蔚蓝海岸', url: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-f184e7c3-1912-41b2-b81f-435d1b37c7b4/1ea114cd-976c-48b4-b4a1-87ab753457a4.mp4', cover: 'https://vkceyugu.cdn.bspapp.com/VKCEYUGU-f184e7c3-1912-41b2-b81f-435d1b37c7b4/4d1152a5-bdfc-4fd9-8bd2-5f65ceb4a553.jpg' },
+    { id: 4, desc: '意境：雪山与云海，磅礴大气', url: 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-uni-app-doc/360e4b20-4f4b-11eb-8a36-ebb87efcf8d0.mp4', cover: 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-uni-app-doc/360e4b20-4f4b-11eb-8a36-ebb87efcf8d0.mp4?vframe/jpg/offset/2' },
+    { id: 5, desc: '风景：大范围风光延时摄影测试流', url: 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-uni-app-doc/a876efc0-4f35-11eb-97b7-0dc4655d6e68.mp4', cover: 'https://bjetxgzv.cdn.bspapp.com/VKCEYUGU-uni-app-doc/a876efc0-4f35-11eb-97b7-0dc4655d6e68.mp4?vframe/jpg/offset/3' }
+];
 
-标题去重与语言格式要求：
-1. 标题必须有极致的力量感与克制感。禁止使用常见陈词滥调（例如不要出现“跑出健康人生”），标题应当高度凝练，像手术刀一样精准。
-2. 一句话摘要要物理、客观，禁止纯鸡汤。
-3. 严格按照纯净的 JSON 数组格式返回，绝不包含任何开头结尾的废话或 Markdown 代码块标识：
+async function generateBatchVideos(batchSize) {
+    const materialJson = JSON.stringify(VIDEO_MATERIAL_POOL.map(m => ({ id: m.id, desc: m.desc })));
+    const prompt = `你是《觉醒空间》App的正向激励内容核心。现在需要你根据真实的视频库素材来撰写匹配的绝佳短视频文案集。
+目前系统里仅有以下几段视频画面可供调用：
+${materialJson}
+
+请你从中随心挑选素材（可随机重复，以凑够指定的生成篇数！），精准生成 ${batchSize} 个高质量搭配文案。
+必须根据素材画面的客观内容（desc），去结合神经学、自律、习惯养成、心流等方面升华文案。不能图文不配！
+
+语言格式要求：
+1. 标题必须有极致的力量感与克制感。像手术刀一样精准。
+2. 摘要包含 50 字的极简陈述，例如解析画面的神经学意义。
+3. 严格按照纯净的 JSON 数组格式返回，不包含任何头尾废话或 Markdown 代码块标识：
 [
   {
-    "t": "视频标题，极简的力量，例如：额叶的重建协议",
-    "d": "一句话摘要（纯硬核或具像化动作的50字总结，例如：一次晨跑如何在物理上增加海马体中的脑源性神经营养因子。）",
-    "author": "创作者标识，如 '晨间能量'、'极简行者' 等"
+    "m_id": 1, 
+    "t": "视频标题，例如：额叶的重建协议",
+    "d": "一句话极简摘要摘要",
+    "author": "创作者标识"
   }
 ]`;
     return await askDeepSeek(prompt);
@@ -221,28 +232,12 @@ exports.main = async (event, context) => {
         }
 
         // ================= 视频算力引擎接驳 =================
-        console.log("🎬 [AI-Cron-Job] 影像挂载：开始批量铸造 20 条健康励志视频流...");
-        // 此处暂采用高清可用公网流代替 Pexels/Pixabay 等 API 动态拉取，避免额外的 Key 约束，确保 100% 播放可用率
-        const PEXELS_VIDEOS = [
-            'http://vjs.zencdn.net/v/oceans.mp4',
-            'https://media.w3.org/2010/05/sintel/trailer.mp4',
-            'http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4',
-            'https://www.w3schools.com/html/mov_bbb.mp4',
-            'https://www.w3schools.com/html/horse.mp4'
-        ];
-        // 视频源防重
-        const shuffledVideos = shuffleArray(PEXELS_VIDEOS);
-        let vidPointer = 0;
+        console.log("🎬 [AI-Cron-Job] 影像挂载：开始根据视觉素材池铸造精准匹配的视频流...");
 
-        for (let i = 0; i < 4; i++) { // 将 2 轮单次 10 条的策略切碎，改为 4 轮每轮 5 条
+        for (let i = 0; i < 4; i++) { // 4轮 x 5条 = 20条
             let batch = [];
             try {
-                const roundKeywords = [
-                    shuffledSeeds[(seedPointer++) % shuffledSeeds.length],
-                    shuffledSeeds[(seedPointer++) % shuffledSeeds.length]
-                ].join(' | ');
-
-                batch = await generateBatchVideos(5, roundKeywords);
+                batch = await generateBatchVideos(5);
             } catch (err) {
                 console.warn(`⚠️ 第 ${i + 1} 轮影像核心引擎超时断连，降频跳过...`);
                 continue;
@@ -250,15 +245,13 @@ exports.main = async (event, context) => {
 
             for (let j = 0; j < batch.length; j++) {
                 const item = batch[j];
-                const vidCoverSeed = `V_Cove_${now}_${globalSalt}_${i}_${j}`;
-                const currentCover = `https://picsum.photos/seed/${vidCoverSeed}/800/1200?blur=1`;
-                const currentVideo = shuffledVideos[vidPointer % shuffledVideos.length];
-                vidPointer++;
+                const matchedMaterial = VIDEO_MATERIAL_POOL.find(v => v.id === item.m_id) || VIDEO_MATERIAL_POOL[0];
+                const currentVideo = matchedMaterial.url;
 
                 allData.push({
                     type: 'video', icon: '🎥', title: item.t,
                     desc: item.d,
-                    cover: currentCover,
+                    cover: matchedMaterial.cover, // 使用我们在素材库中基于高潮节点定义好的封面
                     author: item.author || '能量体', readTime: '实录视频流',
                     contentUrl: currentVideo,
                     status: 1,

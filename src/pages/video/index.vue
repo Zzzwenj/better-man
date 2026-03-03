@@ -19,13 +19,9 @@
               class="sys-video"
               :src="videoData.contentUrl"
               :poster="videoData.cover"
-              :title="videoData.title"
-              autoplay="true"
-              controls="true"
+              autoplay
+              controls
               object-fit="contain"
-              play-btn-position="center"
-              enable-play-gesture="true"
-              vslide-gesture-in-fullscreen="true"
             ></video>
          </view>
          

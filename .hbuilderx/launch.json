@@ -13,6 +13,11 @@
             },
             "provider" : "aliyun",
             "type" : "uniCloud"
+        },
+        {
+            "customPlaygroundType" : "device",
+            "playground" : "standard",
+            "type" : "uni-app:app-ios"
         }
     ]
 }

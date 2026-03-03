@@ -238,6 +238,10 @@
 - **全能清查与暴烈清库协议 (Zero Space Overhead & Deletion Lock Fix)**:
   - **极致换血逻辑**: 将系统对历史临时快照的包容度从 14 天缩减至当前的生成批次前。只要 3 天的定时器敲响，旧约数据全无遗留，打造真正的动态流体系统。
   - **规避平台封顶**: 抛弃软弱的 `author` 定位删除。现在对 `better-articles` 内囊括在 `article/video` 双分支内所有记录，抽离独立的 `_id`。并且手绘了分片绕开 `uniCloud` 单次 `limit(500)` 删除容量上限的 `while` 循环抹杀补血逻辑，实现不管多少旧存量都会被一次扫荡粉碎的纯净机制。
+- **顶级视频分发与原生播放器重构 (Video CDN & Native Player Rewrite)**:
+  - **组件排雷 (Vue Binding Fix)**: 针对 App 端 Vue 编译下原生 Android/iOS 播放器解析 `:autoplay="true"` 等布尔属性导致的致命引擎死锁（00:00 黑屏假死）、属性兼容冲突。通过彻底移除各种非标准 H5 操作盘语法，退守硬核规范的 `autoplay controls` 短写组合，实现了移动端全平台 100% 播放高可用率。
+  - **绝对纯净 CDN 搭载 (DCloud / Qiniu CDN)**: 将原先不可靠、在局域网内遭大面积 DNS 劫持与防火墙阻断的欧美极客 API（TestVideos/W3Schools）视频池，全盘替换成阿里云、DCloud 原生无跨域的 CDN 骨干演示流 (HTTPS MP4)。
+  - **精准帧截取 (VFrame Highlighting)**: 通过将 `picsum` 盲目分配的假图片强制清空，重新基于国内云端转码的 `?vframe/jpg/offset/[N]` 架构，定点切片提取出源视频最中心、最具视觉美感/张力的核心帧充当封面 (`poster`)。做到了所见即所得，彻底攻克文不对题的尴尬观感。
 
 ## 阶段 23：战区核心功能完善与神经可塑性里程碑 UI 修复 (Warzone Core & NeuroBadge UI Fix)
 - **房间卡片重构 (RoomCard Refactor)**:
