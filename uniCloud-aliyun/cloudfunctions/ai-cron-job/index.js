@@ -14,7 +14,12 @@ const STATIC_ASSETS = {
         covers: [10, 11, 13, 14, 16, 28, 29, 36, 38, 43, 46, 57, 58, 65, 69, 70, 75, 83, 97, 104, 106, 115, 122, 129, 136, 147, 152, 163, 174, 185],
         videos: [
             { desc: '深海的壮丽波涛与宁静（海洋风光实录）', url: 'https://vjs.zencdn.net/v/oceans.mp4' },
-            { desc: '海洋动物与浅滩浪花交融', url: 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4' }
+            { desc: '海洋动物与浅滩浪花交融', url: 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-576p.mp4' },
+            { desc: '海龟在清澈浅湾中遨游', url: 'https://res.cloudinary.com/demo/video/upload/sea_turtle.mp4' },
+            { desc: '非洲大草原上的象群跋涉', url: 'https://res.cloudinary.com/demo/video/upload/elephants.mp4' },
+            { desc: '广袤雪原中肆意狂奔的野马群', url: 'https://res.cloudinary.com/demo/video/upload/snow_horses.mp4' },
+            { desc: '地球视角的宏大风光', url: 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/720/Big_Buck_Bunny_720_10s_1MB.mp4' },
+            { desc: '高耸入云的雄伟雪峰', url: 'https://res.cloudinary.com/demo/video/upload/mountain.mp4' }
         ]
     },
     fitness: {
@@ -22,7 +27,12 @@ const STATIC_ASSETS = {
         keywords: ['运动锻炼', '间歇断食', '户外活力', '极限核心', '肌肉撕裂', '小动物与陪伴'],
         covers: [146, 73, 225, 250, 274, 318, 513, 1058, 1073, 237, 1025, 1062, 212, 319, 355, 373, 384, 403, 417, 433, 452, 473, 501, 555],
         videos: [
-            { desc: '充满活力的小狗在户外欢快地奔跑互动（体现陪伴与生命活力）', url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4' }
+            { desc: '充满活力的小狗在户外欢快地奔跑互动（体现陪伴与生命活力）', url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4' },
+            { desc: '高强度滑板极限运动（体现对肌肉和感官的掌控）', url: 'https://res.cloudinary.com/demo/video/upload/skate_park.mp4' },
+            { desc: '活力猫咪与灵敏身法（活泼机敏的神经元重塑）', url: 'https://res.cloudinary.com/demo/video/upload/kitten_fighting.mp4' },
+            { desc: '清晨雄鸡破晓（象征一天的绝对掌控）', url: 'https://res.cloudinary.com/demo/video/upload/rooster.mp4' },
+            { desc: '高台滑雪与极速下落冲刺', url: 'https://res.cloudinary.com/demo/video/upload/ski_jump.mp4' },
+            { desc: '在海浪中穿梭的极限冲浪手', url: 'https://res.cloudinary.com/demo/video/upload/wave.mp4' }
         ]
     },
     inspiration: {
@@ -30,8 +40,11 @@ const STATIC_ASSETS = {
         keywords: ['极简禁欲', '延迟满足的复利', '多巴胺耐受底线', '孤独感与默认网络', '数字排毒协议'],
         covers: [2, 3, 20, 60, 63, 119, 175, 180, 201, 366, 400, 370, 1, 4, 8, 9, 21, 24, 30, 42, 48, 54, 66, 76, 96, 111, 128, 145],
         videos: [
-            { desc: '一部关于勇气、寻找与自我磨砺的史诗级微影预告片段', url: 'https://media.w3.org/2010/05/sintel/trailer.mp4' },
-            { desc: '严酷荒野环境下生命与艰难生存的震撼镜头（野生棕熊生存实录，没有读秒）', url: 'https://media.w3.org/2010/05/video/movie_300.mp4' }
+            { desc: '一部关于勇气、寻找与自我磨砺的史诗级预告片段', url: 'https://media.w3.org/2010/05/sintel/trailer.mp4' },
+            { desc: '严酷荒野环境下生命与艰难生存的震撼镜头', url: 'https://media.w3.org/2010/05/video/movie_300.mp4' },
+            { desc: '穿透黑暗数字丛林的史诗级前行', url: 'https://media.w3.org/2010/05/bunny/movie.mp4' },
+            { desc: '高维度视角的史诗级世界', url: 'https://cdn.plyr.io/static/demo/View_From_A_Blue_Moon_Trailer-720p.mp4' },
+            { desc: '孤独星球上冰冷而宏伟的瀑布坠落', url: 'https://res.cloudinary.com/demo/video/upload/falls.mp4' }
         ]
     }
 }
@@ -50,6 +63,37 @@ function shuffleArray(array) {
 
 // ============== 内存级与云端级双重去重校验 ==============
 const usedGlobalCovers = new Set();
+const usedGlobalVideos = new Set();
+
+// 获取纯净阵列视频
+async function getUniqueVideosForBatch(dbCol, category, count) {
+    const allVideos = STATIC_ASSETS[category].videos;
+    let shuffled = [...allVideos].sort(() => 0.5 - Math.random());
+
+    let result = [];
+    for (let vid of shuffled) {
+        if (result.length >= count) break;
+        if (usedGlobalVideos.has(vid.url)) continue;
+
+        const dbRes = await dbCol.where({ contentUrl: vid.url }).count();
+        if (dbRes.total === 0) {
+            usedGlobalVideos.add(vid.url);
+            result.push(vid);
+        }
+    }
+
+    // 如果云端纯净无重复的不足所需数量（视频库告急），强制从分类池内补齐兜底，绝不让引擎崩溃
+    if (result.length < count) {
+        let fallback = [...allVideos].sort(() => 0.5 - Math.random());
+        while (result.length < count && fallback.length > 0) {
+            let backup = fallback.pop();
+            if (!result.find(v => v.url === backup.url)) {
+                result.push(backup);
+            }
+        }
+    }
+    return result;
+}
 
 // 获取全网唯一封面，杜绝同批次或全库重复
 async function getUniqueCoverUrl(dbCol, category) {
@@ -169,29 +213,20 @@ async function generateBatchArticles(batchSize, categoryCode, categoryWords) {
 }
 
 // ================= 有源影像工坊分集 (短视频) =================
-async function generateBatchVideos(batchSize, categoryCode) {
-    const videosForCat = STATIC_ASSETS[categoryCode].videos;
-    const materialJson = JSON.stringify(videosForCat.map((m, idx) => ({ id: idx, desc: m.desc })));
+async function generateBatchVideos(uniqueVideosList, categoryCode) {
+    const materialJson = JSON.stringify(uniqueVideosList.map((m, idx) => ({ id: idx, desc: m.desc })));
 
-    const prompt = `你是《觉醒空间》App的正向激励内容核心。现在需要你根据真实的视频库素材来撰写匹配的绝佳短视频文案集。
-当前这批次视频思想所在的【核心大类】为：${STATIC_ASSETS[categoryCode].themeStr}。
-目前系统里仅有以下几段视频画面可供调用：
+    const prompt = `你是《觉醒空间》App的激励重塑核心。
+当前视频思想的【大类】为：${STATIC_ASSETS[categoryCode].themeStr}。
+我已经为你分配了绝对不重复的 ${uniqueVideosList.length} 段系统原生视频截取：
 ${materialJson}
 
-请你从中随心挑选素材（可随机重复，以凑够指定的生成篇数！），精准生成 ${batchSize} 个高质量搭配文案。
-必须根据素材画面的客观内容（desc），去结合神经学、自律、习惯养成、心流等方面重构并升华文案。绝对不能出现文案和客观描述（desc）毫无关联的图文不配情况！
-
-语言格式要求：
-1. 标题必须有极致的力量感与克制感。像手术刀一样精准。
-2. 摘要包含 50 字的极简陈述，例如解析画面的神经学意义。
-3. 严格按照纯净的 JSON 数组格式返回，不包含任何头尾废话或 Markdown 代码块标识：
+请你严格为以上每一段画面，【仅1对1】地输出定制化高能文案！一定不要随意发散，必须高度吻合客观内容（desc）。
+语言要求：标题极简克制，像手术刀一般；50字科学解析画面神经学。
+严格返回纯净序列化 JSON 数组：
 [
-  {
-    "m_id": 0, 
-    "t": "视频标题，例如：额叶的重建协议",
-    "d": "一句话极简摘要摘要",
-    "author": "创作者标识"
-  }
+  { "m_id": 0, "t": "冷峻文案标题", "d": "基于第0个录像的一句话摘要", "author": "能量体" },
+  { "m_id": 1, ... }
 ]`;
     return await askDeepSeek(prompt);
 }
@@ -267,17 +302,21 @@ exports.main = async (event, context) => {
 
         for (let i = 0; i < 4; i++) { // 4轮 x 5条 = 20条
             const currentCat = categories[i % categories.length];
+            const targetCount = 5;
+            const pureVideos = await getUniqueVideosForBatch(col, currentCat, targetCount);
+            if (pureVideos.length === 0) continue;
+
             let batch = [];
             try {
-                batch = await generateBatchVideos(5, currentCat);
+                batch = await generateBatchVideos(pureVideos, currentCat);
             } catch (err) {
                 console.warn(`⚠️ 第 ${i + 1} 轮影像核心引擎超时断连跳过...`);
                 continue;
             }
 
             for (let j = 0; j < batch.length; j++) {
-                const item = batch[j];
-                const matchedMaterial = STATIC_ASSETS[currentCat].videos.find((v, idx) => idx === item.m_id) || STATIC_ASSETS[currentCat].videos[0];
+                const item = batch[j] || { m_id: 0, t: '神经链路觉醒', d: '重塑认知的底层协议', author: '系统' };
+                const matchedMaterial = pureVideos.find((v, idx) => idx === item.m_id) || pureVideos[0];
                 const currentVideo = matchedMaterial.url;
                 const actCover = await getUniqueCoverUrl(col, currentCat);
 
