@@ -87,8 +87,10 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
+import { useUserStore } from '../../store/user.js'
 
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 const chatList = ref([])
 const inputValue = ref('')
 const isLoading = ref(false)
@@ -148,6 +150,22 @@ const goBack = () => {
 
 const sendMessage = async () => {
   if (!inputValue.value.trim() || isLoading.value) return
+  
+  // 商业闭环拦截：大模型极其昂贵，仅向黑金会员开放
+  if (!userStore.isVipActive) {
+      uni.showModal({
+          title: '算力节点受限',
+          content: 'REWIRE AI 临床级心理干预大模型仅向「黑金档案」开放。\n升级黑金获取无限次专属抗争辅导。',
+          confirmText: '立刻升级',
+          cancelText: '暂时不了',
+          success: (res) => {
+              if (res.confirm) {
+                  uni.switchTab({ url: '/pages/profile/index' })
+              }
+          }
+      })
+      return
+  }
   
   const userMsg = inputValue.value
   chatList.value.push({ role: 'user', content: userMsg })

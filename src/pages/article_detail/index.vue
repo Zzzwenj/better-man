@@ -49,14 +49,18 @@ onLoad((options) => {
 const fetchArticleDetail = async () => {
     loading.value = true
     try {
-        // 第一层拦截：查探本地是否存在硬核缓存
+        // 第一层拦截：查探本地是否存在硬核缓存（带 24h TTL 过期保护）
         const cacheKey = 'article_cache_' + articleId.value
         const localCache = uni.getStorageSync(cacheKey)
         
-        if (localCache) {
-            currentArticle.value = localCache
-            loading.value = false
-            return // 命中缓存，直接掐断网络层通讯
+        if (localCache && localCache._ts) {
+            const cacheAge = Date.now() - localCache._ts
+            if (cacheAge < 24 * 60 * 60 * 1000) {
+                // 缓存未过期，直接命中
+                currentArticle.value = localCache
+                loading.value = false
+                return
+            }
         }
 
         // 本地无缓存，向云数据库请求轻量记录（不含庞大富文本，只含 OSS URL）
@@ -76,7 +80,7 @@ const fetchArticleDetail = async () => {
             // 是否包含旧式的直接存储文本？兼容处理
             if (articleMeta.textContent) {
                  currentArticle.value = articleMeta
-                 uni.setStorageSync(cacheKey, articleMeta)
+                 uni.setStorageSync(cacheKey, { ...articleMeta, _ts: Date.now() })
             } 
             // 如果是最新的通过云存储外链存储的长图文
             else if (articleMeta.contentUrl) {
@@ -91,8 +95,8 @@ const fetchArticleDetail = async () => {
                 articleMeta.textContent = docRes.data || docRes[1]?.data 
                 
                 currentArticle.value = articleMeta
-                // 将拼装好的最终形态植入住本地 SQLite 缓存
-                uni.setStorageSync(cacheKey, articleMeta)
+                // 带 TTL 缓存
+                uni.setStorageSync(cacheKey, { ...articleMeta, _ts: Date.now() })
             }
         } else {
             uni.showToast({ title: res.result.msg, icon: 'none' })

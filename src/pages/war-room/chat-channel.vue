@@ -259,6 +259,15 @@ onMounted(async () => {
         // 直接使用云端下发的结构数据，服务端已经洗净处理好了 `is_broadcast` 等标记
         chatStore.setHistory(historyRes.result.data)
         scrollToBottom()
+        
+        // --- 黑金 VIP 进场自动装逼广播 ---
+        if (userStore.isVipActive) {
+            // 利用 setTimeout 稍微错开渲染
+            setTimeout(() => {
+                const titleStr = userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '高级特权者')
+                executeSend(`🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`, true, `🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`)
+            }, 800)
+        }
       }
     }
   } catch(e) {
@@ -307,16 +316,33 @@ const goBack = () => {
 }
 
 const leaveRoom = () => {
-  dialog.value = {
-    show: true,
-    title: '撤离警告',
-    content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区。是否继续？',
-    confirmAction: async () => {
-        const success = await warzoneStore.leaveRoomAction(chatStore.roomId)
-        if (success) {
-            uni.switchTab({ url: '/pages/war-room/index' })
+  const roomKey = chatStore.roomId.replace('room_', '')
+  const isDeathMatch = warzoneStore.deathMatches.some(r => r.id === roomKey)
+  
+  if (isDeathMatch) {
+      dialog.value = {
+        show: true,
+        title: '叛逃警告：连坐反噬',
+        content: '作为誓约者，你正在试图脱离交战区。如果没有【防线崩溃金牌】，系统将直接剥夺你 20% 的神经重塑天数，并全区通报！',
+        confirmAction: async () => {
+            const success = await warzoneStore.leaveRoomAction(chatStore.roomId, true)
+            if (success) {
+                uni.switchTab({ url: '/pages/war-room/index' })
+            }
         }
-    }
+      }
+  } else {
+      dialog.value = {
+        show: true,
+        title: '撤离通讯网络',
+        content: '即将断开与该公共频道的网络连接。是否继续？',
+        confirmAction: async () => {
+            const success = await warzoneStore.leaveRoomAction(chatStore.roomId, false)
+            if (success) {
+                uni.switchTab({ url: '/pages/war-room/index' })
+            }
+        }
+      }
   }
 }
 

@@ -156,13 +156,12 @@ onMounted(() => {
   // 1. 获取本地持久化的重塑记录起点
   let startTimestamp = uni.getStorageSync('neuro_start_date')
   if (!startTimestamp) {
-    // 这是一个 Mock：如果用户还没设置，我们默认为他设置一个 5 天前的日期，便于呈现丰富图表
-    startTimestamp = Date.now() - (5 * 24 * 60 * 60 * 1000)
-    uni.setStorageSync('neuro_start_date', startTimestamp)
+    // 无记录则默认 0 天，不主动写入假数据（防止与 Dashboard 竞争）
+    daysClean.value = 0
+  } else {
+    const diffTime = Date.now() - startTimestamp
+    daysClean.value = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)))
   }
-  
-  const diffTime = Date.now() - startTimestamp
-  daysClean.value = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   
   // 2. 核心动态算法：基于坚持天数的受体修复率预估
   // 基础受损算底分 10%，每天恢复 1.5%（这个冷酷的慢速恢复能让破戒成本变得极大）

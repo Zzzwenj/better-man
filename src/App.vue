@@ -7,6 +7,7 @@
 <script>
 import { useChatStore } from './store/chat.js'
 import { useThemeStore } from './store/theme.js'
+import { useUserStore } from './store/user.js'
 
 export default {
   setup() {
@@ -31,28 +32,40 @@ export default {
   },
   onShow: function () {
     console.log('App Show')
-    
-    // 每日打卡热力图计算 (位图字符串法)
-    const lastCheckin = uni.getStorageSync('neuro_last_checkin_date')
+
+    // --- VIP 到期自动关锁（防用户因 VIP 续费断了被永久关在门外）---
+    const userStore = useUserStore()
+    userStore.checkAndAutoUnlock()
+
+    // --- 切后台隐私锁防绕过 ---
+    const userLock = uni.getStorageSync('neuro_privacy_lock')
+    if (userLock && userLock.enabled) {
+        const pages = getCurrentPages()
+        if (pages.length === 0 || (pages[pages.length - 1] && pages[pages.length - 1].route !== 'pages/calculator/index')) {
+            uni.reLaunch({ url: '/pages/calculator/index' })
+            return
+        }
+    }
+
+    // 每日打卡热力图计算（统一 key：last_checkin_date，与 Dashboard/DailyAuditModal 对齐）
+    const lastCheckin = uni.getStorageSync('last_checkin_date')
     const todayStr = new Date().toDateString()
-    
+
     if (lastCheckin !== todayStr) {
         let history = uni.getStorageSync('neuro_checkins') || ''
-        
-        // 如果是新的一天，默认他今天还未破戒，追平这中间断断的 0，并加上今天的 1
+
         if (lastCheckin) {
            const diffDays = Math.floor((new Date(todayStr).getTime() - new Date(lastCheckin).getTime()) / (1000 * 60 * 60 * 24))
            if (diffDays > 1) {
                history += '0'.repeat(diffDays - 1)
            }
         }
-        history += '1' // 收录今天
-        
-        // 限制长度只存最近 100 天节省内存
+        history += '1'
+
         if (history.length > 100) history = history.slice(-100)
-        
+
         uni.setStorageSync('neuro_checkins', history)
-        uni.setStorageSync('neuro_last_checkin_date', todayStr)
+        uni.setStorageSync('last_checkin_date', todayStr)
     }
   },
   onHide: function () {

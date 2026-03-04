@@ -32,40 +32,41 @@
       </view>
     </view>
     
-    <!-- 2. 平台服务契约模幅 (对赌质押区) -->
-    <view :class="['premium-card mx-4', userStore.isProActive ? 'active-contract' : '']">
-        <!-- 契约主体区 -->
+    <!-- 2. 黑金通行证 (Black Gold Pass) 展位 -->
+    <view :class="['premium-card mx-4', userStore.isVipActive ? 'active-contract' : '']">
+        <!-- 会员订阅主体区 -->
         <view @click="upgradePremium" hover-class="card-hover" class="contract-main">
             <view class="flex justify-between items-center">
-                <text class="premium-title">{{ userStore.isProActive ? '🛡️ 绝对意志契约生效中' : '⚡ 神经重铸契约 (质押挑战)' }}</text>
-                <view class="price-chip" v-if="!userStore.isProActive">
-                    <text>￥50 / 30天</text>
+                <text class="premium-title">{{ userStore.isVipActive ? '👑 黑金权限生效中' : '🔥 黑金通行证 (全量特权)' }}</text>
+                <view class="price-chip" v-if="!userStore.isVipActive">
+                    <text>1500 神经币 / 月</text>
                 </view>
             </view>
             
-            <text class="premium-desc block mt-2" v-if="!userStore.isProActive">
-              支付 50 元质押金，立即解锁全站高级防御与大模型。
-              若 30 天未破戒，<text style="color: #00e5ff; font-weight: bold;">50元全额退还</text>并奖励黑金头衔与 10000 神经币。破戒则作为平台服务费扣除。
+            <text class="premium-desc block mt-2" v-if="!userStore.isVipActive">
+              解锁深网最高权限。破戒月费<text style="color: #00e5ff; font-weight: bold;">首3次免单原谅</text>，
+              绝版皇冠标识，专属实体结衣礼盒，以及每月最高 1500 神经币战略储备金！
             </text>
             
             <view class="contract-progress mt-4 flex-col" v-else>
-               <text class="timer-text">契约解禁倒计时: {{ userStore.contractDaysLeft }} 天</text>
+               <text class="timer-text">黑金链路维持天数: {{ userStore.vipDaysLeft }} 天</text>
                <view class="progress-bar mt-2">
-                 <view class="progress-fill" :style="{ width: ((30 - userStore.contractDaysLeft) / 30 * 100) + '%' }"></view>
+                 <!-- 模拟 30 天为一个周期的进度视觉 -->
+                 <view class="progress-fill" :style="{ width: ((userStore.vipDaysLeft % 30) / 30 * 100) + '%' }"></view>
                </view>
             </view>
     
-            <view class="premium-footer flex items-center mt-4" v-if="!userStore.isProActive">
-                <text class="unlock-text">立下生死状 (立刻开启)</text>
+            <view class="premium-footer flex items-center mt-4" v-if="!userStore.isVipActive">
+                <text class="unlock-text">建立特权连接</text>
                 <text class="arrow ml-1">→</text>
             </view>
         </view>
 
         <!-- 临时越权体验 (看广告, 仅显示一次) -->
-        <view class="ad-trial-zone mt-4" v-if="!userStore.isProActive && !userStore.hasUsedTrial" @click.stop="watchAdForTrial" hover-class="ad-hover">
+        <view class="ad-trial-zone mt-4" v-if="!userStore.isVipActive && !userStore.hasUsedTrial" @click.stop="watchAdForTrial" hover-class="ad-hover">
             <view class="ad-content flex items-center justify-center">
                  <text class="ad-icon">📺</text>
-                 <text class="ad-text ml-2">_ 获取24H 临时观察期权限 (仅限1次)</text>
+                 <text class="ad-text ml-2">_ 获取24H 残破特权节点 (仅限1次)</text>
             </view>
         </view>
     </view>
@@ -82,16 +83,42 @@
     />
 
     <!-- 4. 系统底层控制区 (视觉隔离) -->
-    <view class="system-control-zone mt-4">
-      <view class="divider mx-4"></view>
-      <view class="flex-col items-center py-4">
-        <view class="control-item mb-2" @click="handleSettingClick({id: 'wipe'})" hover-class="text-glow">
-          <text class="control-text">中断神经连接 (退出登录)</text>
+    <view class="system-control-zone flex-col items-center w-full pb-10 mt-8">
+      <view class="divider w-full mb-6 relative">
+        <view class="absolute inset-x-4 h-full" style="background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);"></view>
+      </view>
+      
+      <!-- 高危操作与基础流出区 (同样低调的样式，平缓向下排列) -->
+      <view class="flex-col items-center gap-5 w-full">
+        <!-- 引流信标入口 (动态判定显示) -->
+        <view class="control-item" v-if="hasBeaconAccess" @click="showBeacon = true" hover-class="text-glow">
+          <text class="control-text" style="color: #00e5ff; font-weight: bold; text-shadow: 0 0 8px rgba(0,229,255,0.4);">[ 解锁：地球驻扎地信标 ]</text>
         </view>
-        <view class="control-item" @click="handleSettingClick({id: 'delete_account'})" hover-class="text-glow">
-          <text class="control-text secondary">完全焚毁档案 (注销账号)</text>
+
+        <!-- 一行展示退出登录与注销 -->
+        <view class="flex items-center justify-center w-full px-2">
+          <view class="control-item" style="padding: 10px 4px;" @click="handleSettingClick({id: 'wipe'})" hover-class="text-glow">
+            <text class="control-text" style="font-size: 12px;">中断神经连接 (退出登录)</text>
+          </view>
+          
+          <text class="link-divider mx-1">|</text>
+          
+          <view class="control-item" style="padding: 10px 4px;" @click="confirmDeleteAccount" hover-class="text-glow">
+            <text class="control-text" style="font-size: 12px;">完全焚毁档案 (注销账号)</text>
+          </view>
         </view>
-        <text class="version-text mt-3">OS Version: Better-Man 2026.3.2</text>
+      </view>
+
+      <!-- 绝对的页面最底端 -->
+      <view class="bottom-footer flex-col items-center mt-12 gap-5 w-full">
+        <view class="legal-links flex justify-center items-center">
+          <text class="link-text" @click="goAgreement('terms')">《用户协议》</text>
+          <text class="link-divider">|</text>
+          <text class="link-text" @click="goAgreement('privacy')">《隐私政策》</text>
+        </view>
+
+        <!-- OS版本追踪号 -->
+        <text class="version-text">OS Version: Better-Man 2026.3.2</text>
       </view>
     </view>
     
@@ -106,6 +133,32 @@
       @close="showThemeSheet = false"
       @select="onThemeSelect"
     />
+
+    <!-- 私域引流信标弹窗 -->
+    <SecretBeacon :show="showBeacon" @close="showBeacon = false" />
+
+    <!-- 伪装锁密码修改赛博弹窗 -->
+    <CyberDialog 
+      v-model:show="showPinModal"
+      title="修改量子伪装密码"
+      confirmText="覆写系统"
+      cancelText="终止操作"
+      :showCancel="true"
+      @confirm="confirmPinChange"
+      @cancel="showPinModal = false"
+    >
+       <view class="flex-col w-full mt-4">
+          <text class="text-xs text-gray-400 mb-2">请输入由数字组成的 4-6 位暗门密码:</text>
+          <input 
+             class="styled-input text-center font-mono text-xl text-primary" 
+             type="number" 
+             v-model="tempPin" 
+             maxlength="6"
+             placeholder="8972"
+          />
+          <text class="text-xs text-red-500 mt-2 text-center" v-if="pinError">{{pinError}}</text>
+       </view>
+    </CyberDialog>
 
     <!-- 通用赛博弹窗 -->
     <CyberDialog 
@@ -123,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
@@ -133,10 +186,15 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
+import SecretBeacon from '../../components/profile/SecretBeacon.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
 const showThemeSheet = ref(false)
+const showBeacon = ref(false)
+const showPinModal = ref(false)
+const tempPin = ref('')
+const pinError = ref('')
 
 // --- 弹窗状态管理 ---
 const dialogState = ref({
@@ -187,12 +245,36 @@ const userSignature = ref('')
 const isModalOpen = ref(false)
 let localProfileData = {}
 
+// 计算是否有资格查阅地球驻扎地信标 (引流微信)
+const hasBeaconAccess = computed(() => {
+    // 门槛 1: 黑金会员直接展示
+    if (userStore.isVipActive) return true
+    
+    // 门槛 2: 连续活了 21 天的强迫症硬汉
+    const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
+    const diffDays = (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24)
+    if (diffDays >= 21) return true
+    
+    return false
+})
+
+const goAgreement = (type) => {
+  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
+}
+
 // --- 整合列表配置表 (资料在上，系统设置在下) ---
-const integratedList = ref([
-  { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
-  { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
-  { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' }
-])
+// 为了应对 switch 的强制拦截复原 (computed 的话子组件拿不回去)，增加 trigger 计数器强制刷新
+const refreshTrigger = ref(0)
+const integratedList = computed(() => {
+  /* eslint-disable no-unused-expressions */
+  refreshTrigger.value // 强制加入依赖
+  return [
+    { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
+    { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
+    { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
+    { id: 'privacy', icon: '🔒', label: '量子伪装计算器锁 (黑金专属)', type: 'switch', value: userStore.privacyLock.enabled }
+  ]
+})
 
 // --- 初始化钩子 ---
 onMounted(() => {
@@ -305,41 +387,45 @@ const onModalStateChange = (state) => {
   isModalOpen.value = state
 }
 
-// 点击解锁特权（测试质押入口）
+// 点击解锁黑金VIP特权
 const upgradePremium = () => {
-    if (userStore.isProActive) {
+    if (userStore.isVipActive) {
         showDialog({
-            title: '重制契约违约',
-            content: '你正在履行 30 天的绝对意志契约。如果此时放弃，你的 50 元质押金将被立即扣除！',
-            confirmText: '我要放弃',
-            cancelText: '继续坚持',
-            showCancel: true,
-            color: '#ef4444',
-            success: (res) => {
-                if (res.confirm) {
-                    userStore.failContract()
-                    uni.showToast({ title: '契约终结，押金已入账服务费', icon: 'none' })
-                }
-            }
+            title: '黑金权限已激活',
+            content: `你的数据连通性无损维持，剩余 ${userStore.vipDaysLeft} 天。今日赠送的 50 算力点已空投。`,
+            showCancel: false,
+            confirmText: '明确',
+            color: '#10b981'
         })
         return
     }
 
     showDialog({
-        title: '签署神经重铸生死状',
-        content: '预付 50 元。\n30天后未破戒，全额原路退还并奖励 10000 神经币 + 黑金皇冠荣耀。\n破戒或中途放弃，不予退还。',
-        confirmText: '确认微信支付',
-        cancelText: '我再想想',
+        title: '建立黑金特权通讯网',
+        content: '订阅费：1500 神经币/31天。\n解锁每月 3 次“免代价无损折跃（除颤防坠落）”，专属高级称号与主理人直通频道信标。',
+        confirmText: '极速接入',
+        cancelText: '暂不需要',
         showCancel: true,
-        color: themeStore.activeThemeData.primary,
+        color: '#f59e0b', // 琥珀/金色色调
         success: (res) => {
             if (res.confirm) {
-                // 模拟支付成功
-                uni.showLoading({ title: '拉起收银台...' })
+                // 利用虚拟货币实现内部商业闭环
+                if (userStore.neuroCoins < 1500) {
+                    uni.showToast({ title: '神经币余额不足(需1500)', icon: 'none' })
+                    return
+                }
+
+                uni.showLoading({ title: '接驳神经网络...' })
                 setTimeout(() => {
                     uni.hideLoading()
-                    userStore.startPlatformContract()
-                    uni.showToast({ title: '契约成立！祝你生还。', icon: 'success' })
+                    const success = userStore.spendCoins(1500, '订阅包月黑金档案')
+                    if (success) {
+                        userStore.purchaseVip(31, '包月黑金开通')
+                        userStore.claimDailyVipGift()
+                        uni.showToast({ title: '特权链已接通', icon: 'success' })
+                    } else {
+                        uni.showToast({ title: '账单回滚', icon: 'error' })
+                    }
                 }, 1000)
             }
         }
@@ -370,11 +456,51 @@ const watchAdForTrial = () => {
 
 // 统一处理所有通用设置行的点击分发
 const handleSettingClick = (originItem) => {
-  const { id, url } = originItem
+  const { id, url, value } = originItem
 
   if (url) {
       uni.navigateTo({ url })
       return
+  }
+
+  // 点击/切换 隐私伪装锁
+  if (id === 'privacy') {
+     if (value) {
+         // 尝试开启
+         if (!userStore.isVipActive) {
+             // 阻断：非 VIP 拦截弹窗
+             showDialog({
+                 title: '🚨 权限缺失',
+                 content: '量子伪装锁属于高阶黑金特权，可将系统重塑为计算器并支持自定 6 位暗门密码。\n\n是否立即注入黑金算力？',
+                 confirmText: '连接黑金特权',
+                 cancelText: '放弃权限',
+                 showCancel: true,
+                 color: '#f59e0b',
+                 success: (res) => {
+                     // 无论是否开通成功，由于数据是响应式的，当前并未写入 storage，重新渲染会强拉回 false
+                     if (res.confirm) {
+                         upgradePremium() // Changed from buyVip() to upgradePremium()
+                    }
+                     refreshTrigger.value++
+                 }
+             })
+             // 通知子组件强制刷新 switch 的视图状态，避免其变蓝
+             refreshTrigger.value++
+             return
+         }
+         
+         const success = userStore.togglePrivacyLock(true)
+         if (success) {
+            tempPin.value = userStore.privacyLock.pin
+            pinError.value = ''
+            showPinModal.value = true
+         }
+     } else {
+         // 关闭
+         userStore.togglePrivacyLock(false)
+         uni.showToast({ title: '伪装层已卸载', icon: 'none' })
+     }
+     return
   }
 
   if (id === 'theme') {
@@ -396,8 +522,27 @@ const handleSettingClick = (originItem) => {
             }
         }
     })
-  } else if (id === 'delete_account') {
-    // 云端数据彻底销毁
+  }
+}
+
+// 确认修改 PIN 码
+const confirmPinChange = () => {
+   if (!tempPin.value || tempPin.value.length < 4) {
+      pinError.value = '密码不能少于 4 位数字'
+      return
+   }
+   if (!/^\d+$/.test(tempPin.value)) {
+      pinError.value = '量子协议仅支持纯数字组合'
+      return
+   }
+   
+   userStore.togglePrivacyLock(true, tempPin.value)
+   showPinModal.value = false
+   uni.showToast({ title: '暗门重构完成', icon: 'success' })
+}
+
+// 云端数据彻底销毁
+const confirmDeleteAccount = () => {
     showDialog({
         title: '高危警告：深渊销毁',
         content: '该操作将永久删除您的云端神经连接档案及所有数字资产（包含不可逆的重铸史和神经币）。是否确认完全销毁本账号？',
@@ -434,7 +579,6 @@ const handleSettingClick = (originItem) => {
             }
         }
     })
-  }
 }
 
 const onThemeSelect = (themeId) => {
@@ -488,6 +632,7 @@ page {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   min-height: 80px;
   display: flex;
+  flex-direction: column; /* Changed to column to accommodate bottom-actions */
   align-items: center;
 }
 
@@ -500,6 +645,17 @@ page {
   background: radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.25) 0%, transparent 70%);
   pointer-events: none;
 }
+
+.styled-input {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+.styled-input:focus { border-color: #ef4444; }
 
 @keyframes rotateGlow {
   from { transform: rotate(0deg); }
@@ -592,6 +748,27 @@ page {
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
 .arrow { color: var(--theme-primary); font-weight: bold; font-size: 18px;}
 
+/* -------------------------------
+   底部操作区结构重构
+--------------------------------- */
+.bottom-footer {
+  gap: 16px; 
+}
+
+.legal-links { gap: 12px; }
+.link-text { font-size: 13px; color: #71717a; text-decoration: none; padding: 4px; transition: color 0.2s; letter-spacing: 0.5px;}
+.link-text:active { color: #f4f4f5; }
+.link-divider { font-size: 13px; color: #3f3f46; }
+
+.version-text {
+  font-size: 11px;
+  color: #3f3f46;
+  font-family: monospace;
+}
+
+.dev-entry { text-align: center; }
+.ad-text { color: #10b981; font-size: 13px; font-family: monospace; text-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+
 /* 广告体验栏位 */
 .ad-trial-zone {
     margin-top: 16px;
@@ -602,7 +779,7 @@ page {
     transition: all 0.2s ease;
 }
 .ad-hover { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
-.ad-text { color: #10b981; font-size: 13px; font-family: monospace; text-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+
 
 /* 契约进行中状态 */
 .active-contract {

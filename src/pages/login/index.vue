@@ -137,11 +137,16 @@ const generateCaptcha = () => {
 
 onMounted(() => {
   generateCaptcha()
+  // 记住账号：自动填充上次登录的账号
+  const savedAccount = uni.getStorageSync('saved_account')
+  if (savedAccount) {
+      form.account = savedAccount
+  }
 })
 
 const switchMode = (newMode) => {
   mode.value = newMode
-  form.account = ''
+  // 切换模式时保留已记住的账号，仅清空其他字段
   form.password = ''
   form.captchaInput = ''
   form.verifyCode = ''
@@ -267,6 +272,8 @@ const submit = async () => {
         uni.setStorageSync('uni_id_token', token)
         uni.setStorageSync('uni_id_token_expired', res.result.tokenExpired)
         uni.setStorageSync('uid', res.result.uid)
+        // 记住账号（不存密码，安全合规）
+        uni.setStorageSync('saved_account', check.account)
         
         // 拉取云端用户档案及状态
         try {
@@ -310,12 +317,27 @@ const submit = async () => {
         generateCaptcha()
       }
     } else if (mode.value === 'forgot') {
-      // 忘记密码预留，目前后还没写忘记密码的逻辑，先弹个提示并假装成功
-      setTimeout(() => {
-        uni.hideLoading()
-        uni.showToast({ title: '重置成功(模拟)，请登录', icon: 'none' })
+      // 忘记密码：调用云端 resetPassword 重置
+      res = await uniCloud.callFunction({
+        name: 'uni-id-cf',
+        data: {
+          action: 'resetPassword',
+          params: {
+            email: check.type === 'email' ? check.account : '',
+            phone: check.type === 'phone' ? check.account : '',
+            password: form.password,
+            verifyCode: form.verifyCode
+          }
+        }
+      })
+      uni.hideLoading()
+      if (res.result.code === 0) {
+        uni.showToast({ title: '密码重置成功，请登录', icon: 'success' })
         switchMode('login')
-      }, 1000)
+      } else {
+        uni.showToast({ title: res.result.message || '重置失败', icon: 'none' })
+        generateCaptcha()
+      }
     }
   } catch (e) {
     uni.hideLoading()
@@ -347,7 +369,7 @@ const storeFakeTokenAndRedirect = async () => {
     console.log('[DEV] 进入 storeFakeTokenAndRedirect')
     const fakeToken = 'fake_token_for_dev_' + Date.now()
     uni.setStorageSync('uni_id_token', fakeToken)
-    uni.setStorageSync('uni_id_token_expired', Date.now() + 7200000)
+    uni.setStorageSync('uni_id_token_expired', Date.now() + 30 * 24 * 3600 * 1000) // 30天有效
     uni.setStorageSync('uid', 'dev_uid')
     console.log('[DEV] token 已写入本地:', fakeToken)
     

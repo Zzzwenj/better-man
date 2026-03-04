@@ -10,7 +10,7 @@
     <!-- 内容层：不再包在任何有事件拦截的父层里 -->
     <view class="modal-content pop-in flex-col">
       <view class="modal-header flex justify-between items-center pb-3">
-        <text class="modal-title">⚔️ 发起生死局</text>
+        <text class="modal-title">🛡️ 部署斯巴达小队</text>
         <text class="close-btn" @click="closeModal">✕</text>
       </view>
       
@@ -27,17 +27,11 @@
         </view>
 
         <view class="form-group mb-4">
-          <text class="label">个人保密金 (神经币)</text>
-          <view class="flex items-center space-x-2">
-            <view
-              v-for="amt in depositOptions"
-              :key="amt"
-              class="day-btn"
-              :class="{ active: form.deposit === amt }"
-              @click="form.deposit = amt"
-            >{{ amt }}</view>
+          <text class="label">小队连坐惩罚条款 (不可修改)</text>
+          <view class="styled-input text-red text-center font-bold" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3);">
+             一人破戒 · 全队倒退 20% 进度
           </view>
-          <text class="hint-text mt-1 text-xs block">⚠️ 破戒出局将全额没收保密金</text>
+          <text class="hint-text mt-2 text-xs block text-center">⚠️ 任何队员防线崩溃，全队将立即锁屏并接受物理级强制干预</text>
         </view>
         
         <view class="form-group mb-2">
@@ -68,13 +62,9 @@
         </view>
       </view><!-- /modal-body -->
 
-      <view class="modal-footer pt-3 flex justify-between items-center">
-        <view class="total-pool flex-col">
-          <text class="pool-label">预期最高奖池</text>
-          <text class="pool-value">{{ expectedPool }} 神经币</text>
-        </view>
-        <view class="confirm-btn" @click="submitContract">
-          <text class="btn-text">血契结成</text>
+      <view class="modal-footer pt-3 flex justify-center items-center">
+        <view class="confirm-btn" @click="submitContract" style="width: 100%; text-align: center;">
+          <text class="btn-text">发布招募信标</text>
         </view>
       </view>
     </view>
@@ -96,10 +86,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:show', 'confirm'])
 
-const rangeArray = [2, 3, 5, 8, 10]
-
-/** 保密金预设档位 (神经币) */
-const depositOptions = [100, 300, 500, 1000, 2000, 5000]
+const rangeArray = [2, 3, 4, 5]
 
 const closeModal = () => {
   emit('update:show', false)
@@ -107,22 +94,12 @@ const closeModal = () => {
 
 const form = reactive({
   days: 21,
-  deposit: 500,  // 默认选中 500 档
-  maxUsers: 2,
+  maxUsers: 3,
   recruitDeadline: 6
 })
 
-const expectedPool = computed(() => {
-  const dep = parseInt(form.deposit) || 0
-  return dep * form.maxUsers
-})
-
 const submitContract = () => {
-  const dep = Number(form.deposit) || 0
-  if (dep <= 0) {
-    return uni.showToast({ title: '请选择保密金档位', icon: 'none' })
-  }
-  emit('confirm', { ...form, deposit: dep })
+  emit('confirm', { ...form, deposit: 0 })
   closeModal()
 }
 </script>

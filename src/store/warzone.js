@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useUserStore } from './user.js'
 
 /**
  * 生死局默认名称池（共 30 个，按最大人数分档）
@@ -156,12 +157,61 @@ export const useWarzoneStore = defineStore('warzone', {
             this.activeDeathMatchId = ''
             uni.removeStorageSync('neuro_active_dm_room')
         },
-        async leaveRoomAction(roomId) {
+        async leaveRoomAction(roomId, isDeathMatch = false) {
             try {
                 const token = uni.getStorageSync('uni_id_token')
                 if (!token) return false
 
                 uni.showLoading({ title: '断开脑机连接...' })
+
+                // --- 1. 执行连坐惩罚核算 (仅针对生死局斯巴达小队) ---
+                if (isDeathMatch) {
+                    const userStore = useUserStore()
+                    // 【字典兼容修复】ownedItems 已从数组迁移为字典结构 { id: expireTimestamp }
+                    const shieldExp = userStore.ownedItems['shield_01']
+                    const hasShield = shieldExp && shieldExp > Date.now()
+
+                    if (hasShield) {
+                        // 消耗防线崩溃金牌 (静音退群，不扣进度)
+                        uni.showToast({ title: '🛡️ 防御罩已抵消本次反噬', icon: 'none', duration: 3000 })
+                        delete userStore.ownedItems['shield_01']
+                        uni.setStorageSync('neuro_owned_items', userStore.ownedItems)
+                        userStore.syncAssetsToCloud()
+                    } else {
+                        // 无防护罩：触发 20% 倒退连坐反噬
+                        uni.vibrateLong()
+                        const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
+                        const diffDays = Math.max(1, (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24))
+                        const lostDays = Math.ceil(diffDays * 0.2) // 扣减 20%
+
+                        // 写回新的“倒退起点时间”
+                        const newStart = startTimestamp + (lostDays * 24 * 60 * 60 * 1000)
+                        uni.setStorageSync('neuro_start_date', newStart)
+
+                        uni.showToast({ title: `🩸 神经反噬！已抹除 ${lostDays} 天突触记录...`, icon: 'none', duration: 4000 })
+
+                        // 发送世界广播警告全队
+                        const baselineStr = uni.getStorageSync('neuro_baseline')
+                        const profile = baselineStr ? JSON.parse(baselineStr) : {}
+                        const nickname = profile.nickname || '匿名特工'
+
+                        uniCloud.callFunction({
+                            name: 'chat-hub',
+                            data: {
+                                token,
+                                action: 'sendMessage',
+                                payload: {
+                                    room_id: roomId,
+                                    content: `[连坐反噬] 探员 ${nickname} 防线崩溃并叛逃！全队连带受罚机制已触发。`,
+                                    is_broadcast: true,
+                                    nickname: '系统仲裁者'
+                                }
+                            }
+                        })
+                    }
+                }
+
+                // --- 2. 正常剥离云端记录 ---
                 const res = await uniCloud.callFunction({
                     name: 'chat-hub',
                     data: {
@@ -173,9 +223,13 @@ export const useWarzoneStore = defineStore('warzone', {
                 uni.hideLoading()
 
                 if (res.result.code === 0) {
-                    uni.showToast({ title: res.result.msg || '已撤离', icon: 'none' })
-                    this.clearActivePublicRoom()
-                    this.clearActiveDeathMatch()
+                    if (!isDeathMatch) uni.showToast({ title: res.result.msg || '已撤离', icon: 'none' })
+                    // 【修复】只清除对应类型的活跃 ID，不误伤另一侧
+                    if (isDeathMatch) {
+                        this.clearActiveDeathMatch()
+                    } else {
+                        this.clearActivePublicRoom()
+                    }
                     return true
                 } else {
                     uni.showToast({ title: res.result.msg || '撤离失败', icon: 'none' })

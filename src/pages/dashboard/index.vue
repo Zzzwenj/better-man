@@ -26,9 +26,9 @@
           </view>
         </view>
         
-        <!-- 底部已由全域悬浮球 + HUD 提示取代 -->
-        <view class="action-area pb-2 flex justify-center fade-in-up" style="animation-delay: 0.4s;">
-          <!-- 文案已移除，改为悬浮球自动弹出提示 -->
+        <!-- 底部已由全域悬浮球 + HUD 提示取代，且破戒流已整合至每日自检 -->
+        <view class="action-area flex justify-center fade-in-up" style="animation-delay: 0.4s;">
+          <!-- 预留占位区 -->
         </view>
       </view>
       
@@ -42,6 +42,22 @@
         :timeLeft="timeLeft"
         :completedActions="completedActions"
         @doAction="doAction"
+      />
+      
+      <!-- 紧急除颤抉择弹窗 -->
+      <DefibrillatorModal 
+        :show="showDefibModal"
+        :currentHours="hoursClean"
+        @close="showDefibModal = false"
+        @reviveSuccess="onReviveSuccess"
+        @giveUp="onGiveUp"
+      />
+
+      <!-- 每日审核弹窗 -->
+      <DailyAuditModal 
+        :show="showDailyAudit"
+        @close="showDailyAudit = false"
+        @relapseTriggered="onDailyRelapseTriggered"
       />
     </view>
 
@@ -57,6 +73,8 @@ import EnergyCore from '../../components/dashboard/EnergyCore.vue'
 import DataCards from '../../components/dashboard/DataCards.vue'
 import PanicOverlay from '../../components/dashboard/PanicOverlay.vue'
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
+import DefibrillatorModal from '../../components/dashboard/DefibrillatorModal.vue'
+import DailyAuditModal from '../../components/dashboard/DailyAuditModal.vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useWarzoneStore } from '../../store/warzone.js'
 
@@ -67,6 +85,8 @@ const hoursClean = ref(0)
 const hoursSaved = ref(0)
 const dopamineIndex = ref(0)
 const currentPhase = ref('Phase I: 生理挣脱')
+const showDefibModal = ref(false)
+const showDailyAudit = ref(false)
 let timeInterval = null
 
 onMounted(() => {
@@ -83,35 +103,68 @@ onMounted(() => {
   }
 
   let startTimestamp = uni.getStorageSync('neuro_start_date')
-  if (!startTimestamp) {
-    startTimestamp = Date.now() - (5 * 24 * 60 * 60 * 1000)
-    uni.setStorageSync('neuro_start_date', startTimestamp)
-  }
+  const today = new Date().toDateString()
+  const lastCheckin = uni.getStorageSync('last_checkin_date')
   
-  const updateTimer = () => {
-    const diffMs = Date.now() - startTimestamp
-    const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
-    hoursClean.value = totalHours
-    
-    hoursSaved.value = Math.floor((totalHours / 24) * 2)
-    
-    const days = totalHours / 24
-    let rate = 10 + (days * 1.5)
-    dopamineIndex.value = Math.min(Math.floor(rate), 100)
-    
-    if (hoursClean.value < 72) {
-      currentPhase.value = 'Phase I: 生理挣脱'
-    } else if (hoursClean.value < 336) {
-      currentPhase.value = 'Phase II: 额叶觉醒'
-    } else if (hoursClean.value < 1080) {
-      currentPhase.value = 'Phase III: 边缘重塑'
-    } else {
-      currentPhase.value = 'Phase IV: 神经霸体'
-    }
-  }
+  // 用于对抗本地时间篡改的时差偏移量
+  let timeOffset = 0 
   
-  updateTimer()
-  timeInterval = setInterval(updateTimer, 60000)
+  const initTimer = async () => {
+      // 尝试拉取服务端时间进行校准
+      try {
+          const res = await uniCloud.callFunction({
+              name: 'user-center',
+              data: { action: 'getServerTime', token }
+          })
+          if (res.result && res.result.serverTime) {
+              timeOffset = res.result.serverTime - Date.now()
+              console.log('[DR_OS] 服务端时间已对准，Offset:', timeOffset)
+          }
+      } catch (e) {
+          console.warn('[DR_OS] 时间同步信道拥堵，降级使用终端本地时钟')
+      }
+
+      const getRealTime = () => Date.now() + timeOffset
+
+      if (!startTimestamp) {
+        startTimestamp = getRealTime() - (5 * 24 * 60 * 60 * 1000)
+        uni.setStorageSync('neuro_start_date', startTimestamp)
+        uni.setStorageSync('last_checkin_date', today) // 首次初始化默认过检
+      } else {
+        // 每日打卡判定
+        if (lastCheckin !== today) {
+           showDailyAudit.value = true
+        }
+      }
+      
+      const updateTimer = () => {
+        const diffMs = getRealTime() - startTimestamp
+        const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+        hoursClean.value = totalHours
+        
+        hoursSaved.value = Math.floor((totalHours / 24) * 2)
+        
+        const days = totalHours / 24
+        let rate = 10 + (days * 1.5)
+        dopamineIndex.value = Math.min(Math.floor(rate), 100)
+        
+        if (hoursClean.value < 72) {
+          currentPhase.value = 'Phase I: 生理挣脱'
+        } else if (hoursClean.value < 336) {
+          currentPhase.value = 'Phase II: 额叶觉醒'
+        } else if (hoursClean.value < 1080) {
+          currentPhase.value = 'Phase III: 边缘重塑'
+        } else {
+          currentPhase.value = 'Phase IV: 神经霸体'
+        }
+      }
+      
+      updateTimer()
+      timeInterval = setInterval(updateTimer, 60000)
+  }
+
+  initTimer()
+
   
   // 建立全域监听：物理摇晃或悬浮球双击都会触发
   uni.$on('TRIGGER_PANIC_SYSTEM', () => {
@@ -156,8 +209,62 @@ const triggerPanic = () => {
     if (timeLeft.value > 0) {
       timeLeft.value--
     }
-    uni.vibrateLong()
+    // UX 优化：避免每秒极强震动导致手部不适，降低为 5 秒一次
+    if (timeLeft.value % 5 === 0) {
+      uni.vibrateLong()
+    }
   }, 1000)
+}
+
+// 选择彻底放弃 (进度清零)
+const onGiveUp = () => {
+    showDefibModal.value = false
+    
+    // --- 【高危修复】：破戒惩罚必须同步战区引发连坐 ---
+    if (warzoneStore.activeDeathMatchId) {
+        warzoneStore.leaveRoomAction(warzoneStore.activeDeathMatchId, true)
+    }
+
+    const now = Date.now()
+    uni.setStorageSync('neuro_start_date', now)
+    
+    // 记录一条历史标记 (0 表示该日破戒)
+    let history = uni.getStorageSync('neuro_checkins') || ''
+    history += '0'
+    uni.setStorageSync('neuro_checkins', history)
+    
+    hoursClean.value = 0
+    hoursSaved.value = 0
+    dopamineIndex.value = 10
+    
+    // 更新打卡日期以屏蔽今日后续自检
+    uni.setStorageSync('last_checkin_date', new Date().toDateString())
+    
+    uni.showToast({ title: '参数已清零，请重新开始', icon: 'none' })
+}
+
+// 选择除颤挽救 (扣除代价，只回退 50% 时间)
+const onReviveSuccess = () => {
+    showDefibModal.value = false
+    const currentStart = uni.getStorageSync('neuro_start_date') || Date.now()
+    const diff = Date.now() - currentStart
+    
+    // 退回 50% 的时间差
+    const newStart = Date.now() - (diff / 2)
+    uni.setStorageSync('neuro_start_date', newStart)
+    
+    // 不记入破戒历史，视为成功防御，更新打卡标志
+    uni.setStorageSync('last_checkin_date', new Date().toDateString())
+    
+    const totalHours = Math.floor((diff / 2) / (1000 * 60 * 60))
+    hoursClean.value = totalHours
+    hoursSaved.value = Math.floor((totalHours / 24) * 2)
+}
+
+// 被每日审计系统识别出破戒并强制执行断网(除颤前一步)
+const onDailyRelapseTriggered = () => {
+    showDailyAudit.value = false
+    showDefibModal.value = true
 }
 
 const goToWarzone = () => {

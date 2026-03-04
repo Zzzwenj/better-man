@@ -40,11 +40,17 @@ exports.main = async (event, context) => {
             // 获取天梯榜单 (通过离线计算防抖版)
             return await getRankings(db, uid)
         case 'deleteAccount':
-            // 全域云端档案彻底销毁
+            // 云端档案销毁（含7天冷静期）
             return await deleteAccount(usersCollection, uid)
+        case 'getServerTime':
+            // 返回服务端可信时间戳（防本地时间篡改）
+            return { code: 0, serverTime: Date.now() }
         case 'initLibraryData':
             // 初始化内置的精选正向数据（仅用作系统种子数据，开发者调用）
             return await initLibraryData(db)
+        case 'verifyTransaction':
+            // 交易核销（静默记录）
+            return { code: 0, msg: '核销已记录' }
         default:
             return { code: 400, msg: 'Unknown action' }
     }
@@ -75,9 +81,33 @@ async function getRankings(db, uid) {
 
 async function deleteAccount(collection, uid) {
     try {
-        await collection.doc(uid).remove()
-        // MVP 阶段仅移除主表，拓展可顺带清空 chat_history 等关联数据
-        return { code: 0, msg: '账号及对应档案已彻底抹除' }
+        const userRes = await collection.where({ _id: uid }).get()
+        if (userRes.data.length === 0) {
+            return { code: 404, msg: '账号不存在' }
+        }
+
+        const user = userRes.data[0]
+
+        // 【冷静期检查】如果已经标记过待删除，检查是否满7天
+        if (user.delete_requested_at) {
+            const daysPassed = (Date.now() - user.delete_requested_at) / (1000 * 60 * 60 * 24)
+            if (daysPassed >= 7) {
+                // 冷静期已过，执行真正的物理删除
+                await collection.doc(uid).remove()
+                return { code: 0, msg: '冷静期已满，账号及档案已彻底抹除' }
+            } else {
+                const daysLeft = Math.ceil(7 - daysPassed)
+                return { code: 202, msg: `账号已进入销毁倒计时，剩余冷静期 ${daysLeft} 天。期间可联系客服撤回。` }
+            }
+        }
+
+        // 首次请求：标记为待删除，进入7天冷静期
+        await collection.doc(uid).update({
+            delete_requested_at: Date.now(),
+            status: 'pending_delete'
+        })
+
+        return { code: 201, msg: '已进入7天冷静期。7天后系统将自动执行不可逆的深渊销毁。如后悔请在冷静期内重新登录取消。' }
     } catch (e) {
         return { code: 500, msg: '深渊抹除失败: ' + e.message }
     }

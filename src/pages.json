@@ -12,6 +12,21 @@
     },
     "pages": [
         {
+            "path": "pages/calculator/index",
+            "style": {
+                "navigationBarTitleText": "",
+                "navigationStyle": "custom",
+                "disableScroll": true
+            }
+        },
+        {
+            "path": "pages/dashboard/index",
+            "style": {
+                "navigationBarTitleText": "主控空间",
+                "navigationStyle": "custom"
+            }
+        },
+        {
             "path": "pages/login/index",
             "style": {
                 "navigationBarTitleText": "身份核验",
@@ -22,14 +37,6 @@
             "path": "pages/store/index",
             "style": {
                 "navigationBarTitleText": "暗网黑市",
-                "navigationStyle": "custom",
-                "disableScroll": true
-            }
-        },
-        {
-            "path": "pages/calculator/index",
-            "style": {
-                "navigationBarTitleText": "",
                 "navigationStyle": "custom",
                 "disableScroll": true
             }
@@ -60,13 +67,6 @@
             "path": "pages/onboarding/index",
             "style": {
                 "navigationBarTitleText": "基线评估",
-                "navigationStyle": "custom"
-            }
-        },
-        {
-            "path": "pages/dashboard/index",
-            "style": {
-                "navigationBarTitleText": "主控空间",
                 "navigationStyle": "custom"
             }
         },
@@ -119,6 +119,13 @@
             "style": {
                 "navigationBarTitleText": "资料详情",
                 "navigationStyle": "default"
+            }
+        },
+        {
+            "path": "pages/agreement/index",
+            "style": {
+                "navigationBarTitleText": "协议与政策",
+                "navigationStyle": "custom"
             }
         }
     ],

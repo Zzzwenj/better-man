@@ -64,12 +64,14 @@ const handleRefuse = () => {
   // #endif
 }
 
+// 跳转到用户协议页面
 const goAgreement = () => {
-  uni.showToast({ title: '服务协议暂未下发至终端', icon: 'none' })
+  uni.navigateTo({ url: '/pages/agreement/index?type=terms' })
 }
 
+// 跳转到隐私政策页面
 const goPrivacy = () => {
-  uni.showToast({ title: '隐私声明暂未下发至终端', icon: 'none' })
+  uni.navigateTo({ url: '/pages/agreement/index?type=privacy' })
 }
 </script>
 

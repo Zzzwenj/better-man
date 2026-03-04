@@ -15,7 +15,7 @@
         <!-- 激励视频入口：能源补给 -->
         <view class="ad-reward-box mt-4 flex items-center justify-center" @click="handleAdReward">
           <text class="ad-icon mr-2">⚡</text>
-          <text class="ad-btn-text">信号拦截：获取能源补给 ({{ userStore.dailyAdCount }}/5)</text>
+          <text class="ad-btn-text">信号拦截：获取能源补给 ({{ userStore.dailyAdCount }}/3)</text>
         </view>
 
         <text class="warning-text mt-4">>> 规则：黑市交易不退不换，量力而为。纯视觉与炫耀属性，无算力加持。 <<</text>
@@ -120,6 +120,7 @@ const allProducts = ref([
   // 战区武装
   { id: 'w_01', category: 1, title: '全频 EMP 脉冲电报', description: '在公共频道发出的消息附带血红色EMP边框，并高亮悬置 15 分钟，全服瞩目。', price: 150, icon: '📢', typeTag: '消耗品(单次)', duration: '15分钟 / 发送1次' },
   { id: 'w_02', category: 1, title: '赛博坦之怒', description: '发送一个震动全群的强制特效（开发中）。', price: 500, icon: '🤖', typeTag: '消耗品(单次)', duration: '仅限1场战区' },
+  { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带并在战区激活后，你的破戒将不会导致战区解散和队友连坐，仅你自己出局并扣除等量押金。', price: 1280, icon: '🛡️', typeTag: '战略保障', duration: '消耗品(单次)' },
   
   // 盲盒与彩蛋
   { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '7天有效' },

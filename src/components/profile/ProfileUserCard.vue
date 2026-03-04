@@ -25,8 +25,8 @@
       </view>
       <text v-if="signature" class="signature-text mt-1">{{ signature }}</text>
       <view class="status-badge flex items-center mt-2">
-        <view :class="['status-dot', isProActive ? 'online' : 'offline']"></view>
-        <text :class="['status-text', 'ml-1', isProActive ? 'text-online' : '']">{{ userDesc }}</text>
+        <view :class="['status-dot', isVipActive ? 'online' : 'offline']"></view>
+        <text :class="['status-text', 'ml-1', isVipActive ? 'text-online' : '']">{{ userDesc }}</text>
       </view>
     </view>
 
@@ -105,7 +105,7 @@ const props = defineProps({
   userDesc: { type: String, default: '系统干预：已停用' },
   avatar: { type: String, default: '' },
   signature: { type: String, default: '' },
-  isProActive: { type: Boolean, default: false },
+  isVipActive: { type: Boolean, default: false },
   hasBlackGoldCrown: { type: Boolean, default: false },
   formattedCoins: { type: String, default: '0' }
 })

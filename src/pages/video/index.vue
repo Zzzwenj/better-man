@@ -54,6 +54,12 @@ const videoData = ref(null)
 const loading = ref(true)
 
 onLoad((options) => {
+   // 鉴权拦截
+   const token = uni.getStorageSync('uni_id_token')
+   if (!token) {
+       uni.redirectTo({ url: '/pages/login/index' })
+       return
+   }
    if (options.id) {
        videoId.value = options.id
        fetchVideoDetail()

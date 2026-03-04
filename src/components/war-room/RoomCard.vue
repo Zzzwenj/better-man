@@ -5,7 +5,7 @@
         <!-- 图标 -->
         <view class="room-icon flex items-center justify-center flex-shrink-0" :class="roomType">
           <text v-if="roomType === 'public'">📡</text>
-          <text v-else>⚔️</text>
+          <text v-else>🛡️</text>
         </view>
         <text class="room-name ml-2">{{ roomName }}</text>
         <!-- 唯一ID标签，点击可复制 -->
@@ -19,7 +19,7 @@
     <!-- 激活驻留状态的特殊横幅提示 -->
     <view class="active-banner flex items-center justify-center mb-2" v-if="isActive">
       <text class="active-icon mr-1">📍</text>
-      <text class="active-banner-text">神经已连接 · 点击立即折跃</text>
+      <text class="active-banner-text">阵列已绑定 · 神经共振中</text>
     </view>
 
     <view class="room-desc mb-2">
@@ -32,8 +32,8 @@
         <text class="metric-text ml-1">{{ onlineCount }} / {{ maxUsers || '∞' }}</text>
       </view>
       <view class="flex items-center" v-if="roomType === 'death-match'">
-        <text class="metric-icon mt-px">💰</text>
-        <text class="metric-text prize-text ml-1">{{ prizePool }} 神经币</text>
+        <text class="metric-icon mt-px">⚠️</text>
+        <text class="metric-text prize-text ml-1">连坐惩罚: 进度倒退 20%</text>
       </view>
     </view>
   </view>
@@ -49,7 +49,6 @@
  * @prop description - 房间描述
  * @prop onlineCount - 在线人数
  * @prop maxUsers  - 最大人数
- * @prop prizePool - 奖金池 (仅 death-match)
  * @prop status    - 'active' | 'waiting' | 'closed'
  * @prop isActive  - 当前用户是否已连接该房间
  */
@@ -62,7 +61,6 @@ const props = defineProps({
   description:  { type: String,  default: '' },
   onlineCount:  { type: Number,  default: 0 },
   maxUsers:     { type: Number,  default: null },
-  prizePool:    { type: Number,  default: 0 },
   status:       { type: String,  default: 'active' },
   isActive:     { type: Boolean, default: false }
 })
@@ -181,7 +179,7 @@ const statusClass = computed(() => {
 .room-footer { border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 12px; }
 .metric-icon { font-size: 12px; color: #a1a1aa; }
 .metric-text { font-size: 12px; color: #d4d4d8; font-family: monospace; }
-.prize-text { color: #facc15; font-weight: bold; }
+.prize-text { color: #ef4444; font-weight: bold; font-size: 11px;}
 
 .flex { display: flex; }
 .flex-1 { flex: 1; }

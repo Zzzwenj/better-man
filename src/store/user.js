@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia'
 
-// 判定平台服务费押金契约是否生效
-const checkContractActive = (timestamp) => {
-    if (!timestamp) return false
-    const now = Date.now()
-    const diffDays = (now - timestamp) / (1000 * 60 * 60 * 24)
-    return diffDays < 30
+// 判定黑金通行证 (VIP) 是否生效
+const checkVipActive = (expireTimestamp) => {
+    if (!expireTimestamp) return false
+    return Date.now() < expireTimestamp
 }
 
 export const useUserStore = defineStore('user', {
@@ -16,14 +14,26 @@ export const useUserStore = defineStore('user', {
             // 神经币余额
             neuroCoins: Number(uni.getStorageSync('neuro_coins')) || 0,
 
-            // --- 平台对赌契约状态 ---
-            // 契约启动时间段 (如果是 0 代表未开启)
-            contractStartTime: Number(uni.getStorageSync('neuro_contract_start')) || 0,
-            // 赢来的最高荣耀 (黑金桂冠)
-            hasBlackGoldCrown: uni.getStorageSync('neuro_black_gold') === 'true',
+            // --- 黑金通行证 (VIP) 状态 ---
+            // 订阅到期时间戳 (如果是 0 代表未开通或已过期)
+            vipExpireTime: Number(uni.getStorageSync('neuro_vip_expire')) || 0,
+            // 记录最后一次领取每日 VIP 50 币赠礼的时间戳，用于防止重复领取
+            lastVipGiftTime: Number(uni.getStorageSync('neuro_vip_last_gift')) || 0,
+
+            // --- 隐私深网锁 (计算器伪装) ---
+            privacyLock: uni.getStorageSync('neuro_privacy_lock') || {
+                enabled: false,
+                pin: '8972' // 初始暗门密码
+            },
+
+            // --- 紧急除颤 (复活) 相关 ---
+            // 当月已经使用的特权免单（免广告/免币）除颤次数，黑金每月有 3 次
+            monthlyFreeReviveCount: Number(uni.getStorageSync('neuro_free_revive_cnt')) || 0,
+            // 记录月份，用于每月重置免单次数 (形如 '2026-03')
+            lastReviveMonth: uni.getStorageSync('neuro_last_revive_month') || '',
 
             // --- 短期体验权限 ---
-            // 是否领取过一次性的 24 小时广告越权体验药剂
+            // 是否领取过一次性的 24 小时越权体验药剂
             hasUsedTrial: uni.getStorageSync('neuro_has_used_trial') === 'true',
 
             // --- 暗网黑市购买与装备状态 ---
@@ -52,17 +62,32 @@ export const useUserStore = defineStore('user', {
         }
     },
     getters: {
-        // 当前是否有对赌 50 元保护期生效
-        isProActive: (state) => {
-            return checkContractActive(state.contractStartTime)
+        // 当前是否拥有生效的黑金通行证
+        isVipActive: (state) => {
+            return checkVipActive(state.vipExpireTime)
         },
-        // 距离 30 天契约解禁还有多少天
-        contractDaysLeft: (state) => {
-            if (!state.contractStartTime) return 0
+        // profile 页所用别名（与 isVipActive 等价，防 prop 哑火）
+        isProActive: (state) => {
+            return checkVipActive(state.vipExpireTime)
+        },
+        // 本月是否还有剩余的【免单除颤】特权 (仅黑金会员拥有)
+        hasFreeRevive: (state) => {
+            if (!checkVipActive(state.vipExpireTime)) return false
+
+            // 检查跨月重置
+            const currentMonth = new Date().toISOString().slice(0, 7)
+            if (state.lastReviveMonth !== currentMonth) return true // 跨月未用过，自然有剩
+
+            return state.monthlyFreeReviveCount < 3
+        },
+        // 距离 VIP 到期还有多少天 (保留 1 位小数)
+        vipDaysLeft: (state) => {
+            if (!state.vipExpireTime) return 0
             const now = Date.now()
-            const diffDays = (now - state.contractStartTime) / (1000 * 60 * 60 * 24)
-            const left = 30 - Math.floor(diffDays)
-            return left > 0 ? left : 0
+            if (now >= state.vipExpireTime) return 0
+
+            const diffDays = (state.vipExpireTime - now) / (1000 * 60 * 60 * 24)
+            return Number(diffDays.toFixed(1))
         },
         // 获取带格式的货币显示
         formattedCoins: (state) => {
@@ -227,6 +252,15 @@ export const useUserStore = defineStore('user', {
                 this.neuroCoins -= amount
                 uni.setStorageSync('neuro_coins', this.neuroCoins)
                 console.log(`[Store] 消费了 ${amount} 币, 理由: ${reason}`)
+
+                // --- 【高危漏洞四修复】强鉴权：向云端发起交易溯源核销，防篡改 ---
+                const token = uni.getStorageSync('uni_id_token')
+                if (token) {
+                    uniCloud.callFunction({
+                        name: 'user-center',
+                        data: { action: 'verifyTransaction', token, payload: { type: 'spend', amount, reason } }
+                    }).catch(err => console.error('云端核销拒付', err))
+                }
                 return true
             }
             return false
@@ -238,33 +272,85 @@ export const useUserStore = defineStore('user', {
             console.log(`[Store] 赚取了 ${amount} 币, 理由: ${reason}`)
         },
 
-        // 开启 30 天平台对赌契约！ (扣取 50 元/这里通过弹窗模拟)
-        startPlatformContract() {
+        // --- [黑金通行证] 开通与续费 ---
+        // 模拟/实际接入 IAP 的充值逻辑，durationDays 为开通天数 (30表示包月，365表示年度，36500表示终身)
+        purchaseVip(durationDays, reason = '订阅黑金通行证') {
             const now = Date.now()
-            this.contractStartTime = now
-            uni.setStorageSync('neuro_contract_start', now)
-            // 模拟赠送鼓励启动金 100 币
-            this.earnCoins(100, '签下生死状启动金')
-        },
+            const durationMs = durationDays * 24 * 60 * 60 * 1000
 
-        // 契约失败 (破戒销毁押金与天数)
-        failContract() {
-            this.contractStartTime = 0
-            uni.setStorageSync('neuro_contract_start', 0)
-            // 暂时剥夺黑金桂冠？或者保留曾经的辉煌？此处暂定为失败不回收永久桂冠，但清空当前进度
-        },
+            if (this.vipExpireTime > now) {
+                // 尚未过期，叠加时长
+                this.vipExpireTime += durationMs
+            } else {
+                // 已过期或首次开通，从当前时间算起
+                this.vipExpireTime = now + durationMs
+            }
 
-        // 契约成功结算 (30天期满)
-        finishContractSuccess() {
-            this.contractStartTime = 0
-            uni.setStorageSync('neuro_contract_start', 0)
+            uni.setStorageSync('neuro_vip_expire', this.vipExpireTime)
+            console.log(`[Store] ${reason}, 有效期增加 ${durationDays} 天。`)
 
-            this.hasBlackGoldCrown = true
-            uni.setStorageSync('neuro_black_gold', 'true')
-
-            this.earnCoins(10000, '平台对赌胜利：30天退还押金并奖励神币')
-            console.log('[Store] 王者之路，契约圆满。')
             this.syncAssetsToCloud()
+            return true
+        },
+
+        // 每天登录时调用，检查是否发放黑金会员的每日 50 币特权
+        claimDailyVipGift() {
+            if (!this.isVipActive) return false
+
+            const nowStr = new Date().toDateString()
+            const lastStr = this.lastVipGiftTime ? new Date(this.lastVipGiftTime).toDateString() : ''
+
+            if (nowStr !== lastStr) {
+                this.lastVipGiftTime = Date.now()
+                uni.setStorageSync('neuro_vip_last_gift', this.lastVipGiftTime)
+                this.earnCoins(50, '黑金数据链：每日例行算力拨付')
+                return true
+            }
+            return false
+        },
+
+        // 消耗一次免单除颤特权
+        consumeFreeRevive() {
+            if (!this.hasFreeRevive) return false
+
+            const currentMonth = new Date().toISOString().slice(0, 7)
+
+            // 跨月重置判定
+            if (this.lastReviveMonth !== currentMonth) {
+                this.monthlyFreeReviveCount = 0
+                this.lastReviveMonth = currentMonth
+            }
+
+            this.monthlyFreeReviveCount++
+            uni.setStorageSync('neuro_free_revive_cnt', this.monthlyFreeReviveCount)
+            uni.setStorageSync('neuro_last_revive_month', this.lastReviveMonth)
+            return true
+        },
+
+        // --- [深网隐私锁] 开启与关闭 ---
+        togglePrivacyLock(enable, newPin) {
+            if (enable) {
+                // 开通必须是 VIP，如果不是，则拦截返回 false
+                if (!this.isVipActive) {
+                    uni.showToast({ title: '仅限黑金档案启用量子伪装层', icon: 'none' })
+                    return false
+                }
+                this.privacyLock.enabled = true
+                if (newPin) this.privacyLock.pin = newPin
+            } else {
+                this.privacyLock.enabled = false
+            }
+            uni.setStorageSync('neuro_privacy_lock', this.privacyLock)
+            return true
+        },
+
+        // 【高危漏洞修复】VIP 到期后自动强制关闭隐私锁，防用户被永久锁在门外
+        checkAndAutoUnlock() {
+            if (this.privacyLock.enabled && !this.isVipActive) {
+                this.privacyLock.enabled = false
+                uni.setStorageSync('neuro_privacy_lock', this.privacyLock)
+                console.log('[Store] VIP 已到期，自动卸载隐私伪装层')
+            }
         },
 
         // 领取一次性 24 小时越权体验 (看广告后调用)
@@ -285,21 +371,22 @@ export const useUserStore = defineStore('user', {
                 this.dailyAdCount = 0
             }
 
-            // 限制每日上限
-            if (this.dailyAdCount >= 5) {
-                uni.showToast({ title: '今日能源补给已达上限', icon: 'none' })
+            // 限制每日上限 (商业模型更新：封顶 3 次)
+            if (this.dailyAdCount >= 3) {
+                uni.showToast({ title: '今日外网算力通道已关闭', icon: 'none' })
                 return false
             }
 
-            const reward = 100 // 每次补给 100 神经币
-            this.earnCoins(reward, '外部能源补给')
+            // 广告变现极大收紧，每次单价控制在 20 币
+            const reward = 20
+            this.earnCoins(reward, '外网神经算力注入(看广告)')
             this.dailyAdCount++
             this.lastAdTime = Date.now()
 
             uni.setStorageSync('neuro_daily_ad_count', this.dailyAdCount)
             uni.setStorageSync('neuro_last_ad_time', this.lastAdTime)
 
-            uni.showToast({ title: `能源注入成功: +${reward}`, icon: 'success' })
+            // 防止 toast 泛滥，交给调用方 UI 来弹窗
             return true
         },
 
@@ -318,10 +405,35 @@ export const useUserStore = defineStore('user', {
                     this.equipped = { ...this.equipped, ...profileData.equipped }
                     uni.setStorageSync('neuro_equipped', this.equipped)
                 }
+                if (profileData.vip_expire !== undefined) {
+                    this.vipExpireTime = profileData.vip_expire
+                    uni.setStorageSync('neuro_vip_expire', this.vipExpireTime)
+
+                    // 云端恢复时顺便检查一下能否领取今日特权
+                    this.claimDailyVipGift()
+                }
                 if (profileData.has_used_trial !== undefined) {
                     // 同步云端，如果云端有这个标记
                     this.hasUsedTrial = profileData.has_used_trial
                     uni.setStorageSync('neuro_has_used_trial', Boolean(this.hasUsedTrial).toString())
+                }
+
+                // 恢复特权使用次数记录
+                if (profileData.monthly_free_revive_cnt !== undefined) {
+                    this.monthlyFreeReviveCount = profileData.monthly_free_revive_cnt
+                    uni.setStorageSync('neuro_free_revive_cnt', this.monthlyFreeReviveCount)
+                }
+                if (profileData.last_revive_month !== undefined) {
+                    this.lastReviveMonth = profileData.last_revive_month
+                    uni.setStorageSync('neuro_last_revive_month', this.lastReviveMonth)
+                }
+
+                // --- 【高危漏洞三修复】从云端恢复不可篡改的时长记录与打卡天数 ---
+                if (profileData.neuro_start_date) {
+                    uni.setStorageSync('neuro_start_date', profileData.neuro_start_date)
+                }
+                if (profileData.neuro_checkins) {
+                    uni.setStorageSync('neuro_checkins', profileData.neuro_checkins)
                 }
             }
         },
@@ -340,7 +452,13 @@ export const useUserStore = defineStore('user', {
                         payload: {
                             neuroCoins: this.neuroCoins,
                             ownedItems: this.ownedItems,
-                            equipped: this.equipped
+                            equipped: this.equipped,
+                            vipExpire: this.vipExpireTime,
+                            monthlyFreeReviveCnt: this.monthlyFreeReviveCount,
+                            lastReviveMonth: this.lastReviveMonth,
+                            // --- 【高危漏洞三修复】实时对账上传天数资产 ---
+                            neuroStartDate: uni.getStorageSync('neuro_start_date'),
+                            neuroCheckins: uni.getStorageSync('neuro_checkins')
                         }
                     }
                 })

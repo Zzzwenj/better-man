@@ -42,7 +42,7 @@
         <text class="btn-text">{{ isLastStep ? '生成核心协议' : '继续' }}</text>
       </view>
     </view>
-    <text class="disclaimer block text-center pb-4 pt-2">所有数据仅用于本地终端的神经算法推理，绝不上传云端。</text>
+    <text class="disclaimer block text-center pb-4 pt-2">所有数据均经端对端加密处理，仅用于神经算法推理与云端安全备份。</text>
   </view>
 </template>
 

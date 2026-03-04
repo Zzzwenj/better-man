@@ -4,7 +4,7 @@
       <view class="flex justify-between items-center mb-4">
         <view class="room-info flex-col">
           <text class="room-title">全境通讯大厅</text>
-          <text class="room-subtitle mt-1">寻找组织 或 发起血契对赌</text>
+          <text class="room-subtitle mt-1">寻找组织 或 组建连坐小队</text>
         </view>
         <view class="online-chip flex items-center">
           <view class="dot-live"></view>
@@ -17,7 +17,7 @@
           <text class="tab-text">公共频段</text>
         </view>
         <view :class="['tab-item flex-1 flex justify-center', currentTab === 1 ? 'active' : '']" @click="currentTab = 1">
-          <text class="tab-text">生死血契 🔒</text>
+          <text class="tab-text">斯巴达小队 🛡️</text>
         </view>
       </view>
     </view>
@@ -54,9 +54,9 @@
       </view>
       
       <view v-else-if="currentTab === 1" class="fade-in-up">
-        <view class="create-btn flex justify-center items-center mb-4" @click="handleCreateDeathMatch">
-          <text class="btn-icon">⚔️</text>
-          <text class="btn-text ml-2">发起新的战局</text>
+        <view class="create-btn flex justify-center items-center mb-4" :class="{ 'active-squad': warzoneStore.activeDeathMatchId }" @click="handleCreateDeathMatch">
+          <text class="btn-icon">🛡️</text>
+          <text class="btn-text ml-2">{{ warzoneStore.activeDeathMatchId ? '进入我的连坐小队' : '招募连坐小队' }}</text>
         </view>
         
         <RoomCard 
@@ -155,8 +155,33 @@ const matchSearch = (room) => {
          room.description.toLowerCase().includes(q)
 }
 
-const filteredPublicRooms = computed(() => publicRooms.value.filter(matchSearch))
-const filteredDeathMatches = computed(() => deathMatches.value.filter(matchSearch))
+const filteredPublicRooms = computed(() => {
+  const list = publicRooms.value.filter(matchSearch)
+  const activeId = warzoneStore.activePublicRoomId
+  if (!activeId) return list
+  
+  // 置顶逻辑
+  const activeIdx = list.findIndex(r => r.id === activeId)
+  if (activeIdx > -1) {
+    const activeRoom = list.splice(activeIdx, 1)[0]
+    list.unshift(activeRoom)
+  }
+  return list
+})
+
+const filteredDeathMatches = computed(() => {
+  const list = deathMatches.value.filter(matchSearch)
+  const activeId = warzoneStore.activeDeathMatchId
+  if (!activeId) return list
+  
+  // 置顶逻辑
+  const activeIdx = list.findIndex(r => r.id === activeId)
+  if (activeIdx > -1) {
+    const activeRoom = list.splice(activeIdx, 1)[0]
+    list.unshift(activeRoom)
+  }
+  return list
+})
 
 const totalOnline = computed(() => {
   let count = 0
@@ -167,7 +192,7 @@ const totalOnline = computed(() => {
 
 const handleCreateDeathMatch = () => {
   if (warzoneStore.activeDeathMatchId) {
-     showWarning('警告：身负血契', '作为神经连接者，你只能同时身处一条血契时间线。请返回当前战役执行撤离后重试。')
+     uni.navigateTo({ url: `/pages/war-room/death-match?id=${warzoneStore.activeDeathMatchId}` })
      return
   }
   showContractModal.value = true
@@ -176,10 +201,10 @@ const handleCreateDeathMatch = () => {
 const enterRoom = (room) => {
   const isPublic = room.type === 'public'
   const currentActive = isPublic ? warzoneStore.activePublicRoomId : warzoneStore.activeDeathMatchId
-  const typeName = isPublic ? '公共战区' : '生死血契战役'
+  const typeName = isPublic ? '公共战区' : '连坐小队部署序列'
 
   if (currentActive && currentActive !== room.id) {
-     showWarning('侦测到并行的神经驻留', `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`)
+     showWarning('侦测到并行的部署指令', `你目前正在参与第 ${currentActive} 号${typeName}。贸然切入新战区会导致意识粉碎。请先进入该战区并执行【撤离】。`)
      return
   }
 
@@ -195,11 +220,11 @@ const enterRoom = (room) => {
 }
 
 const onContractCreated = async (formData) => {
-  uni.showLoading({ title: '血契阵列生成中' })
+  uni.showLoading({ title: '小队阵列部署中' })
   const res = await warzoneStore.createDeathMatch(formData)
   uni.hideLoading()
   if (res) {
-    uni.showToast({ title: '血契已生成', icon: 'success' })
+    uni.showToast({ title: '小队信标已生成', icon: 'success' })
   }
 }
 </script>
@@ -281,7 +306,7 @@ page { height: 100%; }
 .ml-2 { margin-left: 8px; }
 .pb-safe { height: calc(88px + env(safe-area-inset-bottom)); }
 
-/* 生死血契 战时氛围 */
+/* 连坐小队 战时氛围 */
 .war-mode {
   transition: all 0.5s ease-in-out;
   background-image: 

@@ -21,18 +21,18 @@
     
     <view class="px-4 mt-4 flex-1 fade-in-up" style="animation-delay: 0.1s;">
       <view class="status-card mb-6">
-        <text class="status-label">奖金池 (神经币)</text>
+        <text class="status-label">连坐惩罚协议</text>
         <view class="prize-pool mt-2 flex justify-between items-center">
           <view class="flex items-center">
-            <text class="prize-icon">💰</text>
-            <text class="prize-amount">{{ dmRoom.prizePool }}</text>
+            <text class="prize-icon">⚠️</text>
+            <text class="prize-amount text-red-500 text-xl font-bold">全队倒退 20%</text>
           </view>
           <view class="flex-col items-end" v-if="dmRoom.onlineCount < dmRoom.maxUsers">
-            <text class="text-xs text-red-500 font-bold">征召倒计时</text>
+            <text class="text-xs text-red-500 font-bold">集结倒计时</text>
             <text class="countdown-val">{{ countdownText || '计算中...' }}</text>
           </view>
         </view>
-        <text class="status-desc mt-2">存活者将平分全部奖金。破戒者当即出局并扣除保密金进入公池。</text>
+        <text class="status-desc mt-2">小队同生共死。任何一人生理防线崩溃，全队神经进度强制倒退并面临系统锁屏的物理级惩罚。</text>
       </view>
 
       <!-- 战役宣言展示区 (置顶加强) -->
@@ -44,11 +44,14 @@
         <text class="slogan-text">“ {{ dmRoom.slogan }} ”</text>
       </view>
       
-      <!-- 群主干预台（只保留编辑宣言，征召令移至全员可见区） -->
-      <view class="admin-panel mb-6" v-if="isOwner">
+      <!-- 个人操作控制台 -->
+      <view class="admin-panel mb-6">
         <view class="flex justify-between items-center">
-          <text class="panel-title flex items-center"><text class="text-xl mr-1">👑</text>一号位权限</text>
-          <text class="edit-link" @click="editSlogan">编辑宣言 ✎</text>
+          <text class="panel-title flex items-center"><text class="text-xl mr-1">🛡️</text>战术防具库</text>
+          <view class="flex gap-3">
+             <text class="edit-link text-yellow-500" @click="buyShield">配装静音防护罩</text>
+             <text v-if="isOwner" class="edit-link" @click="editSlogan">编辑宣言 ✎</text>
+          </view>
         </view>
       </view>
 
@@ -91,7 +94,7 @@
         <view class="share-header flex-col items-center w-full mb-4">
           <text class="share-brand tracking-widest text-primary mb-1">=== BETTER MAN ===</text>
           <text class="share-title">觉醒者强制征召令</text>
-          <text class="share-subtitle text-center mt-2">系统检测到你的能量场波动，第 {{ dmRoom.id }} 号战区正在集结。</text>
+          <text class="share-subtitle text-center mt-2">系统发出连坐组队协议，第 {{ dmRoom.id }} 号战区正在集结。</text>
         </view>
         
         <view class="qr-container flex-col items-center justify-center p-4 mb-4">
@@ -203,9 +206,9 @@ onLoad(async (options) => {
   // 先拉取云端数据，保证 expiryTime 就绪，再启动倒计时
   await warzoneStore.fetchRooms()
   
-  // 拉取真实存活名单
-  if (dmRoom.value && dmRoom.value.room_id) {
-     const members = await warzoneStore.fetchRoomMembers(dmRoom.value.room_id)
+  // 拉取真实存活名单（字段统一用 .id）
+  if (dmRoom.value && dmRoom.value.id && dmRoom.value.id !== '??????') {
+     const members = await warzoneStore.fetchRoomMembers(dmRoom.value.id)
      currentMembers.value = members
      memberLoading.value = false
   }
@@ -288,20 +291,20 @@ const leaveRoom = () => {
   if (isOwner.value && dmRoom.value.status === 'waiting') {
       dialog.value = {
         show: true,
-        title: '解散战区确认',
-        content: '作为第一缔约人，此时撤离将判定为[本局流局]，战区将被立即解散，保密金将进入退款队列。是否继续解散？'
+        title: '解散小队确认',
+        content: '作为第一缔约人，此时撤离将判定为[本局流局]，小队将被立即解散。是否继续解散？'
       }
   } else {
       dialog.value = {
         show: true,
         title: '撤离警告',
-        content: '撤离后你将断开与该战役的通讯链接。作为契约者，此时撤离将判定为暂时脱离交战区甚至违约没收押金。是否继续？'
+        content: '撤离后你将断开与该小队的连坐协议。作为契约者，此时撤离将面临严峻的系统惩罚。是否继续？'
       }
   }
 }
 
 const executeLeave = async () => {
-  const success = await warzoneStore.leaveRoomAction(dmRoom.value.room_id)
+  const success = await warzoneStore.leaveRoomAction(dmRoom.value.room_id, true)
   if (success) {
     uni.switchTab({ url: '/pages/war-room/index' })
   }
@@ -312,7 +315,7 @@ const handleMoreAction = () => {
   actionSheet.value = {
     show: true,
     title: '战区战术指令',
-    list: ['撤离当前生死局', '举报违背契约精神行为', '投诉不良内容', '屏蔽此战局'],
+    list: ['强行脱离连坐小队', '举报虚假打卡者', '投诉不良内容', '屏蔽此战局'],
     type: 'more'
   }
 }
@@ -345,6 +348,11 @@ const editSlogan = () => {
   showSloganModal.value = true
 }
 
+// 购买防具
+const buyShield = () => {
+  uni.showToast({ title: '静音防护罩正在进货，敬请期待', icon: 'none' })
+}
+
 const onSloganConfirm = (newSlogan) => {
   uni.showLoading({ title: '加密传输中...' })
   setTimeout(() => {
@@ -361,7 +369,7 @@ const handleInvite = () => {
 
 // 复制带 Deep Linking 的征召文案
 const copyLink = () => {
-    const inviteText = `【生死血契召集】我已在 Better Man 建立/加入第 ${dmRoom.value.id} 号净化战役。\n\n你有种来接下这局豪赌吗？\n🔗 浏览器内点击直达，未安装自动跳商店：\nhttps://app.betterman.vip/join/${dmRoom.value.id}\n\n也可在战区大厅直输入口令：${dmRoom.value.id}`
+    const inviteText = `【斯巴达小队召集】我已在 Better Man 发起第 ${dmRoom.value.id} 号连坐协议。\n\n你有种把后背交给我吗？\n🔗 浏览器点击直达，未安装自动跳商店：\nhttps://app.betterman.vip/join/${dmRoom.value.id}\n\n也可在战区大厅直输入口令：${dmRoom.value.id}`
     uni.setClipboardData({
         data: inviteText,
         success: () => {

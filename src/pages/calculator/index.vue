@@ -42,13 +42,32 @@
 
 <script setup>
 import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { useUserStore } from '../../store/user.js'
 
+const userStore = useUserStore()
 const current = ref('0')
 const equation = ref('')
 
+// 初始化时，如果用户压根没有开启伪装锁，直接放行进入主防线
+onLoad(() => {
+  if (!userStore.privacyLock.enabled) {
+      uni.showLoading({ title: '安全连接建立中...' })
+      setTimeout(() => {
+          uni.hideLoading()
+          const baseline = uni.getStorageSync('neuro_baseline')
+          if (baseline) {
+              uni.switchTab({ url: '/pages/dashboard/index' })
+          } else {
+              uni.redirectTo({ url: '/pages/onboarding/index' })
+          }
+      }, 300)
+  }
+})
+
 // 【核心暗门逻辑】 
-// 特工代码: 输入 8972 并按下 = 号，将直接劫持进入真实的 App 内部
-const STEALTH_CODE = '8972'
+// 特工代码读取: 若开启隐私锁，则核对用户自设的 PIN 码，否则使用初始密码或直接放行。
+const STEALTH_CODE = ref(userStore.privacyLock.pin || '8972')
 
 const append = (val) => {
   if (current.value === '0' && val !== '.') {
@@ -72,8 +91,8 @@ const del = () => {
 }
 
 const calculate = () => {
-  // 拦截层: 暗网密令判定
-  if (current.value === STEALTH_CODE) {
+  // 拦截层: 暗网密令判定（仅匹配用户自设 PIN 码）
+  if (userStore.privacyLock.enabled && current.value === STEALTH_CODE.value) {
     uni.vibrateLong() // 震动反馈，表示密令被识别
     uni.showLoading({ title: '连接神经网络...' }) // 故意营造黑客氛围
     setTimeout(() => {

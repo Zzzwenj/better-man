@@ -72,6 +72,12 @@ const hasAutoInited = ref(false)
 const cacheKey = computed(() => `library_${pageType.value}`)
 
 onLoad((options) => {
+   // 鉴权拦截
+   const token = uni.getStorageSync('uni_id_token')
+   if (!token) {
+       uni.redirectTo({ url: '/pages/login/index' })
+       return
+   }
    if (options.type) {
        pageType.value = options.type
        const cached = uni.getStorageSync(cacheKey.value)

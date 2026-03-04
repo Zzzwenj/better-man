@@ -5,26 +5,26 @@ const CryptoJS = require("crypto-js");
 const db = uniCloud.database();
 
 // 💡 【配置：QQ 邮箱发送方案】
-// 这是你目前测试使用的配置，注意密码处必须填写 SMTP 授权码
+// 敏感凭证通过云函数环境变量注入，避免代码泄露即凭证泄露
 const mailConfig = {
     host: 'smtp.qq.com',     // QQ 邮箱的 SMTP 服务器地址
     port: 465,               // 端口号 465
     secure: true,            // 开启 SSL 安全连接
     auth: {
-        // 你的 QQ 发件邮箱
-        user: '1850680525@qq.com',
-        // 🚨 这里的密码必须是你在 QQ 邮箱设置里生成的【SMTP授权码】，千万不能是你的 QQ 登录密码！
-        pass: 'ukvajjvsirqgefha'
+        user: process.env.SMTP_USER || '1850680525@qq.com',
+        // 🔒 SMTP 授权码必须从环境变量读取，HBuilderX → uniCloud → 云函数详情 → 环境变量配置
+        pass: process.env.SMTP_PASS || ''
     }
 };
 
 const transporter = nodemailer.createTransport(mailConfig);
 
 // 💡 【配置：短信宝发送方案】
+// 🔒 同样通过环境变量注入，防止源码泄露凭证
 const smsConfig = {
-    username: 'Camille07_', // 短信宝注册账号
-    password: 'QQandYC99!', // 短信宝平台密码 (此处云函数会自动给它做 MD5 混淆)
-    sign: '【觉醒空间科技】' // 你的短信签名，短信宝规定必须带【】
+    username: process.env.SMS_USER || 'Camille07_',
+    password: process.env.SMS_PASS || '',
+    sign: '【觉醒空间科技】'
 };
 
 exports.main = async (event, context) => {
@@ -39,6 +39,8 @@ exports.main = async (event, context) => {
             return await register(params);
         case 'login':
             return await login(params);
+        case 'resetPassword':
+            return await resetPassword(params);
         default:
             return { code: 400, message: 'Invalid action' };
     }
@@ -58,6 +60,14 @@ function md5(str) {
 // 1. 发送邮箱验证码
 async function sendEmailCode({ email }) {
     if (!email) return { code: 1, message: '邮箱不能为空' };
+
+    // 【防刷拦截】同一邮箱 60 秒内禁止重复发送
+    const recentCode = await db.collection('uni-verify-codes')
+        .where({ email, createdAt: db.command.gt(Date.now() - 60 * 1000) })
+        .limit(1).get()
+    if (recentCode.data.length > 0) {
+        return { code: 10, message: '请勿频繁操作，60秒后再试' }
+    }
 
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -89,6 +99,14 @@ async function sendEmailCode({ email }) {
 // 2. 发送手机短信验证码 (接入短信宝)
 async function sendSmsCode({ phone }) {
     if (!phone) return { code: 1, message: '手机号不能为空' };
+
+    // 【防刷拦截】同一手机号 60 秒内禁止重复发送
+    const recentCode = await db.collection('uni-verify-codes')
+        .where({ phone, createdAt: db.command.gt(Date.now() - 60 * 1000) })
+        .limit(1).get()
+    if (recentCode.data.length > 0) {
+        return { code: 10, message: '请勿频繁操作，60秒后再试' }
+    }
 
     const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
     const content = `${smsConfig.sign}您的验证码是${verifyCode}。如非本人操作，请忽略本短信。`;
@@ -195,14 +213,67 @@ async function login({ account, password }) {
 
     if (user.password !== inputHash) return { code: 3, message: '密码错误' };
 
-    // 生成 token (兼容旧逻辑)
-    const token = 'fake_token_for_dev_' + user._id;
+    // 生成安全 token（加密随机串，不可预测）
+    const tokenRaw = user._id + '_' + Date.now() + '_' + Math.random().toString(36)
+    const token = CryptoJS.SHA256(tokenRaw).toString()
+    const tokenExpired = Date.now() + 30 * 24 * 3600 * 1000 // 30天有效
+
+    // 将 token 写入用户记录，便于后续服务端校验
+    await db.collection('uni-id-users').doc(user._id).update({
+        token,
+        token_expired: tokenExpired,
+        last_login_date: Date.now()
+    })
 
     return {
         code: 0,
         message: '登录成功',
         token,
         uid: user._id,
-        tokenExpired: Date.now() + 7200000 // 2小时
+        tokenExpired
     };
+}
+
+// 5. 重置密码（忘记密码闭环）
+async function resetPassword({ email, phone, password, verifyCode }) {
+    const account = email || phone
+    if (!account || !password || !verifyCode) return { code: 1, message: '参数不完整' }
+
+    // 校验验证码（复用注册验证码类型 'register'，也可单独用 'reset'）
+    const codeQuery = email
+        ? { email, type: db.command.in(['register', 'reset']) }
+        : { phone, type: db.command.in(['register', 'reset']) }
+
+    const codes = await db.collection('uni-verify-codes')
+        .where(codeQuery)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+
+    if (codes.data.length === 0) return { code: 2, message: '验证码不存在或未发送' }
+
+    const record = codes.data[0]
+    if (Date.now() > record.expiredAt) return { code: 3, message: '验证码已过期' }
+    if (record.code !== verifyCode) return { code: 4, message: '验证码错误' }
+
+    // 验证通过，作废验证码
+    await db.collection('uni-verify-codes').doc(record._id).remove()
+
+    // 查找账号是否存在
+    const users = await db.collection('uni-id-users').where(
+        db.command.or([
+            { email: account },
+            { mobile: account }
+        ])
+    ).get()
+
+    if (users.data.length === 0) return { code: 5, message: '该账号不存在' }
+
+    // 更新密码
+    const user = users.data[0]
+    await db.collection('uni-id-users').doc(user._id).update({
+        password: hashPassword(password)
+    })
+
+    return { code: 0, message: '密码重置成功，请使用新密码登录' }
 }

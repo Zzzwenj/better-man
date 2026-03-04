@@ -15,6 +15,10 @@ export const useChatStore = defineStore('chat', {
             const exists = this.messages.find(m => m._id === msg._id)
             if (!exists) {
                 this.messages.push(msg)
+                // 内存保护：超过 200 条自动淘汰最早消息，防低端设备 OOM
+                if (this.messages.length > 200) {
+                    this.messages = this.messages.slice(-200)
+                }
             }
         },
         setHistory(logs) {
