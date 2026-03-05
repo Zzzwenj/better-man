@@ -119,10 +119,8 @@ const allProducts = ref([
   
   // 战区武装
   { id: 'w_01', category: 1, title: '全频 EMP 脉冲电报', description: '在公共频道发出的消息附带血红色EMP边框，并高亮悬置 15 分钟，全服瞩目。', price: 150, icon: '📢', typeTag: '消耗品(单次)', duration: '15分钟 / 发送1次' },
-  { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带并在战区激活后，你的破戒将不会导致战区解散和队友连坐，仅你自己出局并扣除等量押金。', price: 1280, icon: '🛡️', typeTag: '战略保障', duration: '消耗品(单次)' },
-  
-  // 特效彩蛋
-  { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '7天有效' }
+  { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带并在战区激活后，你的破戒将不会导致战区解散和队友连坐，仅你自己出局并扣除等量押金。', price: 1280, icon: '🛡️', typeTag: '战略保障', duration: '消耗品(单次)' }
+  // 特效彩蛋分类暂无商品（数据流雨彩蛋待实现效果后上架）
 ])
 
 const tabs = ref([

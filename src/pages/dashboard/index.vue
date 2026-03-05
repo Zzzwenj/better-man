@@ -7,10 +7,10 @@
           <text class="title tracking-wider">核心中枢</text>
           <text class="subtitle block mt-1">神经元重塑计划 v1.0</text>
         </view>
-        <view v-if="warzoneStore.activeDeathMatchId" class="quick-action flex items-center justify-center" @click="goToChat" hover-class="action-hover">
-          <view class="battle-pulse"></view>
-          <text class="action-icon">⚔️</text>
-          <text class="action-text">通讯中</text>
+        <!-- 右上角：能源补给（直接播放广告） -->
+        <view class="quick-action ad-action flex items-center justify-center" @click="handleAdReward" hover-class="action-hover">
+          <text class="action-icon">⚡</text>
+          <text class="action-text">{{ userStore.dailyAdCount }}/3</text>
         </view>
       </view>
       
@@ -69,6 +69,7 @@
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { onHide, onShow } from '@dcloudio/uni-app'
 import { getRealTime, getRealDateString } from '@/utils/timeGuard.js'
+import { adManager } from '@/utils/adManager.js'
 import MotivationalQuote from '../../components/dashboard/MotivationalQuote.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import EnergyCore from '../../components/dashboard/EnergyCore.vue'
@@ -152,13 +153,22 @@ onMounted(() => {
 
   initTimer()
 
-  // 接收悬浮球紧急干预指令
-  uni.$on('TRIGGER_PANIC_SYSTEM', () => {
-    if (!isPanicMode.value) {
-      triggerPanic()
-    }
-  })
-})
+   // ✅ 商业闭环：VIP 每日赠币自动发放
+   userStore.claimDailyVipGift()
+
+   // ✅ 广告奖励监听：预加载 + 全局事件
+   adManager.initRewardedVideo()
+   uni.$on('ad-reward-success', () => {
+     userStore.earnAdReward()
+   })
+
+   // 接收悬浮球紧急干预指令
+   uni.$on('TRIGGER_PANIC_SYSTEM', () => {
+     if (!isPanicMode.value) {
+       triggerPanic()
+     }
+   })
+ })
 
 // 【模块E】TabBar 页面切换走 onHide 而非 onUnmounted，需在此暂停定时器防泄漏
 onHide(() => {
@@ -253,7 +263,7 @@ const onGiveUp = () => {
     dopamineIndex.value = 10
     
     // 更新打卡日期以屏蔽今日后续自检
-    uni.setStorageSync('last_checkin_date', new Date().toDateString())
+    uni.setStorageSync('last_checkin_date', getRealDateString())
     
     uni.showToast({ title: '参数已清零 -100币，请重新开始', icon: 'none' })
 }
@@ -269,7 +279,7 @@ const onReviveSuccess = () => {
     uni.setStorageSync('neuro_start_date', newStart)
     
     // 不记入破戒历史，视为成功防御，更新打卡标志
-    uni.setStorageSync('last_checkin_date', new Date().toDateString())
+    uni.setStorageSync('last_checkin_date', getRealDateString())
     
     const totalHours = Math.floor((diff / 2) / (1000 * 60 * 60))
     hoursClean.value = totalHours
@@ -322,7 +332,14 @@ onUnmounted(() => {
   if (panicInterval) clearInterval(panicInterval)
   if (timeInterval) clearInterval(timeInterval)
   uni.$off('TRIGGER_PANIC_SYSTEM')
+  uni.$off('ad-reward-success') // 清理广告奖励监听
 })
+// 商业闭环：右上角直接播放广告视频赚币
+const handleAdReward = () => {
+  uni.vibrateShort()
+  adManager.showRewardedVideo()
+}
+
 
 </script>
 
@@ -479,5 +496,11 @@ page {
   0% { transform: scale(1); opacity: 0.8; }
   50% { transform: scale(1.3); opacity: 0; }
   100% { transform: scale(1); opacity: 0; }
+}
+
+/* 右上角能源补给入口的差异化样式 */
+.ad-action {
+  border-color: rgba(0, 229, 255, 0.3) !important;
+  background: rgba(0, 229, 255, 0.08) !important;
 }
 </style>

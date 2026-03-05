@@ -70,12 +70,27 @@
         <text class="close-icon">×</text>
       </view>
     </view>
+
+    <!-- 赛博弹窗注入 -->
+    <CyberDialog 
+      :show="dialogState.show"
+      :title="dialogState.title"
+      :content="dialogState.content"
+      :confirmText="dialogState.confirmText"
+      :cancelText="dialogState.cancelText"
+      :showCancel="dialogState.showCancel"
+      :color="dialogState.color"
+      @confirm="handleDialogConfirm"
+      @cancel="handleDialogCancel"
+    />
   </view>
 </template>
 
 <script setup>
 import { ref, defineProps, defineEmits, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
+import { getRealTime } from '@/utils/timeGuard.js'
+import CyberDialog from '@/components/common/CyberDialog.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -93,8 +108,14 @@ const adReviveCountToday = ref(0)
 const lastAdReviveTime = ref(uni.getStorageSync('neuro_ad_revive_time') || 0)
 
 onMounted(() => {
-  const lastStr = lastAdReviveTime.value ? new Date(lastAdReviveTime.value).toDateString() : ''
-  if (lastStr === new Date().toDateString()) {
+  // 统一 YYYY-MM-DD 格式进行日期比较
+  const fmtDate = (ts) => {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  }
+  const lastStr = lastAdReviveTime.value ? fmtDate(lastAdReviveTime.value) : ''
+  const todayStr = fmtDate(getRealTime())
+  if (lastStr === todayStr) {
     adReviveCountToday.value = Number(uni.getStorageSync('neuro_ad_revive_cnt')) || 0
   } else {
     adReviveCountToday.value = 0
@@ -102,15 +123,57 @@ onMounted(() => {
   }
 })
 
+// --- 赛博弹窗管理 ---
+const dialogState = ref({
+  show: false,
+  title: '',
+  content: '',
+  confirmText: '',
+  cancelText: '',
+  showCancel: false,
+  color: '#00e5ff',
+  onConfirm: null,
+  onCancel: null
+})
+
+const showDialog = (options) => {
+  dialogState.value = {
+    show: true,
+    title: options.title || '系统提示',
+    content: options.content || '',
+    confirmText: options.confirmText || '确认',
+    cancelText: options.cancelText || '取消',
+    showCancel: options.showCancel || false,
+    color: options.color || '#00e5ff',
+    onConfirm: options.success || null,
+    onCancel: options.cancel || null
+  }
+}
+
+const handleDialogConfirm = () => {
+  if (dialogState.value.onConfirm) {
+    dialogState.value.onConfirm({ confirm: true, cancel: false })
+  }
+  dialogState.value.show = false
+}
+
+const handleDialogCancel = () => {
+  if (dialogState.value.onCancel) {
+    dialogState.value.onCancel({ confirm: false, cancel: true })
+  }
+  dialogState.value.show = false
+}
+
 const preventTouchMove = () => {}
 
 const handleGiveUp = () => {
-    uni.showModal({
+    showDialog({
         title: '最后的警告',
         content: '放弃除颤将导致您这段时间建立的所有神经突触链接彻底断裂 (进度清零)，确认放弃吗？',
         confirmText: '含泪重开',
         cancelText: '我再想想',
-        confirmColor: '#ef4444',
+        showCancel: true,
+        color: '#ef4444',
         success: (res) => {
             if (res.confirm) {
                 emit('giveUp')
@@ -148,12 +211,18 @@ const handleRevive = (type) => {
         }, 1500)
     } else if (type === 'coin') {
         if (userStore.neuroCoins < 600) {
-            uni.showModal({
-                title: '神经币不足',
-                content: '您的算力资产不足以支付本次紧急除颤。是否前往黑市充能？',
-                confirmText: '立即前往',
+            showDialog({
+                title: '资产枯竭限制',
+                content: '您的神经币余额不足以支付本次紧急除颤。是否立即前往极客集市进行能源补充？',
+                confirmText: '立刻前往',
+                cancelText: '返回',
+                showCancel: true,
+                color: '#facc15',
                 success: (res) => {
-                    if (res.confirm) uni.navigateTo({ url: '/pages/store/index' })
+                    if (res.confirm) {
+                        emit('close')
+                        uni.navigateTo({ url: '/pages/store/index' })
+                    }
                 }
             })
             return

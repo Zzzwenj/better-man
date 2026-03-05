@@ -30,10 +30,10 @@
       </view>
     </view>
 
-    <!-- 神经币快捷入口 (嵌入头像栏右侧) -->
-    <view class="wallet-chip flex items-center" @click.stop="goStore" hover-class="wallet-hover">
+    <!-- 神经币展示栏 (取消跳转集市，纯展示) -->
+    <view class="wallet-chip flex items-center">
       <NeuroCoinIcon :size="18" />
-      <text class="wallet-val ml-1">{{ formattedCoins }}</text>
+      <text class="wallet-val ml-2">{{ formattedCoins }}</text>
     </view>
   </view>
 
@@ -111,13 +111,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['updateProfile', 'modalStateChange'])
 
-const goStore = () => {
-    uni.vibrateShort()
-    // 延迟 50ms 跳转，确保视觉反馈（点击态）与物理反馈（震动）优先处理，消除感官卡顿
-    setTimeout(() => {
-        uni.navigateTo({ url: '/pages/store/index' })
-    }, 50)
-}
 
 const showModal = ref(false)
 const editName = ref('')
@@ -300,7 +293,7 @@ const saveProfile = () => {
   padding: 4px 10px;
   transition: all 0.2s;
 }
-.wallet-hover { background: rgba(139, 92, 246, 0.15); transform: scale(0.95); }
+
 .wallet-val { font-size: 12px; color: #e4e4e7; font-family: monospace; font-weight: 900; white-space: nowrap; }
 .wallet-arrow { font-size: 14px; color: #71717a; font-weight: bold; }
 

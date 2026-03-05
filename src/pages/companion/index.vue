@@ -15,11 +15,11 @@
           <text class="nav-subtitle block mt-1 text-center">专业级认知行为辅导</text>
         </view>
 
-        <!-- 右侧对等空位放置在线状态 -->
-        <view style="width: 80px; display: flex; justify-content: flex-end; padding-right: 12px;">
+        <!-- 右侧对等空位放置在线/配额状态 -->
+        <view style="width: auto; min-width: 80px; display: flex; justify-content: flex-end; padding-right: 12px;">
           <view class="quota-badge flex items-center">
             <view class="status-dot mr-1"></view>
-            <text class="quota-text">在线</text>
+            <text class="quota-text">{{ quotaDisplay }}</text>
           </view>
         </view>
       </view>
@@ -80,14 +80,27 @@
         </view>
       </view>
     </view>
+    <!-- 赛博弹窗注入 -->
+    <CyberDialog 
+      :show="dialogState.show"
+      :title="dialogState.title"
+      :content="dialogState.content"
+      :confirmText="dialogState.confirmText"
+      :cancelText="dialogState.cancelText"
+      :showCancel="dialogState.showCancel"
+      :color="dialogState.color"
+      @confirm="handleDialogConfirm"
+      @cancel="handleDialogCancel"
+    />
   </view>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
+import CyberDialog from '../../components/common/CyberDialog.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -121,6 +134,62 @@ const loadProfile = () => {
   }
 }
 
+// 动态配额展示
+const quotaDisplay = computed(() => {
+    if (userStore.isVipActive) {
+        // VIP 每日限量 50
+        const todayReset = uni.getStorageSync('neuro_vip_ai_last_reset') || ''
+        const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') // 简易校准获取今天
+        if (todayReset !== today) {
+            return '今日算力: 50/50'
+        }
+        return `今日算力: ${userStore.vipAiQuota}/50`
+    } else {
+        return `试用节点: ${userStore.freeAiQuota}/5`
+    }
+})
+
+// --- 赛博弹窗管理 ---
+const dialogState = ref({
+  show: false,
+  title: '',
+  content: '',
+  confirmText: '',
+  cancelText: '',
+  showCancel: false,
+  color: '#8b5cf6',
+  onConfirm: null,
+  onCancel: null
+})
+
+const showDialog = (options) => {
+  dialogState.value = {
+    show: true,
+    title: options.title || '系统提示',
+    content: options.content || '',
+    confirmText: options.confirmText || '确认',
+    cancelText: options.cancelText || '取消',
+    showCancel: options.showCancel || false,
+    color: options.color || '#8b5cf6',
+    onConfirm: options.success || null,
+    onCancel: options.cancel || null
+  }
+}
+
+const handleDialogConfirm = () => {
+  if (dialogState.value.onConfirm) {
+    dialogState.value.onConfirm({ confirm: true, cancel: false })
+  }
+  dialogState.value.show = false
+}
+
+const handleDialogCancel = () => {
+  if (dialogState.value.onCancel) {
+    dialogState.value.onCancel({ confirm: false, cancel: true })
+  }
+  dialogState.value.show = false
+}
+
 onMounted(() => {
   // --- 拦截鉴权: 检查如果未登录跳登录页 ---
   const token = uni.getStorageSync('uni_id_token')
@@ -151,19 +220,32 @@ const goBack = () => {
 const sendMessage = async () => {
   if (!inputValue.value.trim() || isLoading.value) return
   
-  // 商业闭环拦截：大模型极其昂贵，仅向黑金会员开放
-  if (!userStore.isVipActive) {
-      uni.showModal({
-          title: '算力节点受限',
-          content: 'REWIRE AI 专业级自律辅导大模型仅向「黑金档案」开放。\n升级黑金获取无限次专属抗争辅导。',
-          confirmText: '立刻升级',
-          cancelText: '暂时不了',
-          success: (res) => {
-              if (res.confirm) {
-                  uni.switchTab({ url: '/pages/profile/index' })
+  // 算力配额校验 (包含 VIP 50次 与 免配 5次)
+  const quotaCheck = userStore.checkAndConsumeAiQuota()
+  if (!quotaCheck.allowed) {
+      if (quotaCheck.reason === 'limit_reached') {
+          showDialog({
+              title: '算力节点过载',
+              content: '黑金专属心理疏导每日算力上限 (50次) 已耗尽，大模型需要冷却重置。\n\n请明天再来继续您的神经重塑之旅。',
+              confirmText: '明白',
+              showCancel: false,
+              color: '#f59e0b'
+          })
+      } else {
+          showDialog({
+              title: '试用节点枯竭',
+              content: '你的 5 次 REWIRE AI 免费心理疏导试用额度已耗尽。\n\n大模型算力被严格管控，升级「黑金档案」即可解锁每日 50 次充沛算力。',
+              confirmText: '立刻升级',
+              cancelText: '暂时不了',
+              showCancel: true,
+              color: '#8b5cf6',
+              success: (res) => {
+                  if (res.confirm) {
+                      uni.switchTab({ url: '/pages/profile/index' })
+                  }
               }
-          }
-      })
+          })
+      }
       return
   }
   

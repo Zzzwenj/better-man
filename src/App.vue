@@ -57,23 +57,30 @@ export default {
 
     // 每日打卡热力图计算 —— 使用校准后的服务端时间，防本地时间篡改
     const lastCheckin = uni.getStorageSync('last_checkin_date')
-    const todayStr = getRealDateString()
+    const todayStr = getRealDateString() // YYYY-MM-DD 格式
 
+    // ✅ 去重：同一天多次 onShow 不重复写入
     if (lastCheckin !== todayStr) {
         let history = uni.getStorageSync('neuro_checkins') || ''
 
         if (lastCheckin) {
-           const diffDays = Math.floor((new Date(todayStr).getTime() - new Date(lastCheckin).getTime()) / (1000 * 60 * 60 * 24))
-           if (diffDays > 1) {
-               history += '0'.repeat(diffDays - 1)
+           // 计算跸天差（统一用 YYYY-MM-DD 进行解析，避免 toDateString 在 Android 上 NaN）
+           const lastMs = new Date(lastCheckin + 'T00:00:00').getTime()
+           const todayMs = new Date(todayStr + 'T00:00:00').getTime()
+           if (!isNaN(lastMs) && !isNaN(todayMs)) {
+               const diffDays = Math.floor((todayMs - lastMs) / (1000 * 60 * 60 * 24))
+               if (diffDays > 1) {
+                   history += '0'.repeat(diffDays - 1)
+               }
            }
         }
-        history += '1'
+        // 此处不再追加 "1"，由 DailyAuditModal 的 onSafe 或拦截成功时写入
+        // 仅补零，避免与 DailyAuditModal 重复写入
 
         if (history.length > 100) history = history.slice(-100)
 
         uni.setStorageSync('neuro_checkins', history)
-        uni.setStorageSync('last_checkin_date', todayStr)
+        // 不在此处更新 last_checkin_date，留给 DailyAuditModal 来写入
     }
   },
   onHide: function () {

@@ -65,7 +65,7 @@ onLoad(() => {
   }
 })
 
-// 【核心暗门逻辑】 
+// 【核心隐私逻辑】 
 // 特工代码读取: 若开启隐私锁，则核对用户自设的 PIN 码，否则使用初始密码或直接放行。
 const STEALTH_CODE = ref(userStore.privacyLock.pin || '8972')
 

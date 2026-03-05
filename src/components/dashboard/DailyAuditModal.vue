@@ -42,6 +42,7 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { useUserStore } from '@/store/user.js'
+import { getRealDateString } from '@/utils/timeGuard.js'
 
 const props = defineProps({
   show: Boolean
@@ -61,9 +62,8 @@ const preventTouchMove = () => {}
 const onSafe = () => {
     uni.vibrateShort()
     
-    // 更新最后打卡日期为今天（与 Dashboard 读取的 key 对齐）
-    const today = new Date().toDateString()
-    uni.setStorageSync('last_checkin_date', today)
+    // 更新最后打卡日期为今天（统一 YYYY-MM-DD 格式）
+    uni.setStorageSync('last_checkin_date', getRealDateString())
     
     // ✅ 写入每日成功打卡记录 "1"，供 Journey 热力图读取
     let checkins = uni.getStorageSync('neuro_checkins') || ''

@@ -8,7 +8,8 @@
             hover-class="item-hover"
             @click="handleItemClick(item)">
         <view class="item-left flex items-center">
-          <text class="item-icon">{{ item.icon }}</text>
+          <component :is="item.icon" v-if="item.iconType === 'component'" />
+          <text v-else class="item-icon">{{ item.icon }}</text>
           <text class="item-label ml-3">{{ item.label }}</text>
         </view>
         

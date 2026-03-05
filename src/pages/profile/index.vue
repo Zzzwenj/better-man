@@ -86,7 +86,7 @@
       @cancel="showPinModal = false"
     >
        <view class="flex-col w-full mt-4">
-          <text class="text-xs text-gray-400 mb-2">请输入由数字组成的 4-6 位暗门密码:</text>
+          <text class="text-xs text-gray-400 mb-2">请输入由数字组成的 4-6 位隐私密码:</text>
           <input 
              class="styled-input text-center font-mono text-xl text-primary" 
              type="number" 
@@ -119,6 +119,7 @@ import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
+import NeuroCoinIcon from '../../components/common/NeuroCoinIcon.vue'
 import HonorCarousel from '../../components/profile/HonorCarousel.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
@@ -217,6 +218,7 @@ const integratedList = computed(() => {
     { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
     { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
     { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
+    { id: 'store', icon: NeuroCoinIcon, iconType: 'component', label: '极客集市：装备与消耗品', type: 'arrow', url: '/pages/store/index' },
     { id: 'privacy', icon: '🔒', label: '量子伪装计算器锁 (黑金专属)', type: 'switch', value: userStore.privacyLock.enabled }
   ]
 })
@@ -441,7 +443,7 @@ const handleSettingClick = (originItem) => {
              // 阻断：非 VIP 拦截弹窗
              showDialog({
                  title: '🚨 权限缺失',
-                 content: '量子伪装锁属于高阶黑金特权，可将系统重塑为计算器并支持自定 6 位暗门密码。\n\n是否立即注入黑金算力？',
+                 content: '量子伪装锁属于高阶黑金特权，可将系统重塑为计算器并支持自定 6 位隐私密码。\n\n是否立即注入黑金算力？',
                  confirmText: '连接黑金特权',
                  cancelText: '放弃权限',
                  showCancel: true,
@@ -514,7 +516,7 @@ const confirmPinChange = () => {
    
    userStore.togglePrivacyLock(true, tempPin.value)
    showPinModal.value = false
-   uni.showToast({ title: '暗门重构完成', icon: 'success' })
+   uni.showToast({ title: '隐私重构完成', icon: 'success' })
 }
 
 // 发起云端流放销毁

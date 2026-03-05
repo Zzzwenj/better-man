@@ -47,10 +47,15 @@ export function getRealTime() {
 
 /**
  * 获取校准后的日期字符串（替代 new Date().toDateString()）
+ * 统一返回 YYYY-MM-DD 格式，避免 Android WebView 下 toDateString 解析 NaN
  * @returns {string}
  */
 export function getRealDateString() {
-    return new Date(getRealTime()).toDateString()
+    const d = new Date(getRealTime())
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
 }
 
 /**

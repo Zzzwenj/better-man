@@ -9,10 +9,13 @@
               </view>
           </view>
           
-          <text class="premium-desc block mt-2" v-if="!userStore.isVipActive">
-            部署最高算力节点。每月<text style="color: #00e5ff; font-weight: bold;">额外领取 1500 神经储备金</text>，
-            解锁绝版黑金冠冕标识，激活专属战区主理人通道，以及每月最高 1500 神经币战略储备金！
-          </text>
+          <view class="premium-desc mt-2" v-if="!userStore.isVipActive">
+            <view class="desc-item"><text class="bullet">▪</text> 部署最高算力节点，解除系统所有限制</view>
+            <view class="desc-item"><text class="bullet">▪</text> <text class="highlight">每月领取 1500 神经储备金</text> (立即发放)</view>
+            <view class="desc-item"><text class="bullet">▪</text> 解锁绝版黑金冠冕标识及战区主理人通道</view>
+            <view class="desc-item"><text class="bullet">▪</text> 每日专属算力，REWIRE AI 心理干预 (50次/天)</view>
+            <view class="desc-item"><text class="bullet">▪</text> 解锁本地「量子伪装计算器」隐私防卫</view>
+          </view>
           
           <view class="contract-progress mt-4 flex-col" v-else>
              <text class="timer-text">黑金链路维持天数: {{ userStore.vipDaysLeft }} 天</text>
@@ -111,7 +114,10 @@ const handleUpgradeClick = async () => {
 .card-hover { transform: translateY(2px); text-shadow: 0 0 5px var(--theme-shadow-primary); }
 .premium-title { font-size: 16px; font-weight: 900; color: var(--theme-primary, #00e5ff); }
 .price-chip { background: var(--theme-primary, #00e5ff); color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
-.premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
+.premium-desc { font-size: 11px; color: #a1a1aa; line-height: 1.6; }
+.desc-item { margin-bottom: 4px; }
+.bullet { color: #facc15; margin-right: 6px; font-size: 12px; }
+.highlight { color: #00e5ff; font-weight: bold; text-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
 .premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
 .unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
 .arrow { color: var(--theme-primary, #00e5ff); font-weight: bold; font-size: 18px;}

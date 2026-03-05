@@ -77,6 +77,7 @@ class PaymentManager {
             // #endif
 
             // #ifndef APP-PLUS
+            // H5/小程序环境不支持原生支付
             reject(new Error('当前环境不支持呼出原生支付系统'));
             // #endif
         });

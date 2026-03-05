@@ -26,7 +26,7 @@ export const useUserStore = defineStore('user', {
             // --- 隐私深网锁 (计算器伪装) ---
             privacyLock: uni.getStorageSync('neuro_privacy_lock') || {
                 enabled: false,
-                pin: '8972' // 初始暗门密码
+                pin: '8972' // 初始隐私密码
             },
 
             // --- 紧急除颤 (复活) 相关 ---
@@ -61,7 +61,14 @@ export const useUserStore = defineStore('user', {
 
             // --- 信号拦截(广告)统计 ---
             lastAdTime: uni.getStorageSync('neuro_last_ad_time') || 0,
-            dailyAdCount: Number(uni.getStorageSync('neuro_daily_ad_count')) || 0
+            dailyAdCount: Number(uni.getStorageSync('neuro_daily_ad_count')) || 0,
+
+            // --- REWIRE AI 对话算力配额 ---
+            // 免费试用额度：永久赠送 5 次体验
+            freeAiQuota: uni.getStorageSync('neuro_free_ai_quota') !== '' ? Number(uni.getStorageSync('neuro_free_ai_quota')) : 5,
+            // VIP 每日额度上限 (50次)
+            vipAiQuota: uni.getStorageSync('neuro_vip_ai_quota') !== '' ? Number(uni.getStorageSync('neuro_vip_ai_quota')) : 50,
+            vipAiLastReset: uni.getStorageSync('neuro_vip_ai_last_reset') || ''
         }
     },
     getters: {
@@ -124,7 +131,7 @@ export const useUserStore = defineStore('user', {
                         this.equipItem(item.id, true)
                     }
                     uni.setStorageSync('neuro_owned_items', this.ownedItems)
-                    uni.showToast({ title: '实体部署成功，权限已授权', icon: 'none' })
+                    uni.showToast({ title: '数据部署成功，权限已授权', icon: 'none' })
                 }
 
                 // 每次发生交易或者资产变化，防抖式向云端静默结印
@@ -256,13 +263,46 @@ export const useUserStore = defineStore('user', {
             return true
         },
 
+        // --- REWIRE AI 算力扣费核心 ---
+        checkAndConsumeAiQuota() {
+            const isVip = checkVipActive(this.vipExpireTime)
+            if (isVip) {
+                // VIP 每日限量 50 次
+                const today = getRealDateString()
+                if (this.vipAiLastReset !== today) {
+                    this.vipAiQuota = 50 // 每日重置
+                    this.vipAiLastReset = today
+                    uni.setStorageSync('neuro_vip_ai_last_reset', today)
+                }
+
+                if (this.vipAiQuota > 0) {
+                    this.vipAiQuota--
+                    uni.setStorageSync('neuro_vip_ai_quota', this.vipAiQuota)
+                    return { allowed: true, quotaType: 'vip', remaining: this.vipAiQuota }
+                } else {
+                    return { allowed: false, reason: 'limit_reached' }
+                }
+            } else {
+                // 非 VIP 扣除试用额度
+                if (this.freeAiQuota > 0) {
+                    this.freeAiQuota--
+                    uni.setStorageSync('neuro_free_ai_quota', this.freeAiQuota)
+                    return { allowed: true, quotaType: 'free', remaining: this.freeAiQuota }
+                } else {
+                    return { allowed: false, reason: 'no_quota' }
+                }
+            }
+        },
+
         // 每天登录时调用，检查是否发放黑金会员的每日 50 币特权
         claimDailyVipGift() {
             if (!this.isVipActive) return false
 
-            // 使用校准后的服务端时间防刷
-            const nowStr = new Date(getRealTime()).toDateString()
-            const lastStr = this.lastVipGiftTime ? new Date(this.lastVipGiftTime).toDateString() : ''
+            // 使用校准后的服务端时间防刷（统一 YYYY-MM-DD 格式）
+            const d1 = new Date(getRealTime())
+            const nowStr = `${d1.getFullYear()}-${String(d1.getMonth() + 1).padStart(2, '0')}-${String(d1.getDate()).padStart(2, '0')}`
+            const d2 = this.lastVipGiftTime ? new Date(this.lastVipGiftTime) : null
+            const lastStr = d2 ? `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}` : ''
 
             if (nowStr !== lastStr) {
                 this.lastVipGiftTime = getRealTime()
@@ -326,10 +366,11 @@ export const useUserStore = defineStore('user', {
 
         // 处理广告奖励发放
         earnAdReward() {
-            // 使用校准时间防止改系统日期刷广告
+            // 使用校准时间防止改系统日期刷广告（统一 YYYY-MM-DD 格式）
             const now = new Date(getRealTime())
-            const todayStr = now.toDateString()
-            const lastDate = new Date(this.lastAdTime).toDateString()
+            const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+            const d3 = new Date(this.lastAdTime)
+            const lastDate = `${d3.getFullYear()}-${String(d3.getMonth() + 1).padStart(2, '0')}-${String(d3.getDate()).padStart(2, '0')}`
 
             // 如果是新的一天，重置计数器
             if (todayStr !== lastDate) {

@@ -339,11 +339,11 @@ page {
 .axis-text { font-size: 9px; color: #71717a; font-family: monospace; }
 .heatmap-main { align-items: stretch; }
 .y-axis { width: 18px; flex-shrink: 0; margin-right: 4px; }
-.y-cell { height: 18px; margin-bottom: 3px; display: flex; align-items: center; }
+.y-cell { aspect-ratio: 1; min-height: 10px; margin-bottom: 3px; display: flex; align-items: center; }
 .y-cell:last-child { margin-bottom: 0; }
 .heatmap-grid { gap: 3px; align-items: stretch; }
-.week-col { gap: 3px; min-width: 0; }
-.heat-cell { width: 100%; height: 18px; border-radius: 3px; }
+.week-col { gap: 3px; min-width: 0; flex: 1; }
+.heat-cell { width: 100%; aspect-ratio: 1; min-width: 10px; min-height: 10px; border-radius: 3px; }
 .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 .lvl-0 { background-color: #18181b; border: 1px solid #27272a; }
 .lvl-1 { background-color: var(--theme-bg-highlight); }
