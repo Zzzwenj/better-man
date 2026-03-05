@@ -64,6 +64,13 @@
             }
         },
         {
+            "path": "pages/onboarding/compliance",
+            "style": {
+                "navigationBarTitleText": "合规协议签署",
+                "navigationStyle": "custom"
+            }
+        },
+        {
             "path": "pages/onboarding/index",
             "style": {
                 "navigationBarTitleText": "基线评估",

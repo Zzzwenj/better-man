@@ -67,6 +67,8 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { onHide, onShow } from '@dcloudio/uni-app'
+import { getRealTime, getRealDateString } from '@/utils/timeGuard.js'
 import MotivationalQuote from '../../components/dashboard/MotivationalQuote.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import EnergyCore from '../../components/dashboard/EnergyCore.vue'
@@ -103,29 +105,11 @@ onMounted(() => {
   }
 
   let startTimestamp = uni.getStorageSync('neuro_start_date')
-  const today = new Date().toDateString()
+  const today = getRealDateString() // 使用校准后的服务端时间
   const lastCheckin = uni.getStorageSync('last_checkin_date')
-  
-  // 用于对抗本地时间篡改的时差偏移量
-  let timeOffset = 0 
-  
-  const initTimer = async () => {
-      // 尝试拉取服务端时间进行校准
-      try {
-          const res = await uniCloud.callFunction({
-              name: 'user-center',
-              data: { action: 'getServerTime', token }
-          })
-          if (res.result && res.result.serverTime) {
-              timeOffset = res.result.serverTime - Date.now()
-              console.log('[DR_OS] 服务端时间已对准，Offset:', timeOffset)
-          }
-      } catch (e) {
-          console.warn('[DR_OS] 时间同步信道拥堵，降级使用终端本地时钟')
-      }
 
-      const getRealTime = () => Date.now() + timeOffset
-
+  // 【模块E重构】移除内部重复的 getServerTime 调用，统一复用全局 timeGuard
+  const initTimer = () => {
       if (!startTimestamp) {
         startTimestamp = getRealTime() - (5 * 24 * 60 * 60 * 1000)
         uni.setStorageSync('neuro_start_date', startTimestamp)
@@ -137,36 +121,36 @@ onMounted(() => {
         }
       }
       
-      const updateTimer = () => {
-        const diffMs = getRealTime() - startTimestamp
-        const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
-        hoursClean.value = totalHours
-        
-        hoursSaved.value = Math.floor((totalHours / 24) * 2)
-        
-        const days = totalHours / 24
-        let rate = 10 + (days * 1.5)
-        dopamineIndex.value = Math.min(Math.floor(rate), 100)
-        
-        if (hoursClean.value < 72) {
-          currentPhase.value = 'Phase I: 生理挣脱'
-        } else if (hoursClean.value < 336) {
-          currentPhase.value = 'Phase II: 额叶觉醒'
-        } else if (hoursClean.value < 1080) {
-          currentPhase.value = 'Phase III: 边缘重塑'
-        } else {
-          currentPhase.value = 'Phase IV: 神经霸体'
-        }
-      }
-      
-      updateTimer()
+      updateTimer() // 立即执行一次
       timeInterval = setInterval(updateTimer, 60000)
+  }
+
+  // 抽离为顶层函数，便于 onShow 复用
+  const updateTimer = () => {
+    const diffMs = getRealTime() - (uni.getStorageSync('neuro_start_date') || startTimestamp)
+    const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+    hoursClean.value = totalHours
+    
+    hoursSaved.value = Math.floor((totalHours / 24) * 2)
+    
+    const days = totalHours / 24
+    let rate = 10 + (days * 1.5)
+    dopamineIndex.value = Math.min(Math.floor(rate), 100)
+    
+    if (hoursClean.value < 72) {
+      currentPhase.value = 'Phase I: 生理挣脱'
+    } else if (hoursClean.value < 336) {
+      currentPhase.value = 'Phase II: 额叶觉醒'
+    } else if (hoursClean.value < 1080) {
+      currentPhase.value = 'Phase III: 边缘重塑'
+    } else {
+      currentPhase.value = 'Phase IV: 神经霸体'
+    }
   }
 
   initTimer()
 
-  
-  // 建立全域监听：物理摇晃或悬浮球双击都会触发
+  // 接收悬浮球紧急干预指令
   uni.$on('TRIGGER_PANIC_SYSTEM', () => {
     if (!isPanicMode.value) {
       triggerPanic()
@@ -174,10 +158,36 @@ onMounted(() => {
   })
 })
 
-onUnmounted(() => {
-  if (panicInterval) clearInterval(panicInterval)
-  if (timeInterval) clearInterval(timeInterval)
-  uni.$off('TRIGGER_PANIC_SYSTEM')
+// 【模块E】TabBar 页面切换走 onHide 而非 onUnmounted，需在此暂停定时器防泄漏
+onHide(() => {
+  if (timeInterval) {
+    clearInterval(timeInterval)
+    timeInterval = null
+  }
+})
+
+// 切回主控页时恢复定时器并刷新数据
+onShow(() => {
+  if (!timeInterval) {
+    const startTs = uni.getStorageSync('neuro_start_date')
+    if (startTs) {
+      // 立即刷新一次显示
+      const diffMs = getRealTime() - startTs
+      const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+      hoursClean.value = totalHours
+      hoursSaved.value = Math.floor((totalHours / 24) * 2)
+    }
+    timeInterval = setInterval(() => {
+      const ts = uni.getStorageSync('neuro_start_date')
+      if (!ts) return
+      const diffMs = getRealTime() - ts
+      const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
+      hoursClean.value = totalHours
+      hoursSaved.value = Math.floor((totalHours / 24) * 2)
+      const days = totalHours / 24
+      dopamineIndex.value = Math.min(Math.floor(10 + days * 1.5), 100)
+    }, 60000)
+  }
 })
 
 const isPanicMode = ref(false)
@@ -293,9 +303,11 @@ const doAction = () => {
   }
 }
 
+// 兜底清理：页面真正被销毁时释放所有资源
 onUnmounted(() => {
   if (panicInterval) clearInterval(panicInterval)
   if (timeInterval) clearInterval(timeInterval)
+  uni.$off('TRIGGER_PANIC_SYSTEM')
 })
 
 </script>

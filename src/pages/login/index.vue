@@ -1,7 +1,5 @@
 <template>
   <view class="login-container flex-col" :style="themeStore.themeCssVars">
-    <!-- 隐私合规拦截墙 -->
-    <PrivacyShield />
     
     <!-- 1. 顶部状态栏 - 对齐主控页风格 -->
     <view class="login-header flex justify-between items-center">
@@ -83,7 +81,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useThemeStore } from '@/store/theme.js'
-import PrivacyShield from '@/components/common/PrivacyShield.vue'
 
 const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'

@@ -8,6 +8,8 @@
 import { useChatStore } from './store/chat.js'
 import { useThemeStore } from './store/theme.js'
 import { useUserStore } from './store/user.js'
+import { initTimeGuard, getRealTime, getRealDateString } from './utils/timeGuard.js'
+import { flushPendingStorage } from './utils/storageDebounce.js'
 
 export default {
   setup() {
@@ -26,6 +28,12 @@ export default {
             chatStore.pushMessage(res.data.payload)
         }
     })
+    
+    // 【安全加固】启动时初始化时间防篡改校准
+    const token = uni.getStorageSync('uni_id_token')
+    if (token) {
+        initTimeGuard(token)
+    }
     
     // 全局凭证静默校验守卫 (冷启动路由分发)
     this.checkAutoLogin()
@@ -47,9 +55,9 @@ export default {
         }
     }
 
-    // 每日打卡热力图计算（统一 key：last_checkin_date，与 Dashboard/DailyAuditModal 对齐）
+    // 每日打卡热力图计算 —— 使用校准后的服务端时间，防本地时间篡改
     const lastCheckin = uni.getStorageSync('last_checkin_date')
-    const todayStr = new Date().toDateString()
+    const todayStr = getRealDateString()
 
     if (lastCheckin !== todayStr) {
         let history = uni.getStorageSync('neuro_checkins') || ''
@@ -70,29 +78,73 @@ export default {
   },
   onHide: function () {
     console.log('App Hide')
+    // 【性能优化】App 退到后台时，强制刷新所有待写入的防抖缓存
+    flushPendingStorage()
   },
   methods: {
     checkAutoLogin() {
         // App端 onLaunch 时执行的路由跳转，能避免白屏或反复输入
+        
+        // 【合规补丁】：无论是否持有 Token，只要没有明确的隐私协议同意记录，一律拦截进黑屋
+        const isPrivacyAgreed = uni.getStorageSync('privacy_agreed')
+        if (!isPrivacyAgreed) {
+           console.warn('[合规拦截] 未同意隐私协议，强制调度至合规阻断墙')
+           uni.reLaunch({ url: '/pages/onboarding/compliance' })
+           return
+        }
+
         const token = uni.getStorageSync('uni_id_token')
         const tokenExpired = uni.getStorageSync('uni_id_token_expired')
-        const now = Date.now()
+        const now = getRealTime() // 使用校准时间替代裸 Date.now()
         
-        // 判断 Token 是否有效 (简单的本地时间戳校验)
+        // 判断 Token 是否有效 (本地时间戳初筛)
         const isTokenValid = token && tokenExpired && (now < tokenExpired)
         
         if (isTokenValid) {
-            // 已接入，再检查是否有基线问卷档案
-            const baseline = uni.getStorageSync('neuro_baseline')
-            if (baseline) {
-                // 两者齐全，直接进入控制台中枢
-                uni.switchTab({ url: '/pages/dashboard/index' })
-            } else {
-                // 有账号，没问卷（如新手机刚登入，或者上面那步异步拉取慢了一拍）
-                // 稳妥起见，这里也可以加个异步去 user-center 取一次。
-                // 为了启动快，如果在 login 或者之前没拉到，就让用户重新走一遍也没事，或者用云端 fallback
-                uni.redirectTo({ url: '/pages/onboarding/index' })
+            // 【模块D：Token 云端验活】本地初筛通过后，异步向云端确认账号状态
+            const verifyAndNavigate = async () => {
+                try {
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('验活超时')), 5000)
+                    )
+                    const cloudPromise = uniCloud.callFunction({
+                        name: 'user-center',
+                        data: { action: 'getUserProfile', token }
+                    })
+                    const profileRes = await Promise.race([cloudPromise, timeoutPromise])
+                    
+                    if (profileRes.result.code === 401 || profileRes.result.code === 404) {
+                        // 云端判定无效：账号被封/已彻底销毁/密码已改
+                        console.warn('[Auth] 云端验活失败，强制登出')
+                        uni.removeStorageSync('uni_id_token')
+                        uni.removeStorageSync('uni_id_token_expired')
+                        uni.reLaunch({ url: '/pages/login/index' })
+                        return
+                    }
+                    
+                    if (profileRes.result.data && profileRes.result.data.status === 'pending_delete') {
+                        // 处于7天注销反悔期，依然放行进入主应用，但在进入后会有顶层弹窗或拦截引导恢复
+                        uni.setStorageSync('user_account_status', 'pending_delete')
+                        const deleteAt = profileRes.result.data.delete_at
+                        if (deleteAt) uni.setStorageSync('account_delete_at', deleteAt)
+                    } else {
+                        uni.removeStorageSync('user_account_status')
+                        uni.removeStorageSync('account_delete_at')
+                    }
+                } catch (e) {
+                    // 超时或网络异常 → 放行（离线容错）
+                    console.warn('[Auth] 云端验活超时/失败，降级放行:', e.message || e)
+                }
+                
+                // 验活通过或已降级，正常路由
+                const baseline = uni.getStorageSync('neuro_baseline')
+                if (baseline) {
+                    uni.switchTab({ url: '/pages/dashboard/index' })
+                } else {
+                    uni.redirectTo({ url: '/pages/onboarding/index' })
+                }
             }
+            verifyAndNavigate()
         } else {
             // 没接入，或者 token 过期了，清理缓存并打回登录页
             if(token) {

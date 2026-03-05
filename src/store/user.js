@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
+import { getRealTime } from '@/utils/timeGuard.js'
+import { debouncedSetStorage } from '@/utils/storageDebounce.js'
 
 // 判定黑金通行证 (VIP) 是否生效
+// 使用校准后的服务端时间判定 VIP 状态，防本地时间篡改
 const checkVipActive = (expireTimestamp) => {
     if (!expireTimestamp) return false
-    return Date.now() < expireTimestamp
+    return getRealTime() < expireTimestamp
 }
 
 export const useUserStore = defineStore('user', {
@@ -83,7 +86,7 @@ export const useUserStore = defineStore('user', {
         // 距离 VIP 到期还有多少天 (保留 1 位小数)
         vipDaysLeft: (state) => {
             if (!state.vipExpireTime) return 0
-            const now = Date.now()
+            const now = getRealTime() // 校准时间
             if (now >= state.vipExpireTime) return 0
 
             const diffDays = (state.vipExpireTime - now) / (1000 * 60 * 60 * 24)
@@ -136,7 +139,7 @@ export const useUserStore = defineStore('user', {
                             this.equipped.empActive = true
                             uni.showToast({ title: `恭喜抽中 ${wonItem.name}`, icon: 'none' })
                         } else {
-                            const now = Date.now()
+                            const now = getRealTime()
                             const durationMs = wonItem.duration * 24 * 60 * 60 * 1000
                             const exp = this.ownedItems[wonItem.id]
 
@@ -155,7 +158,7 @@ export const useUserStore = defineStore('user', {
                 }
                 // 彩蛋等特效 / 期限装扮类 (30 天为例)
                 else {
-                    const now = Date.now()
+                    const now = getRealTime()
                     // 默认时效，如果是从商城来，通常 item.durationDays 会有值，没有则默认 30 天
                     const days = item.durationDays || 30
                     const durationMs = days * 24 * 60 * 60 * 1000
@@ -184,7 +187,7 @@ export const useUserStore = defineStore('user', {
         // 穿戴/卸下 装备
         equipItem(itemId, silent = false) {
             const exp = this.ownedItems[itemId]
-            if (!exp || exp < Date.now()) {
+            if (!exp || exp < getRealTime()) {
                 if (!silent) uni.showToast({ title: '该数据资产已过期或未获取', icon: 'none' })
                 return
             }
@@ -213,7 +216,7 @@ export const useUserStore = defineStore('user', {
         // 在系统关键节点（例如每次打开战区）检验是否过期并自动扒下过期衣服
         verifyEquipmentExpiry() {
             let changed = false
-            const now = Date.now()
+            const now = getRealTime()
             const frames = ['avatarFrame', 'title']
 
             frames.forEach(key => {
@@ -250,7 +253,8 @@ export const useUserStore = defineStore('user', {
         spendCoins(amount, reason = '') {
             if (this.neuroCoins >= amount) {
                 this.neuroCoins -= amount
-                uni.setStorageSync('neuro_coins', this.neuroCoins)
+                // 【性能优化】高频写入改为防抖
+                debouncedSetStorage('neuro_coins', this.neuroCoins)
                 console.log(`[Store] 消费了 ${amount} 币, 理由: ${reason}`)
 
                 // --- 【高危漏洞四修复】强鉴权：向云端发起交易溯源核销，防篡改 ---
@@ -265,20 +269,29 @@ export const useUserStore = defineStore('user', {
             }
             return false
         },
-        // 赚取/奖励神经币
+        // 赚取/奖励神经币 —— 【模块B】增加云端核销记录，防内存刷币
         earnCoins(amount, reason = '') {
             this.neuroCoins += amount
-            uni.setStorageSync('neuro_coins', this.neuroCoins)
+            debouncedSetStorage('neuro_coins', this.neuroCoins)
             console.log(`[Store] 赚取了 ${amount} 币, 理由: ${reason}`)
+
+            // 向云端发起收入流水记录（与 spendCoins 对齐）
+            const token = uni.getStorageSync('uni_id_token')
+            if (token) {
+                uniCloud.callFunction({
+                    name: 'user-center',
+                    data: { action: 'verifyTransaction', token, payload: { type: 'earn', amount, reason } }
+                }).catch(err => console.error('云端收入核销失败', err))
+            }
         },
 
         // --- [黑金通行证] 开通与续费 ---
         // 模拟/实际接入 IAP 的充值逻辑，durationDays 为开通天数 (30表示包月，365表示年度，36500表示终身)
         purchaseVip(durationDays, reason = '订阅黑金通行证') {
-            const now = Date.now()
+            const now = getRealTime()
             const durationMs = durationDays * 24 * 60 * 60 * 1000
 
-            if (this.vipExpireTime > now) {
+            if (this.vipExpireTime > now) { // 校准时间判断
                 // 尚未过期，叠加时长
                 this.vipExpireTime += durationMs
             } else {
@@ -297,12 +310,13 @@ export const useUserStore = defineStore('user', {
         claimDailyVipGift() {
             if (!this.isVipActive) return false
 
-            const nowStr = new Date().toDateString()
+            // 使用校准后的服务端时间防刷
+            const nowStr = new Date(getRealTime()).toDateString()
             const lastStr = this.lastVipGiftTime ? new Date(this.lastVipGiftTime).toDateString() : ''
 
             if (nowStr !== lastStr) {
-                this.lastVipGiftTime = Date.now()
-                uni.setStorageSync('neuro_vip_last_gift', this.lastVipGiftTime)
+                this.lastVipGiftTime = getRealTime()
+                debouncedSetStorage('neuro_vip_last_gift', this.lastVipGiftTime)
                 this.earnCoins(50, '黑金数据链：每日例行算力拨付')
                 return true
             }
@@ -362,7 +376,8 @@ export const useUserStore = defineStore('user', {
 
         // 处理广告奖励发放
         earnAdReward() {
-            const now = new Date()
+            // 使用校准时间防止改系统日期刷广告
+            const now = new Date(getRealTime())
             const todayStr = now.toDateString()
             const lastDate = new Date(this.lastAdTime).toDateString()
 
@@ -381,10 +396,10 @@ export const useUserStore = defineStore('user', {
             const reward = 20
             this.earnCoins(reward, '外网神经算力注入(看广告)')
             this.dailyAdCount++
-            this.lastAdTime = Date.now()
+            this.lastAdTime = getRealTime()
 
-            uni.setStorageSync('neuro_daily_ad_count', this.dailyAdCount)
-            uni.setStorageSync('neuro_last_ad_time', this.lastAdTime)
+            debouncedSetStorage('neuro_daily_ad_count', this.dailyAdCount)
+            debouncedSetStorage('neuro_last_ad_time', this.lastAdTime)
 
             // 防止 toast 泛滥，交给调用方 UI 来弹窗
             return true

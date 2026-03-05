@@ -31,7 +31,7 @@
         </view>
       </view>
     </view>
-    
+
     <!-- 2. 黑金通行证 (Black Gold Pass) 展位 -->
     <view :class="['premium-card mx-4', userStore.isVipActive ? 'active-contract' : '']">
         <!-- 会员订阅主体区 -->
@@ -103,8 +103,30 @@
           
           <text class="link-divider mx-1">|</text>
           
-          <view class="control-item" style="padding: 10px 4px;" @click="confirmDeleteAccount" hover-class="text-glow">
-            <text class="control-text" style="font-size: 12px;">完全焚毁档案 (注销账号)</text>
+          <!-- 账号注销/恢复区 -->
+          <view class="zone-card danger-zone">
+            <template v-if="isPendingDelete">
+              <view class="danger-warning mb-4">
+                <text class="warning-text">您的档案正在焚毁流放期，将于 {{ formatDeleteTime(deleteAt) }} 彻底从深渊抹除。</text>
+              </view>
+              <view class="action-btn cancel-delete-action flex justify-between items-center" @click="cancelDeleteAccount" hover-class="btn-pressed">
+                <view>
+                  <text class="action-name">中止焚毁程序 (恢复账号)</text>
+                  <text class="action-desc block mt-1">终止倒计时，恢复系统所有功能</text>
+                </view>
+                <text class="icon-arrow">↺</text>
+              </view>
+            </template>
+
+            <template v-else>
+              <view class="action-btn delete-action flex justify-between items-center" @click="confirmDeleteAccount" hover-class="btn-pressed">
+                <view>
+                  <text class="action-name">发起 7 天档案流放 (账号注销)</text>
+                  <text class="action-desc block mt-1">资金清零 / 记录销毁 / 神经元解绑，给您7天反悔期</text>
+                </view>
+                <text class="icon-arrow">❯</text>
+              </view>
+            </template>
           </view>
         </view>
       </view>
@@ -176,7 +198,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
@@ -187,6 +209,7 @@ import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
+import { onShow } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -195,6 +218,9 @@ const showBeacon = ref(false)
 const showPinModal = ref(false)
 const tempPin = ref('')
 const pinError = ref('')
+
+const isPendingDelete = ref(false)
+const deleteAt = ref(0)
 
 // --- 弹窗状态管理 ---
 const dialogState = ref({
@@ -299,6 +325,19 @@ onMounted(() => {
     // 静默在后台重新握手拉取最新资料
     fetchCloudProfile()
 })
+
+onShow(() => {
+    // 每次显示页面更新判定
+    isPendingDelete.value = uni.getStorageSync('user_account_status') === 'pending_delete'
+    deleteAt.value = uni.getStorageSync('account_delete_at') || 0
+})
+
+// 格式化时间输出
+const formatDeleteTime = (timestamp) => {
+    if (!timestamp) return '未知时间'
+    const d = new Date(timestamp)
+    return `${d.getMonth() + 1}月${d.getDate()}日 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
 
 const fetchCloudProfile = async () => {
     const token = uni.getStorageSync('uni_id_token')
@@ -541,18 +580,18 @@ const confirmPinChange = () => {
    uni.showToast({ title: '暗门重构完成', icon: 'success' })
 }
 
-// 云端数据彻底销毁
+// 发起云端流放销毁
 const confirmDeleteAccount = () => {
     showDialog({
-        title: '高危警告：深渊销毁',
-        content: '该操作将永久删除您的云端神经连接档案及所有数字资产（包含不可逆的重铸史和神经币）。是否确认完全销毁本账号？',
-        confirmText: '坚决销毁',
+        title: '高危警告：开启强流放程序',
+        content: '该操作将锁定您的云端档案并进入 7 天的流放冷却期。如果您在 7 天内未中止程序，您的所有数字资产（重铸史和神经币）将不可逆地坠入深渊。是否确认？',
+        confirmText: '坚决流放',
         cancelText: '撤回指令',
         showCancel: true,
         color: '#ef4444',
         success: async (res) => {
             if (res.confirm) {
-                uni.showLoading({ title: '执行云端粉碎...' })
+                uni.showLoading({ title: '执行流放指令...' })
                 try {
                     const token = uni.getStorageSync('uni_id_token')
                     const r = await uniCloud.callFunction({
@@ -563,16 +602,57 @@ const confirmDeleteAccount = () => {
                         }
                     })
                     if (r.result.code === 0) {
-                        uni.showToast({ title: '档案已从深渊抹除', icon: 'success' })
-                        setTimeout(() => {
-                            uni.clearStorageSync()
-                            uni.reLaunch({ url: '/pages/login/index' })
-                        }, 1000)
+                        uni.showToast({ title: '已进入 7 天流放冷却倒计时', icon: 'success' })
+                        // 本地打标
+                        uni.setStorageSync('user_account_status', 'pending_delete')
+                        uni.setStorageSync('account_delete_at', r.result.delete_at)
+                        isPendingDelete.value = true
+                        deleteAt.value = r.result.delete_at
                     } else {
-                        uni.showToast({ title: r.result.msg || '销毁失败', icon: 'none' })
+                        uni.showToast({ title: r.result.msg || '执行失败', icon: 'none' })
                     }
                 } catch (e) {
-                    uni.showToast({ title: '网络异常，未销毁', icon: 'none' })
+                    uni.showToast({ title: '网络异常，未执行', icon: 'none' })
+                } finally {
+                    uni.hideLoading()
+                }
+            }
+        }
+    })
+}
+
+// 撤回注销指令
+const cancelDeleteAccount = () => {
+    showDialog({
+        title: '指令覆写验证',
+        content: '您是否确认要中止当前的账号流放焚毁程序，恢复全面接入特权？',
+        confirmText: '确认中止',
+        cancelText: '放弃操作',
+        showCancel: true,
+        color: '#00e5ff',
+        success: async (res) => {
+            if (res.confirm) {
+                uni.showLoading({ title: '修补神经元连接...' })
+                try {
+                    const token = uni.getStorageSync('uni_id_token')
+                    const r = await uniCloud.callFunction({
+                        name: 'user-center',
+                        data: {
+                            action: 'cancelDeleteAccount',
+                            token
+                        }
+                    })
+                    if (r.result.code === 0) {
+                        uni.showToast({ title: '档案已成功抢救', icon: 'success' })
+                        uni.removeStorageSync('user_account_status')
+                        uni.removeStorageSync('account_delete_at')
+                        isPendingDelete.value = false
+                        deleteAt.value = 0
+                    } else {
+                        uni.showToast({ title: r.result.msg || '修补失败', icon: 'none' })
+                    }
+                } catch (e) {
+                    uni.showToast({ title: '网络异常，未修补', icon: 'none' })
                 } finally {
                     uni.hideLoading()
                 }

@@ -49,8 +49,21 @@ exports.main = async (event, context) => {
             // 初始化内置的精选正向数据（仅用作系统种子数据，开发者调用）
             return await initLibraryData(db)
         case 'verifyTransaction':
-            // 交易核销（静默记录）
-            return { code: 0, msg: '核销已记录' }
+            // 交易核销 —— 写入 transaction_logs 集合记录流水，用于反作弊审计
+            try {
+                const txLogs = db.collection('transaction_logs')
+                await txLogs.add({
+                    user_id: uid,
+                    type: payload.type || 'unknown',      // 'spend' 或 'earn'
+                    amount: payload.amount || 0,
+                    reason: payload.reason || '',
+                    created_at: Date.now()
+                })
+                return { code: 0, msg: '核销已记录' }
+            } catch (txErr) {
+                console.error('交易流水写入失败:', txErr)
+                return { code: 0, msg: '核销降级通过' } // 不阻塞前端
+            }
         default:
             return { code: 400, msg: 'Unknown action' }
     }
