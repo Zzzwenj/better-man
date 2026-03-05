@@ -33,42 +33,8 @@
     </view>
 
     <!-- 2. 黑金通行证 (Black Gold Pass) 展位 -->
-    <view :class="['premium-card mx-4', userStore.isVipActive ? 'active-contract' : '']">
-        <!-- 会员订阅主体区 -->
-        <view @click="upgradePremium" hover-class="card-hover" class="contract-main">
-            <view class="flex justify-between items-center">
-                <text class="premium-title">{{ userStore.isVipActive ? '👑 黑金权限生效中' : '🔥 黑金通行证 (全量特权)' }}</text>
-                <view class="price-chip" v-if="!userStore.isVipActive">
-                    <text>1500 神经币 / 月</text>
-                </view>
-            </view>
-            
-            <text class="premium-desc block mt-2" v-if="!userStore.isVipActive">
-              解锁深网最高权限。破戒月费<text style="color: #00e5ff; font-weight: bold;">首3次免单原谅</text>，
-              绝版皇冠标识，专属实体结衣礼盒，以及每月最高 1500 神经币战略储备金！
-            </text>
-            
-            <view class="contract-progress mt-4 flex-col" v-else>
-               <text class="timer-text">黑金链路维持天数: {{ userStore.vipDaysLeft }} 天</text>
-               <view class="progress-bar mt-2">
-                 <!-- 模拟 30 天为一个周期的进度视觉 -->
-                 <view class="progress-fill" :style="{ width: ((userStore.vipDaysLeft % 30) / 30 * 100) + '%' }"></view>
-               </view>
-            </view>
-    
-            <view class="premium-footer flex items-center mt-4" v-if="!userStore.isVipActive">
-                <text class="unlock-text">建立特权连接</text>
-                <text class="arrow ml-1">→</text>
-            </view>
-        </view>
-
-        <!-- 临时越权体验 (看广告, 仅显示一次) -->
-        <view class="ad-trial-zone mt-4" v-if="!userStore.isVipActive && !userStore.hasUsedTrial" @click.stop="watchAdForTrial" hover-class="ad-hover">
-            <view class="ad-content flex items-center justify-center">
-                 <text class="ad-icon">📺</text>
-                 <text class="ad-text ml-2">_ 获取24H 残破特权节点 (仅限1次)</text>
-            </view>
-        </view>
+    <view class="mx-4">
+      <PremiumCard @upgrade="upgradePremium" @watchAd="watchAdForTrial" />
     </view>
     
     <!-- 5. 荣誉资产长廊 (资产化展示) -->
@@ -83,66 +49,16 @@
     />
 
     <!-- 4. 系统底层控制区 (视觉隔离) -->
-    <view class="system-control-zone flex-col items-center w-full pb-10 mt-8">
-      <view class="divider w-full mb-6 relative">
-        <view class="absolute inset-x-4 h-full" style="background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);"></view>
-      </view>
-      
-      <!-- 高危操作与基础流出区 (同样低调的样式，平缓向下排列) -->
-      <view class="flex-col items-center gap-5 w-full">
-        <!-- 引流信标入口 (动态判定显示) -->
-        <view class="control-item" v-if="hasBeaconAccess" @click="showBeacon = true" hover-class="text-glow">
-          <text class="control-text" style="color: #00e5ff; font-weight: bold; text-shadow: 0 0 8px rgba(0,229,255,0.4);">[ 解锁：地球驻扎地信标 ]</text>
-        </view>
-
-        <!-- 一行展示退出登录与注销 -->
-        <view class="flex items-center justify-center w-full px-2">
-          <view class="control-item" style="padding: 10px 4px;" @click="handleSettingClick({id: 'wipe'})" hover-class="text-glow">
-            <text class="control-text" style="font-size: 12px;">中断神经连接 (退出登录)</text>
-          </view>
-          
-          <text class="link-divider mx-1">|</text>
-          
-          <!-- 账号注销/恢复区 -->
-          <view class="zone-card danger-zone">
-            <template v-if="isPendingDelete">
-              <view class="danger-warning mb-4">
-                <text class="warning-text">您的档案正在焚毁流放期，将于 {{ formatDeleteTime(deleteAt) }} 彻底从深渊抹除。</text>
-              </view>
-              <view class="action-btn cancel-delete-action flex justify-between items-center" @click="cancelDeleteAccount" hover-class="btn-pressed">
-                <view>
-                  <text class="action-name">中止焚毁程序 (恢复账号)</text>
-                  <text class="action-desc block mt-1">终止倒计时，恢复系统所有功能</text>
-                </view>
-                <text class="icon-arrow">↺</text>
-              </view>
-            </template>
-
-            <template v-else>
-              <view class="action-btn delete-action flex justify-between items-center" @click="confirmDeleteAccount" hover-class="btn-pressed">
-                <view>
-                  <text class="action-name">发起 7 天档案流放 (账号注销)</text>
-                  <text class="action-desc block mt-1">资金清零 / 记录销毁 / 神经元解绑，给您7天反悔期</text>
-                </view>
-                <text class="icon-arrow">❯</text>
-              </view>
-            </template>
-          </view>
-        </view>
-      </view>
-
-      <!-- 绝对的页面最底端 -->
-      <view class="bottom-footer flex-col items-center mt-12 gap-5 w-full">
-        <view class="legal-links flex justify-center items-center">
-          <text class="link-text" @click="goAgreement('terms')">《用户协议》</text>
-          <text class="link-divider">|</text>
-          <text class="link-text" @click="goAgreement('privacy')">《隐私政策》</text>
-        </view>
-
-        <!-- OS版本追踪号 -->
-        <text class="version-text">OS Version: Better-Man 2026.3.2</text>
-      </view>
-    </view>
+    <SystemControls
+      :hasBeaconAccess="hasBeaconAccess"
+      :isPendingDelete="isPendingDelete"
+      :deleteAt="deleteAt"
+      @openBeacon="showBeacon = true"
+      @settingClick="handleSettingClick"
+      @cancelDelete="cancelDeleteAccount"
+      @confirmDelete="confirmDeleteAccount"
+      @goAgreement="goAgreement"
+    />
     
     <CyberFloatBall />
     <CustomTabBar :current="3" />
@@ -209,6 +125,8 @@ import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
+import PremiumCard from '../../components/profile/PremiumCard.vue'
+import SystemControls from '../../components/profile/SystemControls.vue'
 import { onShow } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
@@ -371,6 +289,8 @@ const fetchCloudProfile = async () => {
         console.error('云端中枢档案同步失败', err)
     }
 }
+
+
 
 // --- 交互事件回传响应 ---
 
@@ -682,7 +602,7 @@ page {
   overflow-x: hidden;
   background-color: #09090b;
   box-sizing: border-box;
-  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
   overflow-y: auto;
 }
 
@@ -804,105 +724,5 @@ page {
   font-weight: bold;
 }
 
-/* 订阅特权模幅 */
-.premium-card {
-    margin-top: 24px;
-    margin-bottom: 0px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-.contract-main {
-    padding: 4px;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-}
-.card-hover { transform: translateY(2px); text-shadow: 0 0 5px var(--theme-shadow-primary); }
-.premium-title { font-size: 16px; font-weight: 900; color: var(--theme-primary); }
-.price-chip { background: var(--theme-primary); color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
-.premium-desc { font-size: 13px; color: #a1a1aa; line-height: 1.5; }
-.premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
-.unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
-.arrow { color: var(--theme-primary); font-weight: bold; font-size: 18px;}
 
-/* -------------------------------
-   底部操作区结构重构
---------------------------------- */
-.bottom-footer {
-  gap: 16px; 
-}
-
-.legal-links { gap: 12px; }
-.link-text { font-size: 13px; color: #71717a; text-decoration: none; padding: 4px; transition: color 0.2s; letter-spacing: 0.5px;}
-.link-text:active { color: #f4f4f5; }
-.link-divider { font-size: 13px; color: #3f3f46; }
-
-.version-text {
-  font-size: 11px;
-  color: #3f3f46;
-  font-family: monospace;
-}
-
-.dev-entry { text-align: center; }
-.ad-text { color: #10b981; font-size: 13px; font-family: monospace; text-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
-
-/* 广告体验栏位 */
-.ad-trial-zone {
-    margin-top: 16px;
-    padding: 12px;
-    background: rgba(16, 185, 129, 0.05);
-    border: 1px dashed rgba(16, 185, 129, 0.3);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-.ad-hover { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
-
-
-/* 契约进行中状态 */
-.active-contract {
-    border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
-    background: linear-gradient(180deg, rgba(0, 229, 255, 0.05) 0%, rgba(24, 24, 27, 0.9) 100%);
-}
-.contract-progress { width: 100%; }
-.timer-text { font-size: 16px; color: #00e5ff; font-family: monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,229,255,0.5);}
-.progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; background: #00e5ff; box-shadow: 0 0 10px #00e5ff; border-radius: 3px; transition: width 0.5s ease-out; }
-
-/* 系统控制区 */
-.system-control-zone {
-  margin-bottom: 0px;
-}
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-}
-.control-item {
-  padding: 10px 20px;
-}
-.control-text {
-  font-size: 13px;
-  color: #71717a;
-  letter-spacing: 1px;
-  transition: all 0.3s;
-  
-  &.secondary {
-    font-size: 11px;
-    opacity: 0.6;
-  }
-}
-.text-glow {
-  .control-text {
-    color: #f4f4f5;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-  }
-}
-.version-text {
-  font-size: 10px;
-  color: #3f3f46;
-  font-family: monospace;
-}
 </style>
