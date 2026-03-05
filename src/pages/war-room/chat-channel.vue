@@ -74,7 +74,7 @@
             <view class="flex items-center" v-if="msg.is_vanguard || msg.equipped_title">
               <text class="vanguard-crown mr-1" v-if="msg.is_vanguard">👑</text>
               <text class="title-tag ellipsis">
-                {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[绝命赌徒]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
+                {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[破釜沉舟]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
               </text>
             </view>
             <view class="flex items-center">
@@ -264,7 +264,7 @@ onMounted(async () => {
         if (userStore.isVipActive) {
             // 利用 setTimeout 稍微错开渲染
             setTimeout(() => {
-                const titleStr = userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '高级特权者')
+                const titleStr = userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[破釜沉舟]' : '高级特权者')
                 executeSend(`🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`, true, `🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`)
             }, 800)
         }
@@ -359,7 +359,7 @@ const isOwner = computed(() => {
     // 公频判定：如果是公频（没在 deathMatch 且能在 publicRooms 找到）
     const pubMatch = warzoneStore.publicRooms.find(r => r.id === roomKey);
     if (pubMatch) {
-       // 如果持有黑金桂冠，或是极端称号 [深渊行者][绝命赌徒]，则临时赋予战区纠察队管理员权限
+       // 如果持有黑金桂冠，或是极端称号 [深渊行者][破釜沉舟]，则临时赋予战区纠察队管理员权限
        if (userStore.hasBlackGoldCrown || userStore.equipped.title === 't_01' || userStore.equipped.title === 't_02') {
            return true;
        }

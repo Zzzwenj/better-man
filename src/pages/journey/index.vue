@@ -80,7 +80,7 @@
     
     <!-- 4. 评估数据模块 -->
     <view class="card-outline mt-4 mx-4">
-      <text class="section-title block mb-4">临床生理学预估</text>
+      <text class="section-title block mb-4">自律数据分析</text>
       
       <view class="stat-row flex items-center justify-between mb-4">
         <view class="flex-col">

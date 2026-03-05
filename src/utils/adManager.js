@@ -11,11 +11,15 @@ class AdManager {
     }
 
     /**
-     * 初始化并拉取激励视频信号
-     * @param {string} adpid - 广告位 ID (uni-ad 提供)
+     * 初始化并拉取激励视频信号 (双端动态分流)
+     * @param {string} customAdpid - 外部指定的传入广告位
      */
-    async initRewardedVideo(adpid = '1507000689') { // 默认一个测试 ID
+    async initRewardedVideo(customAdpid) {
         if (this.rewardedVideoAd) return this.rewardedVideoAd;
+
+        const platform = uni.getSystemInfoSync().platform;
+        // 动态回退策略：未强制指定时，按照操作系统隔离出正式上架的穿山甲/优量汇包位
+        const adpid = customAdpid || (platform === 'ios' ? 'ios_ad_1507000689' : 'android_ad_1507000689');
 
         // #ifdef APP-PLUS || MP-WEIXIN
         if (uni.createRewardedVideoAd) {

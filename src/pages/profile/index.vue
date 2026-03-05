@@ -22,8 +22,8 @@
             <view class="pulse-ring"></view>
           </view>
           <view class="ml-3">
-            <text class="ai-name block">神经元导师 (Nova)</text>
-            <text class="ai-status block">状态: 实时监控中...</text>
+            <text class="ai-name block">神经元核心 (Nova)</text>
+            <text class="ai-status block">状态: 神经网络连通正常...</text>
           </view>
         </view>
         <view class="ai-btn flex items-center justify-center">
@@ -34,7 +34,7 @@
 
     <!-- 2. 黑金通行证 (Black Gold Pass) 展位 -->
     <view class="mx-4">
-      <PremiumCard @upgrade="upgradePremium" @watchAd="watchAdForTrial" />
+      <PremiumCard @watchAd="watchAdForTrial" />
     </view>
     
     <!-- 5. 荣誉资产长廊 (资产化展示) -->
@@ -127,7 +127,8 @@ import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
 import PremiumCard from '../../components/profile/PremiumCard.vue'
 import SystemControls from '../../components/profile/SystemControls.vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onShow, onLoad, onUnload } from '@dcloudio/uni-app'
+import { paymentManager } from '@/utils/paymentManager.js'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -244,6 +245,18 @@ onMounted(() => {
     fetchCloudProfile()
 })
 
+onLoad(() => {
+    // 监听子组件发出的支付意图（例如充值、办卡）
+    uni.$on('trigger-android-pay', handleAndroidPay)
+    // 监听已是 VIP 时的信息展示事件
+    uni.$on('vip-info-click', showVipInfo)
+})
+
+onUnload(() => {
+    uni.$off('trigger-android-pay')
+    uni.$off('vip-info-click')
+})
+
 onShow(() => {
     // 每次显示页面更新判定
     isPendingDelete.value = uni.getStorageSync('user_account_status') === 'pending_delete'
@@ -346,46 +359,44 @@ const onModalStateChange = (state) => {
   isModalOpen.value = state
 }
 
-// 点击解锁黑金VIP特权
-const upgradePremium = () => {
-    if (userStore.isVipActive) {
-        showDialog({
-            title: '黑金权限已激活',
-            content: `你的数据连通性无损维持，剩余 ${userStore.vipDaysLeft} 天。今日赠送的 50 算力点已空投。`,
-            showCancel: false,
-            confirmText: '明确',
-            color: '#10b981'
-        })
-        return
-    }
+// 已是VIP点击展示信息
+const showVipInfo = () => {
+    showDialog({
+        title: '黑金权限已激活',
+        content: `你的数据连通性无损维持，剩余 ${userStore.vipDaysLeft} 天。今日赠送的 50 算力点已空投。`,
+        showCancel: false,
+        confirmText: '明确',
+        color: '#10b981'
+    })
+}
 
+// Android/H5 处理第三方支付分流
+const handleAndroidPay = ({ price, type }) => {
     showDialog({
         title: '建立黑金特权通讯网',
-        content: '订阅费：1500 神经币/31天。\n解锁每月 3 次“免代价无损折跃（除颤防坠落）”，专属高级称号与主理人直通频道信标。',
-        confirmText: '极速接入',
-        cancelText: '暂不需要',
+        content: '订阅费：15 元/31天。\n解锁每月 3 次“免代价无损折跃（除颤防坠落）”，专属高级称号与主理人直通频道信标。',
+        confirmText: '微信支付',
+        cancelText: '支付宝支付',
         showCancel: true,
-        color: '#f59e0b', // 琥珀/金色色调
-        success: (res) => {
-            if (res.confirm) {
-                // 利用虚拟货币实现内部商业闭环
-                if (userStore.neuroCoins < 1500) {
-                    uni.showToast({ title: '神经币余额不足(需1500)', icon: 'none' })
-                    return
-                }
-
-                uni.showLoading({ title: '接驳神经网络...' })
-                setTimeout(() => {
-                    uni.hideLoading()
-                    const success = userStore.spendCoins(1500, '订阅包月黑金档案')
-                    if (success) {
-                        userStore.purchaseVip(31, '包月黑金开通')
-                        userStore.claimDailyVipGift()
-                        uni.showToast({ title: '特权链已接通', icon: 'success' })
-                    } else {
-                        uni.showToast({ title: '账单回滚', icon: 'error' })
-                    }
-                }, 1000)
+        color: '#10b981', // 琥珀/金色色调 -> 改为微信绿以作引导
+        success: async (res) => {
+            const provider = res.confirm ? 'wxpay' : 'alipay'
+            
+            uni.showLoading({ title: '接驳加密网关...' })
+            try {
+                await paymentManager.requestPayment({
+                    productId: type,
+                    provider: provider,
+                    price: price
+                })
+                uni.hideLoading()
+                // 本地假造赋权，线上需配合回调
+                userStore.purchaseVip(31, '包月黑金开通')
+                userStore.claimDailyVipGift()
+                uni.showToast({ title: '特权链已接通', icon: 'success' })
+            } catch (err) {
+                uni.hideLoading()
+                uni.showToast({ title: err.message || '支付通道阻断', icon: 'error' })
             }
         }
     })
@@ -436,9 +447,15 @@ const handleSettingClick = (originItem) => {
                  showCancel: true,
                  color: '#f59e0b',
                  success: (res) => {
-                     // 无论是否开通成功，由于数据是响应式的，当前并未写入 storage，重新渲染会强拉回 false
+                     // 非 VIP 前往支付面板触发
                      if (res.confirm) {
-                         upgradePremium() // Changed from buyVip() to upgradePremium()
+                         if (uni.getSystemInfoSync().platform === 'ios') {
+                             // iOS 无需选微信支付宝，直接调用苹果
+                             paymentManager.requestPayment({ productId: 'vip_1month', provider: 'appleiap', price: 1500 })
+                               .then(() => userStore.purchaseVip(31, '包月黑金开通'))
+                         } else {
+                             handleAndroidPay({ price: 1500, type: 'vip_1month' })
+                         }
                     }
                      refreshTrigger.value++
                  }

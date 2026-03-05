@@ -74,7 +74,7 @@
 <script setup>
 /**
  * @component ContractModal
- * @description 战区(生死血契)模块弹出层组件，用于签署对战契约或选择匹配模式。
+ * @description 战区(破釜沉舟契约)模块弹出层组件，用于签署对战契约或选择匹配模式。
  * 2026 优化：全自定义 UI 替代原生 Picker 以保证视觉统一性。
  */
 

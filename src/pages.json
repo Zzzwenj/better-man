@@ -36,7 +36,7 @@
         {
             "path": "pages/store/index",
             "style": {
-                "navigationBarTitleText": "暗网黑市",
+                "navigationBarTitleText": "极客集市",
                 "navigationStyle": "custom",
                 "disableScroll": true
             }
@@ -59,7 +59,7 @@
         {
             "path": "pages/war-room/death-match",
             "style": {
-                "navigationBarTitleText": "生死血契",
+                "navigationBarTitleText": "破釜沉舟契约",
                 "navigationStyle": "custom"
             }
         },

@@ -66,7 +66,7 @@ const steps = [
     key: 'gender',
     multiple: false,
     title: 'SYS. 染色体图谱录入',
-    subtitle: '请确认生理性别。不同性别的神经内分泌系统在多巴胺受体分布与冲动寻觅机制上存在本质差异。',
+    subtitle: '请确认生理性别。不同性别的神经系统在习惯养成与自控机制上存在差异，系统将据此优化策略。',
     options: [
       { label: 'XY 染色体 (男性体质)', value: 'male' },
       { label: 'XX 染色体 (女性体质)', value: 'female' }
@@ -105,7 +105,7 @@ const steps = [
       { label: '每周 1-2 次 (常规阈值)', value: 'weekly' },
       { label: '每隔 1-2 天 (高频波动)', value: 'every_other_day' },
       { label: '几乎每天 (边缘失守)', value: 'daily' },
-      { label: '每天多次 (临床红线)', value: 'multiple_daily' }
+      { label: '每天多次 (高危级别)', value: 'multiple_daily' }
     ]
   },
   {

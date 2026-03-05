@@ -1,7 +1,7 @@
 <template>
   <view class="store-container flex-col">
     <!-- 定制的高斯模糊导航栏 (统一使用 CyberNavBar) -->
-    <CyberNavBar title="暗网黑市" :blur="true" />
+    <CyberNavBar title="极客集市" :blur="true" />
 
     <scroll-view scroll-y class="store-scroll flex-1" :show-scrollbar="false">
       <!-- 资产展现区 -->
@@ -18,7 +18,7 @@
           <text class="ad-btn-text">信号拦截：获取能源补给 ({{ userStore.dailyAdCount }}/3)</text>
         </view>
 
-        <text class="warning-text mt-4">>> 规则：黑市交易不退不换，量力而为。纯视觉与炫耀属性，无算力加持。 <<</text>
+        <text class="warning-text mt-4">>> 规则：集市交易不退不换，量力而为。纯视觉与炫耀属性，无算力加持。 <<</text>
       </view>
 
       <!-- 顶部分类 Tab -->
@@ -53,7 +53,7 @@
         <!-- 空状态 -->
         <view v-if="currentProducts.length === 0" class="empty-state flex-col items-center justify-center mt-12">
           <text class="empty-icon">📂</text>
-          <text class="empty-text mt-4">该分类下暂无可用黑市数据</text>
+          <text class="empty-text mt-4">该分类下暂无可用集市数据</text>
         </view>
       </view>
       
@@ -94,7 +94,7 @@ onMounted(() => {
 
 onUnload(() => {
   uni.$off('ad-reward-success')
-  // 退出黑市页面时，由于大概率发生过消费，静默进行一波 T+1 资产上报对账以节约 RU
+  // 退出集市页面时，由于大概率发生过消费，静默进行一波 T+1 资产上报对账以节约 RU
   userStore.syncAssetsToCloud()
 })
 
@@ -114,23 +114,21 @@ const allProducts = ref([
   { id: 'f_01', category: 0, title: '深空等离子边框', description: '装配后你的头像将被高温等离子射线环绕。', price: 500, icon: '🌌', typeTag: '视觉系', duration: '30天有效' },
   { id: 'f_02', category: 0, title: '故障干扰线边框', description: '模拟信号被强制截断的红色雪花屏幕效果。', price: 500, icon: '📺', typeTag: '视觉系', duration: '30天有效' },
   { id: 't_01', category: 0, title: '称号：深渊行者', description: '在所有的战区聊天显示，象征极限承压能力。', price: 300, icon: '🦇', typeTag: '社交展示', duration: '15天有效' },
-  { id: 't_02', category: 0, title: '称号：绝命赌徒', description: '只有在生死契约中沉浮过的人才敢佩戴。', price: 300, icon: '🃏', typeTag: '社交展示', duration: '15天有效' },
+  { id: 't_02', category: 0, title: '称号：破釜沉舟', description: '只有签署过决心契约的探员才配佩戴。', price: 300, icon: '🃏', typeTag: '社交展示', duration: '15天有效' },
   { id: 't_03', category: 0, title: '称号：赛博精神病', description: '精神承载力过载的象征，极度危险。', price: 800, icon: '🧠', typeTag: '社交展示', duration: '30天有效' },
   
   // 战区武装
   { id: 'w_01', category: 1, title: '全频 EMP 脉冲电报', description: '在公共频道发出的消息附带血红色EMP边框，并高亮悬置 15 分钟，全服瞩目。', price: 150, icon: '📢', typeTag: '消耗品(单次)', duration: '15分钟 / 发送1次' },
-  { id: 'w_02', category: 1, title: '赛博坦之怒', description: '发送一个震动全群的强制特效（开发中）。', price: 500, icon: '🤖', typeTag: '消耗品(单次)', duration: '仅限1场战区' },
   { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带并在战区激活后，你的破戒将不会导致战区解散和队友连坐，仅你自己出局并扣除等量押金。', price: 1280, icon: '🛡️', typeTag: '战略保障', duration: '消耗品(单次)' },
   
-  // 盲盒与彩蛋
-  { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '7天有效' },
-  { id: 'b_01', category: 2, title: '神经元盲盒', description: '搏一搏单车变摩托。可能开出极品装扮碎片、谢谢参与，或者...系统病毒扣钱。', price: 50, icon: '🎲', typeTag: '概率深坑', duration: '即时生效' }
+  // 特效彩蛋
+  { id: 'e_01', category: 2, title: '视觉打卡：数据流雨', description: '阻断成功时的红屏将替换为骇客帝国代码瀑布。', price: 800, icon: '💻', typeTag: '全局彩蛋', duration: '7天有效' }
 ])
 
 const tabs = ref([
   { name: '赛博装扮' },
   { name: '战区武装' },
-  { name: '盲盒与彩蛋' }
+  { name: '特效彩蛋' }
 ])
 const currentTab = ref(0)
 
@@ -169,24 +167,7 @@ const executeTransaction = async (product) => {
   const success = userStore.purchaseItem(product)
   if (success) {
     showModal.value = false
-    
-    // 盲盒逻辑真实抽奖
-    if (product.id === 'b_01') {
-      const roll = Math.random()
-      if (roll < 0.05) {
-         userStore.earnCoins(500, '盲盒大奖')
-         uni.showToast({ title: '🔥 暴击！开出 500 神经币', icon: 'none', duration: 3000 })
-      } else if (roll < 0.25) {
-         userStore.earnCoins(100, '盲盒回本')
-         uni.showToast({ title: '👏 运气不错，开出 100 神经币', icon: 'none' })
-      } else if (roll > 0.85) {
-         userStore.spendCoins(100, '盲盒病毒扣款')
-         uni.showToast({ title: '💀 遭遇赛博病毒，你的账户流失了 100 币', icon: 'none', duration: 3000 })
-         uni.vibrateLong()
-      } else {
-         uni.showToast({ title: '📦 里面空空如也...谢谢参与', icon: 'none' })
-      }
-    }
+    // 彩蛋特效无需额外前端逻辑，purchaseItem 内部已自动处理
   } else {
     uni.showToast({ title: '余额异常', icon: 'error' })
   }

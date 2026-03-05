@@ -63,7 +63,7 @@
 <script setup>
 /**
  * @component CyberTransactionModal
- * @description 暗网黑市(商店)交易弹窗组件，负责商品详情展示及神经币扣除逻辑。
+ * @description 极客集市(商店)交易弹窗组件，负责商品详情展示及神经币扣除逻辑。
  */
 
 import { computed } from 'vue'

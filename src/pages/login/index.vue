@@ -69,11 +69,16 @@
         <text v-if="mode === 'login'" class="nav-text" @click="switchMode('register')">激活新节点</text>
         <text v-if="mode === 'login'" class="nav-text" @click="switchMode('forgot')">密钥丢失</text>
       </view>
-    </view>
 
-    <!-- 底部免密入口 -->
-    <view class="dev-entry pb-bottom flex justify-center mt-10" @click="devLogin">
-        <text class="dev-text">系统深度调试模式 [DEV]</text>
+      <!-- 🍎 苹果审核合规防线 (Apple Login) -->
+      <!-- #ifdef APP-PLUS -->
+      <view class="third-party-login mt-6" v-if="mode === 'login' && isIOS">
+         <view class="apple-btn flex items-center justify-center mx-10" hover-class="btn-hover" @click="appleLogin">
+             <text class="platform-icon text-2xl font-bold"></text>
+             <text class="ml-2 Apple-text text-sm tracking-wider font-bold">通过 Apple 安全握手</text>
+         </view>
+      </view>
+      <!-- #endif -->
     </view>
   </view>
 </template>
@@ -84,6 +89,7 @@ import { useThemeStore } from '@/store/theme.js'
 
 const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'
+const isIOS = computed(() => uni.getSystemInfoSync().platform === 'ios')
 
 const form = reactive({
   account: '',
@@ -344,77 +350,43 @@ const submit = async () => {
   }
 }
 
-// [特殊] 开发者免密一键登入
-const devLogin = () => {
-    console.log('[DEV] 长按触发了 devLogin 函数')
-    uni.showModal({
-        title: 'ROOT 权限确认',
-        content: '跳过所有鉴权限制，以开发者身份进入系统？',
-        confirmColor: themeStore.activeThemeData.primary,
-        success: (res) => {
-            console.log('[DEV] showModal 回调:', res)
-            if (res.confirm) {
-                console.log('[DEV] 用户确认，开始执行 storeFakeTokenAndRedirect')
-                storeFakeTokenAndRedirect()
+// 🍎 苹果原生接入通道 (IAP & Apple Login)
+const appleLogin = () => {
+    uni.login({
+        provider: 'apple',
+        success: async (loginRes) => {
+            uni.showLoading({ title: 'Apple 链路校验中...' })
+            try {
+                // 将 loginRes.authResult 发送到 user-center 云函数完成换取/注册 Token
+                const res = await uniCloud.callFunction({
+                    name: 'uni-id-cf',
+                    data: {
+                        action: 'loginByApple',
+                        params: { appleIdentityToken: loginRes.authResult.identityToken }
+                    }
+                })
+                uni.hideLoading()
+                if (res.result.code === 0) {
+                    uni.setStorageSync('uni_id_token', res.result.token)
+                    uni.setStorageSync('uid', res.result.uid)
+                    uni.showToast({ title: '物理防线已穿透', icon: 'success' })
+                    setTimeout(() => {
+                        const baseline = uni.getStorageSync('neuro_baseline')
+                        if (!baseline) uni.redirectTo({ url: '/pages/onboarding/index' })
+                        else uni.switchTab({ url: '/pages/dashboard/index' })
+                    }, 1000)
+                } else {
+                    uni.showToast({ title: 'Apple 握手被拒', icon: 'none' })
+                }
+            } catch (err) {
+                uni.hideLoading()
+                uni.showToast({ title: '云端中枢失联', icon: 'none' })
             }
+        },
+        fail: () => {
+            uni.showToast({ title: 'Apple 授权中断', icon: 'none' })
         }
     })
-}
-
-// 登录成功后的公共跳转逻辑
-const storeFakeTokenAndRedirect = async () => {
-    console.log('[DEV] 进入 storeFakeTokenAndRedirect')
-    const fakeToken = 'fake_token_for_dev_' + Date.now()
-    uni.setStorageSync('uni_id_token', fakeToken)
-    uni.setStorageSync('uni_id_token_expired', Date.now() + 30 * 24 * 3600 * 1000) // 30天有效
-    uni.setStorageSync('uid', 'dev_uid')
-    console.log('[DEV] token 已写入本地:', fakeToken)
-    
-    // 开发特权：拨款 1,000,000 神经币用于测试大额流转
-    uni.setStorageSync('neuro_coins', 1000000)
-
-    // 尝试拉取云端档案，但加超时保护，不阻塞跳转
-    try {
-      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('云函数超时')), 5000))
-      const cloudPromise = uniCloud.callFunction({
-        name: 'user-center',
-        data: {
-          action: 'getUserProfile',
-          token: fakeToken
-        }
-      })
-      const profileRes = await Promise.race([cloudPromise, timeoutPromise])
-      console.log('[DEV] 云端档案拉取成功:', JSON.stringify(profileRes.result))
-      if (profileRes.result.code === 0 && profileRes.result.data) {
-        const userData = profileRes.result.data
-        if (userData.neuro_baseline) {
-          const baseline = userData.neuro_baseline
-          baseline.nickname = userData.nickname || baseline.nickname
-          baseline.avatar = userData.avatar || baseline.avatar
-          baseline.signature = userData.signature || baseline.signature
-          uni.setStorageSync('neuro_baseline', JSON.stringify(baseline))
-        }
-        if (userData.neuro_start_date) {
-            uni.setStorageSync('neuro_start_date', userData.neuro_start_date)
-        }
-      }
-    } catch (err) {
-      console.warn('[DEV] 云端档案拉取失败(不影响跳转):', err.message || err)
-    }
-
-    console.log('[DEV] 准备跳转...')
-    uni.showToast({ title: '接入成功', icon: 'success' })
-    setTimeout(() => {
-        const baseline = uni.getStorageSync('neuro_baseline')
-        console.log('[DEV] baseline 状态:', baseline ? '存在' : '不存在')
-        if (!baseline) {
-            console.log('[DEV] 跳转到 onboarding')
-            uni.redirectTo({ url: '/pages/onboarding/index' })
-        } else {
-            console.log('[DEV] 跳转到 dashboard')
-            uni.switchTab({ url: '/pages/dashboard/index' })
-        }
-    }, 1000)
 }
 </script>
 
@@ -540,4 +512,17 @@ const storeFakeTokenAndRedirect = async () => {
 .nav-text:active { color: #fff; }
 
 .dev-text { font-size: 12px; color: #fff; opacity: 0.1; }
+
+.apple-btn {
+    background: #ffffff;
+    color: #000000;
+    height: 48px;
+    border-radius: 24px;
+    box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+.apple-btn:active {
+    transform: scale(0.96);
+}
+.Apple-text { color: #000000; }
 </style>

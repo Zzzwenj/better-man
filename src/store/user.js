@@ -39,7 +39,7 @@ export const useUserStore = defineStore('user', {
             // 是否领取过一次性的 24 小时越权体验药剂
             hasUsedTrial: uni.getStorageSync('neuro_has_used_trial') === 'true',
 
-            // --- 暗网黑市购买与装备状态 ---
+            // --- 极客集市购买与装备状态 ---
             // 采用 Dict { 'f_01': 1735689600000 } 记录每个物品的过期时间戳
             ownedItems: (() => {
                 const stored = uni.getStorageSync('neuro_owned_items')
@@ -98,63 +98,13 @@ export const useUserStore = defineStore('user', {
         }
     },
     actions: {
-        // 购买黑市商品
+        // 购买集市商品
         purchaseItem(item) {
-            if (this.spendCoins(item.price, `购买黑市商品: ${item.title}`)) {
+            if (this.spendCoins(item.price, `购买集市商品: ${item.title}`)) {
                 // 如果是消耗品（例如EMP喇叭 w_01），不记录永久拥有，直接激活效果
                 if (item.id === 'w_01') {
                     this.equipped.empActive = true
                     uni.showToast({ title: '全频 EMP 脉冲已加载', icon: 'none' })
-                }
-                // 盲盒逻辑预留（直接消耗币，这里不处理抽取结果）
-                else if (item.id === 'b_01') {
-                    // 奖池定义
-                    const pool = [
-                        { id: 'f_01', type: 'frame', name: '深空等离子', duration: 15, prob: 0.15 },
-                        { id: 'f_02', type: 'frame', name: '故障干扰线', duration: 15, prob: 0.15 },
-                        { id: 't_01', type: 'title', name: '深渊行者', duration: 15, prob: 0.10 },
-                        { id: 't_02', type: 'title', name: '绝命赌徒', duration: 15, prob: 0.10 },
-                        { id: 't_03', type: 'title', name: '赛博精神病', duration: 15, prob: 0.05 },
-                        { id: 'w_01', type: 'emp', name: '全频 EMP', duration: 0, prob: 0.20 }, // 单次消耗
-                        { id: 'coin', type: 'currency', name: '神经币碎片 (x200)', amount: 200, prob: 0.25 }
-                    ]
-
-                    // 轮盘抽奖
-                    const rand = Math.random()
-                    let sum = 0
-                    let wonItem = null
-                    for (const prize of pool) {
-                        sum += prize.prob
-                        if (rand <= sum) {
-                            wonItem = prize
-                            break
-                        }
-                    }
-
-                    if (wonItem) {
-                        if (wonItem.type === 'currency') {
-                            this.earnCoins(wonItem.amount, '盲盒中奖')
-                            uni.showToast({ title: `恭喜抽中 ${wonItem.name}`, icon: 'none' })
-                        } else if (wonItem.type === 'emp') {
-                            this.equipped.empActive = true
-                            uni.showToast({ title: `恭喜抽中 ${wonItem.name}`, icon: 'none' })
-                        } else {
-                            const now = getRealTime()
-                            const durationMs = wonItem.duration * 24 * 60 * 60 * 1000
-                            const exp = this.ownedItems[wonItem.id]
-
-                            if (exp && exp > now) {
-                                this.ownedItems[wonItem.id] = exp + durationMs
-                            } else {
-                                this.ownedItems[wonItem.id] = now + durationMs
-                                // 自动装备
-                                this.equipItem(wonItem.id, true) // 传入 true 以略过 toast
-                            }
-                            uni.showToast({ title: `恭喜获得 [${wonItem.name}]`, icon: 'none' })
-                        }
-                        uni.setStorageSync('neuro_owned_items', this.ownedItems)
-                        uni.setStorageSync('neuro_equipped', this.equipped)
-                    }
                 }
                 // 彩蛋等特效 / 期限装扮类 (30 天为例)
                 else {

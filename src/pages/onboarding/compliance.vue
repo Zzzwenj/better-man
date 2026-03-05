@@ -16,10 +16,10 @@
        <view class="contract-card">
           <text class="section-title">§ 核心预警与免责声明</text>
           <text class="content-text mt-2 block">
-            1. <text class="highlight">极端干预策略</text>：为重塑多巴胺受体，本系统包含极强的情绪打击、物理阻断、赛博警报等非传统刺激手段。若您患有心脏病、抑郁症或易出现极端应激反应，<text style="color: #ef4444; font-weight: bold;">请勿继续</text>。
+            1. <text class="highlight">高强度自律训练</text>：本系统包含物理阻断、专注警报等非传统激励手段，旨在帮助你建立自律习惯。若您有特殊健康状况，<text style="color: #ef4444; font-weight: bold;">请咨询专业人士后再决定是否继续</text>。
           </text>
           <text class="content-text mt-2 block">
-            2. <text class="highlight">连坐与对赌</text>：部分战区涉及积分扣除及小队连坐判定，您的违规行为可能导致资产清零及队友进度闪崩。
+            2. <text class="highlight">战区连坐机制</text>：部分战区涉及积分扣除及小队连坐判定，您的违规行为可能导致积分清零及队友进度受损。
           </text>
 
           <text class="section-title mt-6 block">§ 隐私防线承诺</text>

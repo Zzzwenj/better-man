@@ -372,3 +372,30 @@
   - 清理了 `SystemControls` 的外部间隙断层，使版本号声明、法律基建入口与底部栏无缝衔接。
 - **黑金价格拦截重铸 (Word Break & Flex Lock)**：
   - 针对窄屏手机特权卡片标题强制挤断价格标签 `[1500神经币/月]` 的车祸现场。追加了 `flex-shrink: 0` 全局锁死权，并允许主述文字自行折断下落，彻底修除了视觉污染。
+
+## 阶段 34：全域合规消毒与奖惩闭环贯通 (Compliance Scrub & Reward Loop Closure)
+- **涉赌词汇核弹级清洗 (Gambling Term Eradication)**：
+  - 全局搜索并替换了所有涉赌高危词汇：「暗网黑市」→「极客集市」、「生死血契」→「破釜沉舟契约」、「绝命赌徒」→「破釜沉舟」、「连坐与对赌」→「战区连坐机制」。
+  - 覆盖范围涉及 `pages.json`、`store/index.vue`、`chat-channel.vue`、`user.js`、`ContractModal.vue`、`CyberTransactionModal.vue` 等核心文件。
+- **涉医越权表述下架 (Medical Claim Downgrade)**：
+  - 「临床级认知行为干预」→「专业级认知行为辅导」、「临床生理学预估」→「自律数据分析」、「临床红线」→「高危级别」。
+  - 「多巴胺受体遭到破坏」→「自律防线出现裂隙」、「多巴胺受体分布」→ 习惯养成与自控机制。
+  - 「临床神经科学」→「神经科学常识」、「多巴胺受体上调」→ 大脑奖励系统自我修复。
+  - 覆盖 `compliance.vue`、`companion/index.vue`、`journey`、`onboarding`、`MotivationalQuote`、`DailyAuditModal`、`theme.js` 等 8 个文件。
+- **开发者后门剔除 (Dev Backdoor Removal)**：
+  - 删除了 `login/index.vue` 中的 DEV 免密入口及百万代币拨发逻辑。
+  - 清理了 Profile 页面中"神经元导师(Nova)"和"实时监控中"的医疗监控暗示。
+- **盲盒系统完整下架 (Loot Box Full Removal)**：
+  - 删除了 `store/index.vue` 中的「神经元盲盒 (b_01)」商品及其前端抽奖逻辑（含"病毒扣款"侵权操作）。
+  - 删除了 `store/user.js` 中 `purchaseItem` 的 50 行盲盒奖池/轮盘代码。
+  - Tab 名从「盲盒与彩蛋」改为「特效彩蛋」。
+- **未实现画饼商品清除 (Vaporware Cleanup)**：
+  - 删除了「赛博坦之怒 (w_02)」— 描述写着"开发中"，功能完全未实现的占位商品。
+- **拦截器奖惩闭环贯通 (Interceptor Reward/Penalty Loop)**：
+  - 成功完成紧急拦截任务 → 奖励 **+50** 神经币 + 写入打卡记录 `1`。
+  - 破戒放弃 → 惩罚扣除 **-100** 神经币（原无扣除）+ 战区连坐上报。
+  - 每日自检通过 → 写入打卡记录 `1` + 奖励 **+10** 神经币。
+  - 热力图 `neuro_checkins` 现在有三个实际写入源，草坪能正确渲染绿点/红点。
+- **支付链路合规化 (Payment Compliance)**：
+  - `PremiumCard.vue` 改为真实法币定价（15¥/月），接入 `paymentManager` 的 iOS IAP / Android 支付流。
+  - 移除了虚拟货币购买实物（"实体结衣礼盒"）的违规描述。

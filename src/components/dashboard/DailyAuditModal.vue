@@ -25,7 +25,7 @@
           <text class="audit-icon">💀</text>
         </view>
         <text class="title text-red">审判前夕</text>
-        <text class="subtitle mt-3">多巴胺受体遭到破坏，系统即将判定突触断裂。<br/>这段时间累积的神经重建天数面临清火。</text>
+        <text class="subtitle mt-3">自律防线出现裂隙，系统即将判定突触断裂。<br/>这段时间累积的神经重建天数面临清火。</text>
         
         <view class="btn danger-btn-solid mt-8" @click="onRelapse" hover-class="btn-hover-danger-solid">
           <text class="btn-text text-white">接受系统审判 (准备清零)</text>
@@ -41,6 +41,7 @@
 
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
+import { useUserStore } from '@/store/user.js'
 
 const props = defineProps({
   show: Boolean
@@ -64,7 +65,16 @@ const onSafe = () => {
     const today = new Date().toDateString()
     uni.setStorageSync('last_checkin_date', today)
     
-    uni.showToast({ title: '突触网络稳定，继续保持', icon: 'none' })
+    // ✅ 写入每日成功打卡记录 "1"，供 Journey 热力图读取
+    let checkins = uni.getStorageSync('neuro_checkins') || ''
+    checkins += '1'
+    uni.setStorageSync('neuro_checkins', checkins)
+    
+    // ✅ 每日自检成功奖励 10 神经币
+    const userStore = useUserStore()
+    userStore.earnCoins(10, '每日自律自检通过奖励')
+    
+    uni.showToast({ title: '突触稳定 +10币，继续保持', icon: 'none' })
     emit('close')
 }
 

@@ -1,17 +1,17 @@
 <template>
   <view :class="['premium-card', userStore.isVipActive ? 'active-contract' : '']">
       <!-- 会员订阅主体区 -->
-      <view @click="$emit('upgrade')" hover-class="card-hover" class="contract-main">
+      <view @click="handleUpgradeClick" hover-class="card-hover" class="contract-main">
           <view class="flex justify-between items-center w-full">
               <text class="premium-title flex-1 mr-2" style="word-break: break-all; line-height: 1.2;">{{ userStore.isVipActive ? '👑 黑金权限生效中' : '🔥 黑金通行证 (全量特权)' }}</text>
               <view class="price-chip" style="flex-shrink: 0;" v-if="!userStore.isVipActive">
-                  <text>1500 神经币 / 月</text>
+                  <text>15 ¥ / 月</text>
               </view>
           </view>
           
           <text class="premium-desc block mt-2" v-if="!userStore.isVipActive">
-            解锁深网最高权限。破戒月费<text style="color: #00e5ff; font-weight: bold;">首3次免单原谅</text>，
-            绝版皇冠标识，专属实体结衣礼盒，以及每月最高 1500 神经币战略储备金！
+            部署最高算力节点。每月<text style="color: #00e5ff; font-weight: bold;">额外领取 1500 神经储备金</text>，
+            解锁绝版黑金冠冕标识，激活专属战区主理人通道，以及每月最高 1500 神经币战略储备金！
           </text>
           
           <view class="contract-progress mt-4 flex-col" v-else>
@@ -40,9 +40,44 @@
 
 <script setup>
 import { useUserStore } from '@/store/user.js'
+import { paymentManager } from '@/utils/paymentManager.js'
 
 defineEmits(['upgrade', 'watchAd'])
 const userStore = useUserStore()
+
+// 拦截原生点击，如果是非 VIP 则拉起真实环境
+const handleUpgradeClick = async () => {
+    if (userStore.isVipActive) {
+        // 如果已经是 VIP，只做事件穿透，让父级弹窗展示剩余时间
+        uni.$emit('vip-info-click') 
+        return
+    }
+
+    const platform = uni.getSystemInfoSync().platform
+    // #ifdef APP-PLUS
+    if (platform === 'ios') {
+        uni.showLoading({ title: '安全连接 App Store...' })
+        try {
+            await paymentManager.requestPayment({
+                productId: 'vip_1month',
+                provider: 'appleiap',
+                price: 1500 // 分
+            })
+            uni.hideLoading()
+            // 付费成功，手动赋予权益（真实项目应由服务器发端回调加资产）
+            userStore.purchaseVip(31, 'App Store 内购特权开通')
+            uni.showToast({ title: '特权链已接通', icon: 'success' })
+        } catch (e) {
+            uni.hideLoading()
+            uni.showToast({ title: 'Apple 支付中断', icon: 'none' })
+        }
+        return
+    }
+    // #endif
+
+    // [安卓/H5/小程序] 抛出事件给外部去调起微信/支付宝弹窗
+    uni.$emit('trigger-android-pay', { price: 1500, type: 'vip_1month' })
+}
 </script>
 
 <style lang="scss" scoped>

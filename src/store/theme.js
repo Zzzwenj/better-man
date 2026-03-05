@@ -35,7 +35,7 @@ export const useThemeStore = defineStore('theme', {
                 {
                     id: 'cyber',
                     name: 'Cyber Neon',
-                    desc: '青紫交织，基础临床协议',
+                    desc: '青紫交织，基础自律协议',
                     primary: '#00e5ff',
                     primaryGradientStart: '#00C6FF',
                     primaryGradientEnd: '#0072FF',

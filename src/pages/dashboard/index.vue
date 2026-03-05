@@ -79,9 +79,11 @@ import DefibrillatorModal from '../../components/dashboard/DefibrillatorModal.vu
 import DailyAuditModal from '../../components/dashboard/DailyAuditModal.vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useWarzoneStore } from '../../store/warzone.js'
+import { useUserStore } from '../../store/user.js'
 
 const themeStore = useThemeStore()
 const warzoneStore = useWarzoneStore()
+const userStore = useUserStore()
 
 const hoursClean = ref(0)
 const hoursSaved = ref(0)
@@ -243,6 +245,9 @@ const onGiveUp = () => {
     history += '0'
     uni.setStorageSync('neuro_checkins', history)
     
+    // ✅ 惩罚闭环：破戒扣除 100 神经币
+    userStore.spendCoins(100, '破戒惩罚扣除')
+    
     hoursClean.value = 0
     hoursSaved.value = 0
     dopamineIndex.value = 10
@@ -250,7 +255,7 @@ const onGiveUp = () => {
     // 更新打卡日期以屏蔽今日后续自检
     uni.setStorageSync('last_checkin_date', new Date().toDateString())
     
-    uni.showToast({ title: '参数已清零，请重新开始', icon: 'none' })
+    uni.showToast({ title: '参数已清零 -100币，请重新开始', icon: 'none' })
 }
 
 // 选择除颤挽救 (扣除代价，只回退 50% 时间)
@@ -296,8 +301,17 @@ const doAction = () => {
   if (completedActions.value >= currentIntervention.value.target) {
     isPanicMode.value = false
     if (panicInterval) clearInterval(panicInterval)
+    
+    // ✅ 奖励闭环：成功完成拦截任务，奖励 50 神经币
+    userStore.earnCoins(50, '完成紧急拦截任务奖励')
+    
+    // ✅ 记录成功打卡 (1 = 成功抵抗)
+    let checkins = uni.getStorageSync('neuro_checkins') || ''
+    checkins += '1'
+    uni.setStorageSync('neuro_checkins', checkins)
+    
     uni.showToast({
-      title: '干预解除',
+      title: '干预解除 +50币',
       icon: 'success'
     })
   }

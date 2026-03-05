@@ -12,7 +12,7 @@
         <!-- 标题区 -->
         <view class="flex-1 flex-col items-center justify-center">
           <text class="nav-title">REWIRE AI</text>
-          <text class="nav-subtitle block mt-1 text-center">临床级认知行为干预</text>
+          <text class="nav-subtitle block mt-1 text-center">专业级认知行为辅导</text>
         </view>
 
         <!-- 右侧对等空位放置在线状态 -->
@@ -155,7 +155,7 @@ const sendMessage = async () => {
   if (!userStore.isVipActive) {
       uni.showModal({
           title: '算力节点受限',
-          content: 'REWIRE AI 临床级心理干预大模型仅向「黑金档案」开放。\n升级黑金获取无限次专属抗争辅导。',
+          content: 'REWIRE AI 专业级自律辅导大模型仅向「黑金档案」开放。\n升级黑金获取无限次专属抗争辅导。',
           confirmText: '立刻升级',
           cancelText: '暂时不了',
           success: (res) => {
