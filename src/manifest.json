@@ -43,7 +43,17 @@
                     "NSMicrophoneUsageDescription": "系统需要访问麦克风以允许语音指令输入"
                 }
             },
-            "sdkConfigs": {}
+            "sdkConfigs": {
+                "payment": {
+                    "appleiap": {},
+                    "alipay": {
+                        "__platform__": [
+                            "ios",
+                            "android"
+                        ]
+                    }
+                }
+            }
         },
         "nativePlugins": {}
     },
@@ -71,7 +81,7 @@
         "enable": false
     },
     "uni-push": {
-        "enable": true
+        "enable": false
     },
     "uniCloud": {
         "aliyun": {

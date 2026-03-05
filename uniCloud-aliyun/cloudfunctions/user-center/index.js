@@ -127,20 +127,26 @@ async function deleteAccount(collection, uid) {
 }
 
 async function syncAssets(collection, uid, payload) {
-    const { neuroCoins, ownedItems, equipped } = payload
+    const { neuroCoins, ownedItems, equipped, vipExpire, monthlyFreeReviveCnt, lastReviveMonth, neuroStartDate, neuroCheckins, neuroBaseline } = payload
 
     // 采用合并更新
     const updateData = {}
     if (neuroCoins !== undefined) updateData.neuro_coins = neuroCoins
     if (ownedItems !== undefined) updateData.owned_items = ownedItems
     if (equipped !== undefined) updateData.equipped = equipped
+    if (vipExpire !== undefined) updateData.vip_expire = vipExpire
+    if (monthlyFreeReviveCnt !== undefined) updateData.monthly_free_revive_cnt = monthlyFreeReviveCnt
+    if (lastReviveMonth !== undefined) updateData.last_revive_month = lastReviveMonth
+    if (neuroStartDate !== undefined) updateData.neuro_start_date = neuroStartDate
+    if (neuroCheckins !== undefined) updateData.neuro_checkins = neuroCheckins
+    if (neuroBaseline !== undefined) updateData.neuro_baseline = neuroBaseline
 
     if (Object.keys(updateData).length > 0) {
         updateData.updated_at = Date.now()
         await collection.doc(uid).update(updateData)
     }
 
-    return { code: 0, msg: '资产链已同步' }
+    return { code: 0, msg: '资产链与档案已同步' }
 }
 
 async function syncBaseline(collection, uid, payload) {

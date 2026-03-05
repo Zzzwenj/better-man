@@ -6,9 +6,9 @@
     <view class="ambient-glow"></view>
 
     <!-- 顶部标题 -->
-    <view class="header mt-10 px-6 fade-up">
-       <text class="title">身份验证与契约签署</text>
-       <text class="subtitle mt-3">你即将接入【觉醒空间】神经网络。在此之前，系统需要与你缔结具备法律效力的单向契约。</text>
+    <view class="header mt-4 px-6 fade-up">
+       <text class="title block">身份验证与契约签署</text>
+       <text class="subtitle mt-3 block">你即将接入【觉醒空间】神经网络。在此之前，系统需要与你缔结具备法律效力的单向契约。</text>
     </view>
 
     <!-- 合规文本滚动区 -->
@@ -28,17 +28,21 @@
           </text>
 
           <view class="links-row flex flex-col mt-8">
-             <view class="link-item flex items-center mb-3" @click="goTo('terms')" hover-class="link-hover">
-               <text class="icon-link">📄</text>
-               <text class="link-text ml-2">完整阅读《产品服务协议》</text>
+             <view class="checkbox-row flex items-start mb-6" @click="agreeTerms = !agreeTerms">
+               <view class="cyber-checkbox mt-1 mr-3" :class="{ 'checked': agreeTerms }">
+                 <view class="inner-dot" v-if="agreeTerms"></view>
+               </view>
+               <text class="check-desc flex-1">我已满 18 周岁，并已完整阅读且同意 <text class="highlight-link" @click.stop="goTo('terms')">《产品服务协议》</text></text>
              </view>
-             <view class="link-item flex items-center" @click="goTo('privacy')" hover-class="link-hover">
-               <text class="icon-link">🔒</text>
-               <text class="link-text ml-2">完整阅读《隐私防线政策》</text>
+             
+             <view class="checkbox-row flex items-start" @click="agreePrivacy = !agreePrivacy">
+               <view class="cyber-checkbox mt-1 mr-3" :class="{ 'checked': agreePrivacy }">
+                 <view class="inner-dot" v-if="agreePrivacy"></view>
+               </view>
+               <text class="check-desc flex-1">我已明悉并同意 <text class="highlight-link" @click.stop="goTo('privacy')">《隐私防线政策》</text> 中的所有数据处理条例</text>
              </view>
           </view>
        </view>
-       <view class="pb-10"></view>
     </scroll-view>
 
     <!-- 底部硬核按钮 -->
@@ -47,7 +51,7 @@
            <text class="refuse-text">拒绝并切断连接</text>
         </view>
 
-        <view class="btn-accept flex justify-center items-center" @click="handleAccept" hover-class="btn-pressed">
+        <view class="btn-accept flex justify-center items-center" :class="{ 'disabled': !bothAgreed }" @click="handleAccept" :hover-class="bothAgreed ? 'btn-pressed' : ''">
            <text class="accept-text">我已阅读并签署契约</text>
         </view>
     </view>
@@ -55,10 +59,15 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()
+
+const agreeTerms = ref(false)
+const agreePrivacy = ref(false)
+
+const bothAgreed = computed(() => agreeTerms.value && agreePrivacy.value)
 
 onMounted(() => {
     uni.hideTabBar()
@@ -69,19 +78,34 @@ const goTo = (type) => {
 }
 
 const handleRefuse = () => {
-    uni.showToast({ title: '已断开神经元连接', icon: 'none' })
+    uni.showToast({ title: '拒绝契约，切断神经元连接', icon: 'none' })
+    uni.removeStorageSync('uni_id_token')
     setTimeout(() => {
         // #ifdef APP-PLUS
         plus.runtime.quit()
         // #endif
         
         // #ifndef APP-PLUS
-        uni.reLaunch({ url: '/pages/login/index' })
+        // 非 App 环境无法直接退杀进程，提示用户自行关闭网页/小程序
+        uni.showModal({
+            title: '连接已断开',
+            content: '因未签署安全契约，系统无法介入。请手动关闭当前页面或应用。',
+            showCancel: false,
+            confirmText: '明白',
+            confirmColor: '#71717a'
+        })
         // #endif
     }, 1500)
 }
 
 const handleAccept = () => {
+    if (!bothAgreed.value) {
+        uni.showToast({ title: '请先勾选并签署上方所有契约', icon: 'none' })
+        // 添加震动提醒
+        uni.vibrateShort()
+        return
+    }
+
     uni.vibrateShort()
     uni.setStorageSync('privacy_agreed', true)
     
@@ -111,14 +135,15 @@ const handleAccept = () => {
   overflow: hidden;
 }
 
-.safe-area-top { height: calc(var(--status-bar-height) + 10px); }
+.safe-area-top { height: calc(var(--status-bar-height) + 40px); }
 .px-6 { padding: 0 24px; }
-.mt-10 { margin-top: 40px; }
+.mt-4 { margin-top: 16px; }
 .mt-8 { margin-top: 32px; }
 .mt-6 { margin-top: 24px; }
 .mt-3 { margin-top: 12px; }
 .mt-2 { margin-top: 8px; }
-.ml-2 { margin-left: 8px; }
+.mt-1 { margin-top: 4px; }
+.mr-3 { margin-right: 12px; }
 .mb-4 { margin-bottom: 16px; }
 .mb-3 { margin-bottom: 12px; }
 .pb-10 { padding-bottom: 40px; }
@@ -164,24 +189,59 @@ const handleAccept = () => {
 
 .links-row {
   border-top: 1px dashed rgba(255, 255, 255, 0.1);
-  padding-top: 20px;
+  padding-top: 24px;
 }
 
-.link-item {
-  background: rgba(0, 0, 0, 0.3);
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.2s;
+.checkbox-row {
+  transition: all 0.3s;
 }
-.link-hover { background: rgba(0, 229, 255, 0.1); border-color: rgba(0, 229, 255, 0.4); }
+
+.cyber-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #52525b;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  flex-shrink: 0;
+}
+.cyber-checkbox.checked {
+  border-color: var(--theme-primary, #00e5ff);
+  background: rgba(0, 229, 255, 0.1);
+}
+.inner-dot {
+  width: 10px;
+  height: 10px;
+  background: var(--theme-primary, #00e5ff);
+  border-radius: 3px;
+  box-shadow: 0 0 10px var(--theme-shadow-primary);
+}
+
+.check-desc {
+  font-size: 13px;
+  color: #a1a1aa;
+  line-height: 1.6;
+}
+
+.highlight-link {
+  color: var(--theme-primary, #00e5ff);
+  font-weight: bold;
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 229, 255, 0.3);
+  text-underline-offset: 2px;
+}
+.highlight-link:active {
+  opacity: 0.7;
+}
+
 .icon-link { font-size: 16px; }
-.link-text { font-size: 14px; font-weight: bold; color: #f4f4f5;}
 
 .footer-action {
   z-index: 10;
   background: linear-gradient(180deg, transparent 0%, #050505 40%);
-  padding-top: 40px;
+  padding-top: 20px;
 }
 
 .btn-refuse {
@@ -196,10 +256,16 @@ const handleAccept = () => {
   background: var(--theme-primary, #00e5ff);
   border-radius: 16px;
   box-shadow: 0 10px 20px rgba(0, 229, 255, 0.2);
+  transition: all 0.3s;
+}
+.btn-accept.disabled {
+  background: #27272a;
+  box-shadow: none;
+  opacity: 0.5;
 }
 .accept-text { font-size: 16px; color: #000; font-weight: 900; letter-spacing: 1.5px;}
 
-.btn-pressed { transform: scale(0.97); opacity: 0.9; }
+.btn-pressed:not(.disabled) { transform: scale(0.97); opacity: 0.9; }
 
 /* 极其平滑的入场动画 */
 .fade-up {

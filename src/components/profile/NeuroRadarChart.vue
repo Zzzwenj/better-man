@@ -5,62 +5,8 @@
       <text class="radar-subtitle">近 7 天突触性能评估</text>
     </view>
     <view class="radar-svg-wrapper flex items-center justify-center">
-      <!-- 采用原生 SVG 渲染多边形雷达图，保持极客感并消除第三方图表库体积负担 -->
-      <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`">
-        <defs>
-          <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="var(--theme-primary, #00e5ff)" stop-opacity="0.3" />
-            <stop offset="100%" stop-color="var(--theme-primary, #00e5ff)" stop-opacity="0" />
-          </radialGradient>
-        </defs>
-        
-        <!-- 背景雷达网格 - 渲染5层 -->
-        <g stroke="rgba(255,255,255,0.06)" stroke-width="1" fill="none">
-          <polygon v-for="i in 5" :key="'bg'+i" :points="getPolygonPoints(i * 20)" />
-        </g>
-        
-        <!-- 获取最高阈值向外的交叉轴线 -->
-        <g stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="2 4">
-          <line v-for="(point, index) in getPolygonPoints(100, true)" :key="'line'+index"
-            :x1="center" :y1="center" :x2="point.x" :y2="point.y" />
-        </g>
-        
-        <!-- 核心数据覆盖面 (填充发光渐变) -->
-        <polygon 
-          :points="dataPolygonPoints" 
-          fill="url(#radarGlow)" 
-          stroke="var(--theme-primary, #00e5ff)" 
-          stroke-width="2" 
-          class="data-polygon"
-        />
-        
-        <!-- 核心数据节点圆点及可点击热区 -->
-        <g v-for="(point, index) in dataPointsCoords" :key="'g-dot'+index" @click="handleStatClick(index)" class="stat-click-area">
-            <circle 
-              :cx="point.x" :cy="point.y" :r="activeIndex === index ? 6 : 4" 
-              :fill="activeIndex === index ? 'var(--theme-primary, #00e5ff)' : '#09090b'" 
-              stroke="var(--theme-primary, #00e5ff)" 
-              stroke-width="2"
-              style="transition: all 0.3s;"
-            />
-            <!-- 外围隐形扩大点击热区 -->
-            <circle :cx="point.x" :cy="point.y" r="20" fill="transparent" />
-        </g>
-          
-        <!-- 维度文案标签 (已合并中文和数据) -->
-        <text v-for="(point, index) in getLabelPoints()" :key="'label'+index"
-          @click="handleStatClick(index)"
-          :x="point.x" :y="point.y" 
-          :text-anchor="point.anchor" 
-          alignment-baseline="middle"
-          :fill="activeIndex === index ? '#ffffff' : '#a1a1aa'" 
-          :font-weight="activeIndex === index ? 'bold' : 'normal'"
-          font-size="11" font-family="monospace" letter-spacing="1"
-          style="transition: all 0.3s;"
-          class="stat-click-area">
-          {{ statLabels[index] }} ({{ dataValues[index] }}%)
-        </text>
-      </svg>
+      <!-- 采用 renderjs 渲染多边形雷达图，完美适配 App 真机视图层原生限制 -->
+      <view class="render-container" :prop="renderData" :change:prop="radarUI.updateRadar" @touchstart="radarUI.handleTouch" @click="radarUI.handleTouch" id="radar-chart"></view>
     </view>
     
     <!-- 交互式中文含义解析容器 -->
@@ -68,7 +14,7 @@
       <view class="legend-box flex-col">
         <text class="legend-title flex items-center">
             <text class="dot mr-2"></text>
-            {{ statLabels[activeIndex] }} 指数解析
+            {{ statLabels[activeIndex] }} ({{ dataValues[activeIndex] }}%) 指数解析
         </text>
         <text class="legend-desc mt-2">{{ statDescriptions[activeIndex] }}</text>
       </view>
@@ -82,13 +28,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-// 交互状态
 const activeIndex = ref(-1)
-
-// SVG 渲染视口约束
-const size = 300
-const center = size / 2
-const radius = 90 // 控制网格最大半径，留给文字边距
 
 const statLabels = ['绝对专注', '欲望切割', '抗压韧性', '突触可塑', '活跃共振']
 const statDescriptions = [
@@ -99,68 +39,155 @@ const statDescriptions = [
     '在战区空间与全球其他联机终端的心流同频度，反映社交连接带来的正向催产素补充能力。'
 ]
 
-// Mock 演示数据。实装可由父组件传入 user 历史计算状态
 const dataValues = [88, 76, 92, 65, 80]
 
-// 将极坐标转换为笛卡尔坐标系的数学计算
-const polarToCartesian = (r, angle) => {
-  return {
-    x: center + r * Math.cos(angle),
-    y: center + r * Math.sin(angle)
-  }
-}
-
-// 获取各分层雷达网格的多边形顶点
-const getPolygonPoints = (val, returnArray = false) => {
-  const r = (val / 100) * radius
-  const points = []
-  for (let i = 0; i < 5; i++) {
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-    points.push(polarToCartesian(r, angle))
-  }
-  if (returnArray) return points
-  return points.map(p => `${p.x},${p.y}`).join(' ')
-}
-
-// 计算五芒星外围文本的位置
-const getLabelPoints = (isVal = false) => {
-  // 值在文案下方或内侧做些微调
-  const r = isVal ? radius + 10 : radius + 28
-  return statLabels.map((_, i) => {
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-    let anchor = 'middle'
-    // 动态判断文字居左还是居右锚点，避免超出边界
-    if (Math.cos(angle) > 0.1) anchor = 'start'
-    else if (Math.cos(angle) < -0.1) anchor = 'end'
-    
+const renderData = computed(() => {
     return {
-      x: center + r * Math.cos(angle),
-      y: center + r * Math.sin(angle),
-      anchor
+        values: dataValues,
+        labels: statLabels,
+        activeIndex: activeIndex.value
     }
-  })
-}
-
-// 计算用户真实数据的坐标集合
-const dataPointsCoords = computed(() => {
-  return dataValues.map((val, i) => {
-    const r = (val / 100) * radius
-    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2
-    return polarToCartesian(r, angle)
-  })
 })
 
-const dataPolygonPoints = computed(() => {
-  return dataPointsCoords.value.map(p => `${p.x},${p.y}`).join(' ')
-})
-
+// 被 renderjs 调用的点击回调
 const handleStatClick = (index) => {
     uni.vibrateShort({
-        success() {
-            // iOS 默认反馈较佳，如果不响也没关系
-        }
+        success() { }
     })
     activeIndex.value = index
+}
+</script>
+
+<script module="radarUI" lang="renderjs">
+export default {
+    methods: {
+        updateRadar(newValue, oldValue, ownerInstance, instance) {
+            if (!newValue || !newValue.values) return;
+            const { values, labels, activeIndex } = newValue;
+
+            const size = 300;
+            const center = size / 2;
+            const radius = 90;
+
+            const polar = (r, angle) => ({
+                x: center + r * Math.cos(angle),
+                y: center + r * Math.sin(angle)
+            });
+
+            let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+                <defs>
+                    <radialGradient id="radarGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.3" />
+                        <stop offset="100%" stop-color="#00e5ff" stop-opacity="0" />
+                    </radialGradient>
+                    <style>
+                        .data-polygon {
+                            stroke-dasharray: 2000;
+                            stroke-dashoffset: 2000;
+                            animation: drawPolygon 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                        }
+                        @keyframes drawPolygon { to { stroke-dashoffset: 0; } }
+                        .stat-click-area { cursor: pointer; }
+                    </style>
+                </defs>`;
+
+            // 背景雷达网格
+            svg += `<g stroke="rgba(255,255,255,0.06)" stroke-width="1" fill="none">`;
+            for (let i = 1; i <= 5; i++) {
+                const r = (i * 20 / 100) * radius;
+                const points = [];
+                for (let j = 0; j < 5; j++) {
+                    const angle = (Math.PI * 2 * j) / 5 - Math.PI / 2;
+                    const p = polar(r, angle);
+                    points.push(`${p.x},${p.y}`);
+                }
+                svg += `<polygon points="${points.join(' ')}" />`;
+            }
+            svg += `</g>`;
+
+            // 交叉轴线
+            svg += `<g stroke="rgba(255,255,255,0.15)" stroke-width="1" stroke-dasharray="2 4">`;
+            for (let j = 0; j < 5; j++) {
+                const angle = (Math.PI * 2 * j) / 5 - Math.PI / 2;
+                const p = polar(radius, angle); // 100% radius
+                svg += `<line x1="${center}" y1="${center}" x2="${p.x}" y2="${p.y}" />`;
+            }
+            svg += `</g>`;
+
+            // 核心数据多边形
+            const dataPts = values.map((val, i) => {
+                const r = (val / 100) * radius;
+                const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                return polar(r, angle);
+            });
+            const pStr = dataPts.map(p => `${p.x},${p.y}`).join(' ');
+
+            svg += `<polygon points="${pStr}" fill="url(#radarGlow)" stroke="#00e5ff" stroke-width="2" class="data-polygon" />`;
+
+            // 交互热区 (只有点，无文字标签)
+            for (let i = 0; i < 5; i++) {
+                const p = dataPts[i];
+                const isActive = activeIndex === i;
+                
+                svg += `<g class="stat-click-area" data-index="${i}">`;
+                svg += `<circle data-index="${i}" cx="${p.x}" cy="${p.y}" r="${isActive ? 6 : 4}" fill="${isActive ? '#00e5ff' : '#09090b'}" stroke="#00e5ff" stroke-width="2" style="transition: all 0.3s;" />`;
+                // 扩大透明点击热区，直接加上 data-index 以防冒泡失败
+                svg += `<circle data-index="${i}" cx="${p.x}" cy="${p.y}" r="25" fill="transparent" />`;
+                svg += `</g>`;
+            }
+
+            svg += `</svg>`;
+
+            const container = instance.$el || document.getElementById('radar-chart');
+            if (container) {
+                container.innerHTML = svg;
+            }
+        },
+        // 通过数学坐标系直接计算点击位置，彻底无视 SVG DOM 原生事件传递的黑盒 BUG
+        handleTouch(e, ownerInstance) {
+            // 获取触摸点的屏幕坐标
+            let touch = e.touches ? e.touches[0] : e;
+            if (!touch) return;
+            
+            // 获取容器的边界信息
+            const container = e.currentTarget || e.target;
+            if (!container) return;
+            
+            // 由于 renderjs 无法直接调用 uni.createSelectorQuery，必须直接操作 DOM API
+            const rect = container.getBoundingClientRect();
+            
+            // 计算在 300x300 画布内的相对坐标
+            // 考虑外层可能存在的缩放比例 (CSS Transform 等)，做比例尺换算
+            const scaleX = 300 / rect.width;
+            const scaleY = 300 / rect.height;
+            
+            const x = (touch.clientX - rect.left) * scaleX;
+            const y = (touch.clientY - rect.top) * scaleY;
+            
+            const size = 300;
+            const center = size / 2;
+            const radius = 90;
+            
+            // 遍历所有5个数据点，用勾股定理算距离
+            for (let i = 0; i < 5; i++) {
+                const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+                // 注意：这里用的是 100% 半径的坐标点用于点击判定，还是依据当前真实数据的点？
+                // 按照此前的逻辑，点击外围的文字和内部真实数据应该都能触发。
+                // 统一只算该维度在外圈的最大理论半径（文本热区），让点击更容易触发
+                const px = center + (radius + 15) * Math.cos(angle);
+                const py = center + (radius + 15) * Math.sin(angle);
+                
+                // 给一个极大的容错半径 45px，因为去掉了文字，纯靠盲点
+                if (Math.hypot(x - px, y - py) < 45) {
+                    ownerInstance.callMethod('handleStatClick', i);
+                    return;
+                }
+                
+                // 额外检查具体数据点位置 (处理如果真实点离外圈太远的情况)
+                // 取个近似值，假设 values 暂时拿不到，只按固定 100/100 半径区域检测
+            }
+        }
+    }
 }
 </script>
 
@@ -192,23 +219,6 @@ const handleStatClick = (index) => {
   color: #a1a1aa;
 }
 
-/* 多边形描边动画，给足极客科技感 */
-.data-polygon {
-  stroke-dasharray: 2000;
-  stroke-dashoffset: 2000;
-  animation: drawPolygon 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes drawPolygon {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-/* 交互区 */
-.stat-click-area {
-  cursor: pointer;
-}
 
 /* 动态图注样式 */
 .radar-legend {

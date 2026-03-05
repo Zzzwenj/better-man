@@ -464,7 +464,10 @@ export const useUserStore = defineStore('user', {
                             lastReviveMonth: this.lastReviveMonth,
                             // --- 【高危漏洞三修复】实时对账上传天数资产 ---
                             neuroStartDate: uni.getStorageSync('neuro_start_date'),
-                            neuroCheckins: uni.getStorageSync('neuro_checkins')
+                            neuroCheckins: uni.getStorageSync('neuro_checkins'),
+                            // --- 【高危漏洞二修复】全局档案核心资料上行同步 ---
+                            // 需 parse 为对象，因为云端存的是 Document Object 而非字符串
+                            neuroBaseline: uni.getStorageSync('neuro_baseline') ? JSON.parse(uni.getStorageSync('neuro_baseline')) : {}
                         }
                     }
                 })

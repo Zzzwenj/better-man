@@ -19,7 +19,8 @@ export default {
   onLaunch: function () {
     console.log('App Launch - 特工隐秘模式已激活 (伪装: 计算器)')
     
-    // 监听 uni-push 2.0 透传消息
+    // 监听 uni-push 2.0 透传消息 (暂不启用推送模块，避免打包报错)
+    /*
     uni.onPushMessage((res) => {
         console.log("收到推送透传消息：", res)
         if (res.type === 'receive') {
@@ -28,6 +29,7 @@ export default {
             chatStore.pushMessage(res.data.payload)
         }
     })
+    */
     
     // 【安全加固】启动时初始化时间防篡改校准
     const token = uni.getStorageSync('uni_id_token')
@@ -97,6 +99,7 @@ export default {
         if (!isPrivacyAgreed) {
            console.warn('[合规拦截] 未同意隐私协议，强制调度至合规阻断墙')
            uni.reLaunch({ url: '/pages/onboarding/compliance' })
+           // 【高危漏洞一修复】必须显式 return 斩断执行链，防止底层生命周期串联越权跳过重定向！
            return
         }
 
@@ -121,11 +124,22 @@ export default {
                     const profileRes = await Promise.race([cloudPromise, timeoutPromise])
                     
                     if (profileRes.result.code === 401 || profileRes.result.code === 404) {
-                        // 云端判定无效：账号被封/已彻底销毁/密码已改
-                        console.warn('[Auth] 云端验活失败，强制登出')
+                        // 云端判定无效：账号被封/已彻底销毁/密码已改/在其他终端全息重连
+                        console.warn('[Auth] 云端验活失败，互斥掉线')
                         uni.removeStorageSync('uni_id_token')
                         uni.removeStorageSync('uni_id_token_expired')
-                        uni.reLaunch({ url: '/pages/login/index' })
+                        
+                        // 【多端互斥挤占提醒】
+                        uni.showModal({
+                            title: '连接中断',
+                            content: '您的高级神经档案已在其他物理终端成功接入，当前连接已切断。如非本人操作，请立刻篡改密钥。',
+                            showCancel: false,
+                            confirmText: '重新部署',
+                            confirmColor: '#00e5ff',
+                            success: () => {
+                                uni.reLaunch({ url: '/pages/login/index' })
+                            }
+                        })
                         return
                     }
                     
@@ -137,6 +151,16 @@ export default {
                     } else {
                         uni.removeStorageSync('user_account_status')
                         uni.removeStorageSync('account_delete_at')
+                    }
+                    
+                    // --- 【高危漏洞二修复】全局档案核心资料下行同步 ---
+                    if (profileRes.result.data && profileRes.result.data.neuro_baseline) {
+                        const baseline = profileRes.result.data.neuro_baseline
+                        // 合并最高优先级的最新属性（如果存在）
+                        baseline.nickname = profileRes.result.data.nickname || baseline.nickname
+                        baseline.avatar = profileRes.result.data.avatar || baseline.avatar
+                        baseline.signature = profileRes.result.data.signature || baseline.signature
+                        uni.setStorageSync('neuro_baseline', JSON.stringify(baseline))
                     }
                 } catch (e) {
                     // 超时或网络异常 → 放行（离线容错）

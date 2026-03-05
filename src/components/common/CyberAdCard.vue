@@ -1,16 +1,8 @@
 <template>
   <view class="cyber-ad-card flex-col align-stretch" hover-class="card-hover">
     <view class="card-cover-wrap">
-      <!-- uni-ad 原生定制展示组件 -->
-      <ad-custom 
-        :adpid="adpid" 
-        @load="onAdLoad" 
-        @error="onAdError" 
-        class="native-ad-unit"
-      ></ad-custom>
-      
-      <!-- 叙事化蒙层：当广告未加载完成时显示 -->
-      <view v-if="!isLoaded" class="card-cover-placeholder flex items-center justify-center">
+      <!-- 叙事化蒙层：展示替代动画 (暂时屏蔽uni-ad，避免打包缺失模块报错) -->
+      <view class="card-cover-placeholder flex items-center justify-center">
         <view class="loading-ripple"></view>
         <text class="placeholder-text mt-4">能量信号扫描中...</text>
       </view>
@@ -45,17 +37,6 @@ const props = defineProps({
   }
 })
 
-const isLoaded = ref(false)
-
-const onAdLoad = (e) => {
-  console.log('[AdCard] 广告加载成功:', e)
-  isLoaded.value = true
-}
-
-const onAdError = (e) => {
-  console.error('[AdCard] 广告加载失败:', e)
-  isLoaded.value = false
-}
 </script>
 
 <style lang="scss" scoped>

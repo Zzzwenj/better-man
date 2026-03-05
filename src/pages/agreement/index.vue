@@ -172,14 +172,14 @@ onMounted(() => {
 .content-scroll {
   flex: 1;
   height: 0; /* 配合 flex: 1 撑满 */
-  padding: 0 24px 40px 24px;
+  padding: 0 24px;
   box-sizing: border-box;
   width: 100%;
 }
 
 .content-body {
   padding-top: 16px;
-  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
   width: 100%;
 }
@@ -207,6 +207,7 @@ onMounted(() => {
   font-size: 12px;
   color: #3f3f46;
   margin-top: 32px;
+  margin-bottom: 24px;
   text-align: center;
   font-family: monospace;
 }
