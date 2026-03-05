@@ -117,6 +117,7 @@
 import { ref, onMounted, computed, reactive } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
+import { useRewardAd } from '../../composables/useRewardAd.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
 import NeuroCoinIcon from '../../components/common/NeuroCoinIcon.vue'
@@ -141,6 +142,8 @@ const pinError = ref('')
 
 const isPendingDelete = ref(false)
 const deleteAt = ref(0)
+
+const { initAd, showAd } = useRewardAd('1507000689') // [开发测试专用ID] DCloud 官方保底激励视频，全网皆可调起，无收益。上线前请替换为你的真实 ID
 
 // --- 弹窗状态管理 ---
 const dialogState = ref({
@@ -226,6 +229,7 @@ const integratedList = computed(() => {
 // --- 初始化钩子 ---
 onMounted(() => {
     uni.hideTabBar()
+    initAd() // 提前加载广告配置节点
     
     // 拦截鉴权
     const token = uni.getStorageSync('uni_id_token')
@@ -404,23 +408,30 @@ const handleAndroidPay = ({ price, type }) => {
     })
 }
 
-// 模拟看广告体验一天
+// 真实的拉取并等待激励广告播完体验一天
 const watchAdForTrial = () => {
     showDialog({
         title: '拦截：非安全频段',
-        content: '这是本系统唯一一次开放底层漏洞的机会。\n是否授权接入视网膜 30 秒 (观看视频广告) ?\n我们将为你无损注入 24 小时的大模型降维打击权限。',
+        content: '这是本系统唯一一次开放底层漏洞的机会。\n是否授权接入视网膜 30 秒 (观看视频广告) ?\n我们将为你无损注入 24 小时的大模型降维打击全量权限。',
         confirmText: '建立连接',
         cancelText: '拒绝接入',
         showCancel: true,
         color: '#10b981',
-        success: (res) => {
+        success: async (res) => {
             if (res.confirm) {
-                uni.showLoading({ title: '解析影像中...' })
-                setTimeout(() => {
+                try {
+                    uni.showLoading({ title: '视频流握手中...' })
+                    const isCompleted = await showAd()
                     uni.hideLoading()
-                    userStore.claimTrialPermission() // 记录为已使用
-                    uni.showToast({ title: '权限覆写成功 (剩 23:59:59)', icon: 'none', duration: 3000 })
-                }, 2000)
+                    
+                    if (isCompleted) {
+                        userStore.claimTrialPermission() // 真实触发资产下发
+                        uni.showToast({ title: '权限覆写成功 (剩 23:59:59)', icon: 'none', duration: 3000 })
+                    }
+                } catch(e) {
+                   uni.hideLoading()
+                   console.error('播放器调度失败', e)
+                }
             }
         }
     })
