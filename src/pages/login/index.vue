@@ -299,6 +299,15 @@ const submit = async () => {
               baseline.avatar = userData.avatar || baseline.avatar
               baseline.signature = userData.signature || baseline.signature
               uni.setStorageSync('neuro_baseline', JSON.stringify(baseline))
+            } else if (userData.nickname || userData.avatar || userData.signature) {
+              // 容错兜底：若云端无问卷数据（未完成 onboarding），但名片被单独修改过（比如在旧版或通过其他途径修改）
+              // 先暂存在本地结构中，避免后续个人主页强制读取 baseline 发生全空白错误或名字变随机数字
+              const tempBaseline = {
+                 nickname: userData.nickname || '',
+                 avatar: userData.avatar || '',
+                 signature: userData.signature || ''
+              }
+              uni.setStorageSync('neuro_baseline', JSON.stringify(tempBaseline))
             }
             if (userData.neuro_start_date) {
               uni.setStorageSync('neuro_start_date', userData.neuro_start_date)

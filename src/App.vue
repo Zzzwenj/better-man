@@ -106,7 +106,7 @@ export default {
 
         const token = uni.getStorageSync('uni_id_token')
         const tokenExpired = uni.getStorageSync('uni_id_token_expired')
-        const now = getRealTime() // 使用校准时间替代裸 Date.now()
+        const now = serverTime.now() // 使用校准时间替代裸 Date.now()
         
         // 判断 Token 是否有效 (本地时间戳初筛)
         const isTokenValid = token && tokenExpired && (now < tokenExpired)

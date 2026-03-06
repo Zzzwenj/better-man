@@ -429,3 +429,9 @@
 - **赛博微动效**：封装 CyberFooter 空白页兜底，重塑全局按钮霓虹压制动画。
 - **绝对时空防卫 (Security)**：部署 serverTime.js，全面清缴 Date.now() 与 ew Date() 的本地系统时间调用漏洞，死磕设备调表作弊。
 - **云端大清洗引擎 (Cron)**：新增 warzone-cron 定时器，每小时无人值守扫描废弃死局，闭环处理房间流产退款与契约打卡过渡。
+
+### 2026-03-06 更新 2：登录链路对齐与初始路由防御 (Login Guard & Auth Sync)
+- **401令牌拒签修复 (Token Auth Fix)**：废除 `user-center` 残留的硬编码假 token 拦截机制，全面启用真实 JWT 在 `uni-id-users` 库中的查验核销与过期拦截，畅通底层云函数的调用。
+- **孤岛重塑兜底 (Fallback Baseline)**：在登录页获取资料时增加柔性挂载。若云端无完整问卷基线档案，自动捕捉并本地存根独立修改过的小名/签名/头像等信息，破除后续组件因找不到名字变为空白的死局。
+- **变量越权阻断 (Ref Initialization)**：定点修复了 `profile` 页 `userSignature` 未定义就修改的 JS 穿透宕机崩溃 Bug。以及异常拦截模块写死的配对失灵警告。
+- **启动防闪验活 (Launch Flash Fix)**：修补了由于未使用在 `App.vue` 载体里导入的 `serverTime` 模块，以及在免密守门员 `calculator` 的 `onLoad` 中未校验 token 存在性就强行转到基线的超时逻辑崩盘 Bug。现已严格遵守冷启动下的绝对拦截逻辑：无凭证一律踢回登录、有凭证才放行核验主控/问卷。

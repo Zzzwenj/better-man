@@ -55,11 +55,16 @@ onLoad(() => {
       uni.showLoading({ title: '安全连接建立中...' })
       setTimeout(() => {
           uni.hideLoading()
-          const baseline = uni.getStorageSync('neuro_baseline')
-          if (baseline) {
-              uni.switchTab({ url: '/pages/dashboard/index' })
+          const token = uni.getStorageSync('uni_id_token')
+          if (!token) {
+              uni.redirectTo({ url: '/pages/login/index' })
           } else {
-              uni.redirectTo({ url: '/pages/onboarding/index' })
+              const baseline = uni.getStorageSync('neuro_baseline')
+              if (baseline) {
+                  uni.switchTab({ url: '/pages/dashboard/index' })
+              } else {
+                  uni.redirectTo({ url: '/pages/onboarding/index' })
+              }
           }
       }, 300)
   }
@@ -97,12 +102,16 @@ const calculate = () => {
     uni.showLoading({ title: '连接神经网络...' }) // 故意营造黑客氛围
     setTimeout(() => {
         uni.hideLoading()
-        // 核心跳转逻辑：检查是否做过基线评估
-        const baseline = uni.getStorageSync('neuro_baseline')
-        if (baseline) {
-            uni.switchTab({ url: '/pages/dashboard/index' })
+        const token = uni.getStorageSync('uni_id_token')
+        if (!token) {
+            uni.redirectTo({ url: '/pages/login/index' })
         } else {
-            uni.redirectTo({ url: '/pages/onboarding/index' })
+            const baseline = uni.getStorageSync('neuro_baseline')
+            if (baseline) {
+                uni.switchTab({ url: '/pages/dashboard/index' })
+            } else {
+                uni.redirectTo({ url: '/pages/onboarding/index' })
+            }
         }
     }, 1200)
     return
