@@ -79,6 +79,8 @@
          </view>
       </view>
       <!-- #endif -->
+      
+      <CyberFooter />
     </view>
   </view>
 </template>
@@ -86,6 +88,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useThemeStore } from '@/store/theme.js'
+import CyberFooter from '@/components/common/CyberFooter.vue'
 
 const themeStore = useThemeStore()
 const mode = ref('login') // 'login', 'register', 'forgot'
@@ -506,9 +509,9 @@ const appleLogin = () => {
 
 .btn-text { color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 2px;}
 
-.btn-hover { transform: scale(0.96); opacity: 0.9;}
+.btn-hover { transform: scale(0.96); opacity: 0.9; box-shadow: 0 2px 10px var(--theme-shadow-primary); }
 
-.nav-text { font-size: 14px; color: #9ca3af; }
+.nav-text { font-size: 14px; color: #9ca3af; transition: color 0.2s; }
 .nav-text:active { color: #fff; }
 
 .dev-text { font-size: 12px; color: #fff; opacity: 0.1; }

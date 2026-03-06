@@ -42,7 +42,7 @@
 <script setup>
 import { ref, watch, defineProps, defineEmits } from 'vue'
 import { useUserStore } from '@/store/user.js'
-import { getRealDateString } from '@/utils/timeGuard.js'
+import { serverTime } from '@/utils/serverTime.js'
 
 const props = defineProps({
   show: Boolean
@@ -63,7 +63,9 @@ const onSafe = () => {
     uni.vibrateShort()
     
     // 更新最后打卡日期为今天（统一 YYYY-MM-DD 格式）
-    uni.setStorageSync('last_checkin_date', getRealDateString())
+    const realDate = new Date(serverTime.now())
+    const todayStr = `${realDate.getFullYear()}-${String(realDate.getMonth()+1).padStart(2,'0')}-${String(realDate.getDate()).padStart(2,'0')}`
+    uni.setStorageSync('last_checkin_date', todayStr)
     
     // ✅ 写入每日成功打卡记录 "1"，供 Journey 热力图读取
     let checkins = uni.getStorageSync('neuro_checkins') || ''

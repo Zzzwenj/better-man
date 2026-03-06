@@ -1,147 +1,200 @@
 <template>
-  <view :class="['premium-card', userStore.isVipActive ? 'active-contract' : '']">
-      <!-- 会员订阅主体区 -->
-      <view @click="handleUpgradeClick" hover-class="card-hover" class="contract-main">
-          <view class="flex justify-between items-center w-full">
-              <text class="premium-title flex-1 mr-2" style="word-break: break-all; line-height: 1.2;">{{ userStore.isVipActive ? '👑 黑金权限生效中' : '🔥 黑金通行证 (全量特权)' }}</text>
-              <view class="price-chip" style="flex-shrink: 0;" v-if="!userStore.isVipActive">
-                  <text>15 ¥ / 月</text>
-              </view>
-          </view>
-          
-          <view class="premium-desc mt-2" v-if="!userStore.isVipActive">
-            <view class="desc-item"><text class="bullet">▪</text> 部署最高算力节点，解除系统所有限制</view>
-            <view class="desc-item"><text class="bullet">▪</text> <text class="highlight">每月领取 1500 神经储备金</text> (立即发放)</view>
-            <view class="desc-item"><text class="bullet">▪</text> 解锁绝版黑金冠冕标识及战区主理人通道</view>
-            <view class="desc-item"><text class="bullet">▪</text> 每日专属算力，REWIRE AI 心理干预 (50次/天)</view>
-            <view class="desc-item"><text class="bullet">▪</text> 解锁本地「量子伪装计算器」隐私防卫</view>
-          </view>
-          
-          <view class="contract-progress mt-4 flex-col" v-else>
-             <text class="timer-text">黑金链路维持天数: {{ userStore.vipDaysLeft }} 天</text>
-             <view class="progress-bar mt-2">
-               <!-- 模拟 30 天为一个周期的进度视觉 -->
-               <view class="progress-fill" :style="{ width: ((userStore.vipDaysLeft % 30) / 30 * 100) + '%' }"></view>
-             </view>
-          </view>
-  
-          <view class="premium-footer flex items-center mt-4" v-if="!userStore.isVipActive">
-              <text class="unlock-text">建立特权连接</text>
-              <text class="arrow ml-1">→</text>
-          </view>
+  <view class="premium-card relative overflow-hidden" :class="{ active: isVip }">
+    <!-- 背景流光 -->
+    <view class="glow-bg absolute w-full h-full inset-0"></view>
+    
+    <view class="flex items-center justify-between relative z-10">
+      <view class="flex items-center">
+        <text class="vip-icon">◈</text>
+        <view class="ml-2 flex-col">
+          <text class="vip-title">{{ isVip ? 'REWIRE 黑金档案' : '普通神经漫游者' }}</text>
+          <text class="vip-desc mt-1">{{ isVip ? `档案有效期至: ${vipExpireTime}` : '神经链接受限中' }}</text>
+        </view>
       </view>
+      <view class="flex items-center">
+         <view class="cyber-coin-badge flex items-center mr-3" hover-class="badge-hover" @click="$emit('openStore')">
+           <text class="coin-icon">⎔</text>
+           <text class="coin-num">{{ userCoins }}</text>
+         </view>
+         <view v-if="!isVip" class="btn-upgrade flex items-center justify-center" hover-class="btn-hover" @click="$emit('openStore')">
+           <text class="btn-text">神经溯源</text>
+         </view>
+         <view v-else class="btn-renew flex items-center justify-center" hover-class="btn-hover" @click="$emit('openStore')">
+           <text class="btn-text">时空续接</text>
+         </view>
+      </view>
+    </view>
+    
+    <!-- VIP 专属特权图标区 -->
+    <view class="privileges flex items-center justify-around mt-4 relative z-10" :class="{ 'opacity-50': !isVip }">
+       <view class="priv-item flex-col items-center">
+         <view class="icon-wrap"><text class="priv-icon">⎈</text></view>
+         <text class="priv-text mt-1">深度图谱</text>
+       </view>
+       <view class="priv-item flex-col items-center">
+         <view class="icon-wrap"><text class="priv-icon">⌬</text></view>
+         <text class="priv-text mt-1">AI 伴疗</text>
+       </view>
+       <view class="priv-item flex-col items-center">
+         <view class="icon-wrap"><text class="priv-icon">✧</text></view>
+         <text class="priv-text mt-1">绝密频道</text>
+       </view>
+    </view>
 
-      <!-- 临时越权体验 (看广告, 仅显示一次) -->
-      <view class="ad-trial-zone mt-4" v-if="!userStore.isVipActive && !userStore.hasUsedTrial" @click.stop="$emit('watchAd')" hover-class="ad-hover">
-          <view class="ad-content flex items-center justify-center">
-               <text class="ad-icon">📺</text>
-               <text class="ad-text ml-2">_ 获取24H 残破特权节点 (仅限1次)</text>
-          </view>
-      </view>
+    <!-- 针对非VIP的试用横幅 -->
+    <view v-if="!isVip" class="trial-banner mt-3 flex items-center justify-between relative z-10" hover-class="banner-hover" @click="$emit('watchAd')">
+       <view class="flex items-center">
+         <text class="ad-icon mr-2">▶</text>
+         <text class="trial-text">观看神经共振广告获取 [ 24H 体验权 ]</text>
+       </view>
+       <text class="trial-arrow">></text>
+    </view>
+    <!-- 针对 VIP 的状态栏 -->
+    <view v-else class="vip-status-bar mt-3 flex items-center justify-between relative z-10">
+       <view class="flex items-center">
+          <text class="status-dot mr-2"></text>
+          <text class="status-text">黑金链路已激活</text>
+       </view>
+       <view class="sparkline flex items-end">
+          <view class="bar" style="height: 12px"></view>
+          <view class="bar" style="height: 18px"></view>
+          <view class="bar" style="height: 10px"></view>
+          <view class="bar" style="height: 24px"></view>
+          <view class="bar active" style="height: 16px"></view>
+       </view>
+    </view>
   </view>
 </template>
 
 <script setup>
-import { useUserStore } from '@/store/user.js'
-import { paymentManager } from '@/utils/paymentManager.js'
-
-defineEmits(['upgrade', 'watchAd'])
-const userStore = useUserStore()
-
-// 拦截原生点击，如果是非 VIP 则拉起真实环境
-const handleUpgradeClick = async () => {
-    if (userStore.isVipActive) {
-        // 如果已经是 VIP，只做事件穿透，让父级弹窗展示剩余时间
-        uni.$emit('vip-info-click') 
-        return
-    }
-
-    const platform = uni.getSystemInfoSync().platform
-    // #ifdef APP-PLUS
-    if (platform === 'ios') {
-        uni.showLoading({ title: '安全连接 App Store...' })
-        try {
-            await paymentManager.requestPayment({
-                productId: 'vip_1month',
-                provider: 'appleiap',
-                price: 1500 // 分
-            })
-            uni.hideLoading()
-            // 付费成功，手动赋予权益（真实项目应由服务器发端回调加资产）
-            userStore.purchaseVip(31, 'App Store 内购特权开通')
-            uni.showToast({ title: '特权链已接通', icon: 'success' })
-        } catch (e) {
-            uni.hideLoading()
-            uni.showToast({ title: 'Apple 支付中断', icon: 'none' })
-        }
-        return
-    }
-    // #endif
-
-    // [安卓/H5/小程序] 抛出事件给外部去调起微信/支付宝弹窗
-    uni.$emit('trigger-android-pay', { price: 1500, type: 'vip_1month' })
-}
+defineProps({
+  isVip: { type: Boolean, default: false },
+  vipExpireTime: { type: String, default: '' },
+  vipDaysLeft: { type: Number, default: 0 },
+  userCoins: { type: Number, default: 0 }
+})
+defineEmits(['openStore', 'watchAd'])
 </script>
 
 <style lang="scss" scoped>
+/* 此处包含原 profile/index.vue 中 Premium Card 相关的局部作用域样式 */
+.premium-card {
+  margin-top: 20px;
+  background: linear-gradient(135deg, rgba(39, 39, 42, 0.4) 0%, rgba(24, 24, 27, 0.6) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.premium-card.active {
+  border-color: var(--theme-primary, #00e5ff);
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.15) 0%, rgba(39, 39, 42, 0.8) 100%);
+  box-shadow: 0 8px 30px rgba(0, 229, 255, 0.15);
+}
+.glow-bg {
+  background: radial-gradient(circle at 100% 0%, rgba(0, 229, 255, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+.premium-card.active .glow-bg {
+  background: radial-gradient(circle at 100% 0%, rgba(0, 229, 255, 0.2) 0%, transparent 70%);
+}
+
+.vip-icon { font-size: 24px; color: #a1a1aa; }
+.premium-card.active .vip-icon { color: var(--theme-primary, #00e5ff); text-shadow: 0 0 10px var(--theme-shadow-primary); }
+
+.vip-title { font-size: 16px; font-weight: 900; color: #e4e4e7; letter-spacing: 1px; }
+.premium-card.active .vip-title { color: var(--theme-primary, #00e5ff); }
+.vip-desc { font-size: 11px; color: #71717a; font-family: monospace; }
+.premium-card.active .vip-desc { color: #a1a1aa; }
+
+.btn-upgrade {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--theme-primary, #00e5ff) 0%, #0284c7 100%);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
+  transition: transform 0.2s;
+}
+.btn-renew {
+  padding: 6px 14px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid var(--theme-primary, #00e5ff);
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.1);
+  transition: transform 0.2s;
+}
+.btn-text { color: #fff; font-size: 12px; font-weight: 900; letter-spacing: 1px; }
+.btn-renew .btn-text { color: var(--theme-primary, #00e5ff); }
+.btn-hover { transform: scale(0.95); opacity: 0.9; }
+
+.privileges { margin-top: 24px; }
+.priv-item { width: 33%; }
+.icon-wrap {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s;
+}
+.premium-card.active .icon-wrap {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.3);
+  box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.1);
+}
+
+.priv-icon { color: #a1a1aa; font-size: 18px; }
+.premium-card.active .priv-icon { color: var(--theme-primary, #00e5ff); }
+.priv-text { font-size: 11px; color: #a1a1aa; font-weight: 500; font-family: monospace; }
+.premium-card.active .priv-text { color: #e4e4e7; }
+
+.trial-banner {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 14px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.banner-hover { background: rgba(255, 255, 255, 0.08); transform: translateY(1px); }
+.ad-icon { color: var(--theme-secondary, #f59e0b); font-size: 12px; }
+.trial-text { font-size: 11px; color: #d4d4d8; font-weight: bold; }
+.trial-arrow { color: #71717a; font-size: 12px; font-weight: bold; }
+
+.vip-status-bar {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+.status-dot { width: 6px; height: 6px; background: var(--theme-primary, #00e5ff); border-radius: 50%; box-shadow: 0 0 8px var(--theme-primary, #00e5ff); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+.status-text { font-size: 11px; color: #a1a1aa; font-family: monospace; letter-spacing: 1px;}
+.sparkline .bar { width: 3px; background: rgba(255, 255, 255, 0.1); margin-left: 2px; border-radius: 1px; }
+.sparkline .bar.active { background: var(--theme-primary, #00e5ff); box-shadow: 0 0 4px var(--theme-shadow-primary); }
+
+.cyber-coin-badge { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 12px; transition: all 0.2s;}
+.badge-hover { border-color: var(--theme-secondary, #f59e0b); background: rgba(245, 158, 11, 0.1);}
+.coin-icon { color: var(--theme-secondary, #f59e0b); font-size: 14px; font-weight: bold; margin-right: 4px; text-shadow: 0 0 8px rgba(245,158,11,0.5);}
+.coin-num { color: #f4f4f5; font-size: 14px; font-weight: 900; font-family: monospace;}
+
+.opacity-50 { opacity: 0.5; }
+.mt-1 { margin-top: 4px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mr-2 { margin-right: 8px; }
+.mr-3 { margin-right: 12px; }
+.ml-2 { margin-left: 8px; }
 .flex { display: flex; }
 .flex-col { display: flex; flex-direction: column; }
-.justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
 .items-center { align-items: center; }
-.block { display: block; }
-.mt-2 { margin-top: 8px; }
-.mt-4 { margin-top: 16px; }
-.ml-1 { margin-left: 4px; }
-.ml-2 { margin-left: 8px; }
-
-/* 订阅特权模幅 */
-.premium-card {
-    margin-top: 24px;
-    margin-bottom: 0px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 20px 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-.contract-main {
-    padding: 4px;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-}
-.card-hover { transform: translateY(2px); text-shadow: 0 0 5px var(--theme-shadow-primary); }
-.premium-title { font-size: 16px; font-weight: 900; color: var(--theme-primary, #00e5ff); }
-.price-chip { background: var(--theme-primary, #00e5ff); color: #09090b; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold;}
-.premium-desc { font-size: 11px; color: #a1a1aa; line-height: 1.6; }
-.desc-item { margin-bottom: 4px; }
-.bullet { color: #facc15; margin-right: 6px; font-size: 12px; }
-.highlight { color: #00e5ff; font-weight: bold; text-shadow: 0 0 5px rgba(0, 229, 255, 0.4); }
-.premium-footer { border-top: 1px dashed var(--theme-shadow-primary); padding-top: 12px;}
-.unlock-text { color: #f4f4f5; font-size: 14px; font-weight: bold; }
-.arrow { color: var(--theme-primary, #00e5ff); font-weight: bold; font-size: 18px;}
-
-/* 契约进行中状态 */
-.active-contract {
-    border-color: rgba(0, 229, 255, 0.4);
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
-    background: linear-gradient(180deg, rgba(0, 229, 255, 0.05) 0%, rgba(24, 24, 27, 0.9) 100%);
-}
-.contract-progress { width: 100%; }
-.timer-text { font-size: 16px; color: #00e5ff; font-family: monospace; font-weight: bold; text-shadow: 0 0 10px rgba(0,229,255,0.5);}
-.progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
-.progress-fill { height: 100%; background: #00e5ff; box-shadow: 0 0 10px #00e5ff; border-radius: 3px; transition: width 0.5s ease-out; }
-
-/* 广告体验栏位 */
-.ad-trial-zone {
-    margin-top: 16px;
-    padding: 12px;
-    background: rgba(16, 185, 129, 0.05);
-    border: 1px dashed rgba(16, 185, 129, 0.3);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-.ad-hover { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.6); }
-.ad-text { color: #10b981; font-size: 13px; font-family: monospace; text-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+.items-end { align-items: flex-end; }
+.justify-between { justify-content: space-between; }
+.justify-around { justify-content: space-around; }
+.justify-center { justify-content: center; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.overflow-hidden { overflow: hidden; }
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.z-10 { z-index: 10; }
 </style>

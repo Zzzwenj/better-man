@@ -68,7 +68,6 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { onHide, onShow } from '@dcloudio/uni-app'
-import { getRealTime, getRealDateString } from '@/utils/timeGuard.js'
 import { adManager } from '@/utils/adManager.js'
 import MotivationalQuote from '../../components/dashboard/MotivationalQuote.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
@@ -81,6 +80,7 @@ import DailyAuditModal from '../../components/dashboard/DailyAuditModal.vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useWarzoneStore } from '../../store/warzone.js'
 import { useUserStore } from '../../store/user.js'
+import { serverTime } from '@/utils/serverTime.js'
 
 const themeStore = useThemeStore()
 const warzoneStore = useWarzoneStore()
@@ -108,13 +108,14 @@ onMounted(() => {
   }
 
   let startTimestamp = uni.getStorageSync('neuro_start_date')
-  const today = getRealDateString() // 使用校准后的服务端时间
+  const realDate = new Date(serverTime.now())
+  const today = `${realDate.getFullYear()}-${String(realDate.getMonth()+1).padStart(2,'0')}-${String(realDate.getDate()).padStart(2,'0')}` // 使用校准后的服务端时间
   const lastCheckin = uni.getStorageSync('last_checkin_date')
 
-  // 【模块E重构】移除内部重复的 getServerTime 调用，统一复用全局 timeGuard
+  // 【模块E重构】移除内部重复的 getServerTime 调用，统一复用全局 serverTime
   const initTimer = () => {
       if (!startTimestamp) {
-        startTimestamp = getRealTime() - (5 * 24 * 60 * 60 * 1000)
+        startTimestamp = serverTime.now() - (5 * 24 * 60 * 60 * 1000)
         uni.setStorageSync('neuro_start_date', startTimestamp)
         uni.setStorageSync('last_checkin_date', today) // 首次初始化默认过检
       } else {
@@ -130,7 +131,7 @@ onMounted(() => {
 
   // 抽离为顶层函数，便于 onShow 复用
   const updateTimer = () => {
-    const diffMs = getRealTime() - (uni.getStorageSync('neuro_start_date') || startTimestamp)
+    const diffMs = serverTime.now() - (uni.getStorageSync('neuro_start_date') || startTimestamp)
     const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
     hoursClean.value = totalHours
     
@@ -184,7 +185,7 @@ onShow(() => {
     const startTs = uni.getStorageSync('neuro_start_date')
     if (startTs) {
       // 立即刷新一次显示
-      const diffMs = getRealTime() - startTs
+      const diffMs = serverTime.now() - startTs
       const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
       hoursClean.value = totalHours
       hoursSaved.value = Math.floor((totalHours / 24) * 2)
@@ -192,7 +193,7 @@ onShow(() => {
     timeInterval = setInterval(() => {
       const ts = uni.getStorageSync('neuro_start_date')
       if (!ts) return
-      const diffMs = getRealTime() - ts
+      const diffMs = serverTime.now() - ts
       const totalHours = Math.floor(diffMs / (1000 * 60 * 60))
       hoursClean.value = totalHours
       hoursSaved.value = Math.floor((totalHours / 24) * 2)
@@ -247,7 +248,7 @@ const onGiveUp = () => {
         warzoneStore.leaveRoomAction(warzoneStore.activeDeathMatchId, true)
     }
 
-    const now = Date.now()
+    const now = serverTime.now()
     uni.setStorageSync('neuro_start_date', now)
     
     // 记录一条历史标记 (0 表示该日破戒)
@@ -271,11 +272,11 @@ const onGiveUp = () => {
 // 选择除颤挽救 (扣除代价，只回退 50% 时间)
 const onReviveSuccess = () => {
     showDefibModal.value = false
-    const currentStart = uni.getStorageSync('neuro_start_date') || Date.now()
-    const diff = Date.now() - currentStart
+    const currentStart = uni.getStorageSync('neuro_start_date') || serverTime.now()
+    const diff = serverTime.now() - currentStart
     
     // 退回 50% 的时间差
-    const newStart = Date.now() - (diff / 2)
+    const newStart = serverTime.now() - (diff / 2)
     uni.setStorageSync('neuro_start_date', newStart)
     
     // 不记入破戒历史，视为成功防御，更新打卡标志

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from './user.js'
+import { serverTime } from '@/utils/serverTime.js'
 
 /**
  * 生死局默认名称池（共 30 个，按最大人数分档）
@@ -120,7 +121,7 @@ export const useWarzoneStore = defineStore('warzone', {
 
                 if (res.result.code === 0) {
                     // 计算过期时间戳 (当前服务器/本地时间 + 截止小时数)
-                    const expiryTime = Date.now() + (matchData.recruitDeadline || 6) * 3600 * 1000
+                    const expiryTime = serverTime.now() + (matchData.recruitDeadline || 6) * 3600 * 1000
 
                     const newRoom = {
                         ...res.result.data,
@@ -169,7 +170,7 @@ export const useWarzoneStore = defineStore('warzone', {
                     const userStore = useUserStore()
                     // 【字典兼容修复】ownedItems 已从数组迁移为字典结构 { id: expireTimestamp }
                     const shieldExp = userStore.ownedItems['shield_01']
-                    const hasShield = shieldExp && shieldExp > Date.now()
+                    const hasShield = shieldExp && shieldExp > serverTime.now()
 
                     if (hasShield) {
                         // 消耗防线崩溃金牌 (静音退群，不扣进度)
@@ -180,8 +181,8 @@ export const useWarzoneStore = defineStore('warzone', {
                     } else {
                         // 无防护罩：触发 20% 倒退连坐反噬
                         uni.vibrateLong()
-                        const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
-                        const diffDays = Math.max(1, (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24))
+                        const startTimestamp = uni.getStorageSync('neuro_start_date') || serverTime.now()
+                        const diffDays = Math.max(1, (serverTime.now() - startTimestamp) / (1000 * 60 * 60 * 24))
                         const lostDays = Math.ceil(diffDays * 0.2) // 扣减 20%
 
                         // 写回新的“倒退起点时间”

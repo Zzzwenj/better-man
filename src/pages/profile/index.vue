@@ -12,7 +12,7 @@
       @modalStateChange="onModalStateChange"
     />
     
-    <!-- 1.5 神经元 AI 导师入口 (NEW) -->
+    <!-- 1.5 神经元 AI 导师入口 -->
     <view class="ai-mentor-card mx-4" @click="goToAI" hover-class="card-hover">
       <view class="ai-glow"></view>
       <view class="flex items-center justify-between relative z-10 w-full">
@@ -32,32 +32,33 @@
       </view>
     </view>
 
-    <!-- 2. 黑金通行证 (Black Gold Pass) 展位 -->
+    <!-- 2. 黑金通行证 (Black Gold Pass) -->
     <view class="mx-4">
-      <PremiumCard @watchAd="watchAdForTrial" />
+      <PremiumCard 
+        :isVip="userStore.isVipActive"
+        :vipExpireTime="userStore.formattedVipExpire"
+        :vipDaysLeft="userStore.vipDaysLeft"
+        :userCoins="userStore.coins"
+        @openStore="handleSettingClick({url: '/pages/store/index'})"
+        @watchAd="watchAdForTrial"
+      />
     </view>
     
-    <!-- 5. 荣誉资产长廊 (资产化展示) -->
-    <HonorCarousel />
-    
-    <!-- 3. 整合列表区：资料与设置 -->
-    <ProfileSettingsList 
-      title="" 
-      :list="integratedList" 
-      :hideNative="isModalOpen || showThemeSheet"
-      @itemClick="handleSettingClick" 
+    <!-- 3. 荣誉资产长廊 (资产化展示) -->
+    <HonorCarousel 
+      :currentThemeName="currentThemeName"
+      :ownedItems="userStore.ownedItems"
+      :equippedItems="userStore.equippedItems"
+      @navigateToStore="handleSettingClick({url: '/pages/store/index'})"
     />
-
-    <!-- 4. 系统底层控制区 (视觉隔离) -->
-    <SystemControls
-      :hasBeaconAccess="hasBeaconAccess"
-      :isPendingDelete="isPendingDelete"
-      :deleteAt="deleteAt"
-      @openBeacon="showBeacon = true"
-      @settingClick="handleSettingClick"
-      @cancelDelete="cancelDeleteAccount"
-      @confirmDelete="confirmDeleteAccount"
-      @goAgreement="goAgreement"
+    
+    <!-- 4. 系统控制区 -->
+    <ProfileSettingsList 
+      :privacyLockEnabled="userStore.privacyLock.enabled"
+      :deviceId="deviceId"
+      @handleSettingClick="handleUnifiedSettingClick"
+      @togglePrivacyLock="handlePrivacyToggle"
+      @goToAgreement="goAgreement"
     />
     
     <CyberFloatBall />
@@ -114,21 +115,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import { useRewardAd } from '../../composables/useRewardAd.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
-import NeuroCoinIcon from '../../components/common/NeuroCoinIcon.vue'
 import HonorCarousel from '../../components/profile/HonorCarousel.vue'
+import PremiumCard from '../../components/profile/PremiumCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
-import PremiumCard from '../../components/profile/PremiumCard.vue'
-import SystemControls from '../../components/profile/SystemControls.vue'
 import { onShow, onLoad, onUnload } from '@dcloudio/uni-app'
 import { paymentManager } from '@/utils/paymentManager.js'
 
@@ -190,41 +189,11 @@ const handleDialogCancel = () => {
 const userName = ref('探索者_8972')
 const userDesc = ref('系统干预：已停用')
 const userAvatar = ref('')
-const userSignature = ref('')
-const isModalOpen = ref(false)
-let localProfileData = {}
-
-// 计算是否有资格查阅地球驻扎地信标 (引流微信)
-const hasBeaconAccess = computed(() => {
-    // 门槛 1: 黑金会员直接展示
-    if (userStore.isVipActive) return true
-    
-    // 门槛 2: 连续活了 21 天的强迫症硬汉
-    const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
-    const diffDays = (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24)
-    if (diffDays >= 21) return true
-    
-    return false
+// --- 动态数据 (传给组件) ---
+const currentThemeName = computed(() => {
+    return themeStore.themes.find(t => t.id === themeStore.currentTheme)?.name || '未知系统'
 })
-
-const goAgreement = (type) => {
-  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
-}
-
-// --- 整合列表配置表 (资料在上，系统设置在下) ---
-// 为了应对 switch 的强制拦截复原 (computed 的话子组件拿不回去)，增加 trigger 计数器强制刷新
-const refreshTrigger = ref(0)
-const integratedList = computed(() => {
-  /* eslint-disable no-unused-expressions */
-  refreshTrigger.value // 强制加入依赖
-  return [
-    { id: 'v', icon: '🎥', label: '神经重塑精选视频库', type: 'arrow', url: '/pages/article/index?type=video' },
-    { id: 'a', icon: '💡', label: '认知觉醒深度长文库', type: 'arrow', url: '/pages/article/index?type=article' },
-    { id: 'theme', icon: '🎨', label: '视觉干预协议 (系统主题色)', type: 'arrow' },
-    { id: 'store', icon: NeuroCoinIcon, iconType: 'component', label: '极客集市：装备与消耗品', type: 'arrow', url: '/pages/store/index' },
-    { id: 'privacy', icon: '🔒', label: '量子伪装计算器锁 (黑金专属)', type: 'switch', value: userStore.privacyLock.enabled }
-  ]
-})
+const deviceId = ref('UNKNOWN')
 
 // --- 初始化钩子 ---
 onMounted(() => {
@@ -437,18 +406,72 @@ const watchAdForTrial = () => {
     })
 }
 
-// 统一处理所有通用设置行的点击分发
-const handleSettingClick = (originItem) => {
-  const { id, url, value } = originItem
-
-  if (url) {
-      uni.navigateTo({ url })
-      return
+// 统一处理组件点击
+const handleUnifiedSettingClick = (type) => {
+  switch (type) {
+    case 'theme':
+      showThemeSheet.value = true
+      break
+    case 'article':
+      uni.navigateTo({ url: '/pages/article/index?type=article' })
+      break
+    case 'video':
+      uni.navigateTo({ url: '/pages/article/index?type=video' })
+      break
+    case 'beacon':
+      checkBeaconAccess()
+      break
+    case 'logout':
+      confirmLogout()
+      break
+    case 'delete_account':
+      confirmDeleteAccount()
+      break
+    case 'clear_cache':
+      uni.clearStorageSync()
+      uni.reLaunch({ url: '/pages/login/index' })
+      break
   }
+}
 
-  // 点击/切换 隐私伪装锁
-  if (id === 'privacy') {
-     if (value) {
+// 通用的老版本方法保留以支持上面
+const handleSettingClick = ({ url }) => {
+    if(url) uni.navigateTo({ url })
+}
+const goAgreement = (type) => {
+  uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
+}
+
+const checkBeaconAccess = () => {
+    // 简版校验
+    const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
+    const diffDays = (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24)
+    if (userStore.isVipActive || diffDays >= 21) {
+        showBeacon.value = true
+    } else {
+        uni.showToast({ title: '突触连接天数未达 21 天，拒绝接通', icon: 'none' })
+    }
+}
+
+const confirmLogout = () => {
+    showDialog({
+        title: '物理切断连接',
+        content: '登出后，你将失去当前的神经同步流，直到你再次进行量子验证。',
+        confirmText: '坚决切断',
+        showCancel: true,
+        color: '#ef4444',
+        success: (res) => {
+            if (res.confirm) {
+                uni.removeStorageSync('uni_id_token')
+                uni.reLaunch({ url: '/pages/login/index' })
+            }
+        }
+    })
+}
+
+// 代理 Privacy 切换
+const handlePrivacyToggle = (val) => {
+      if (val) {
          // 尝试开启
          if (!userStore.isVipActive) {
              // 阻断：非 VIP 拦截弹窗
@@ -470,11 +493,9 @@ const handleSettingClick = (originItem) => {
                              handleAndroidPay({ price: 1500, type: 'vip_1month' })
                          }
                     }
-                     refreshTrigger.value++
                  }
              })
-             // 通知子组件强制刷新 switch 的视图状态，避免其变蓝
-             refreshTrigger.value++
+             // 关闭原组件里面的 switch，这里靠 Vue 单向响应式可能压不住，但组件内可以通过 $forceUpdate 或 watch 同步
              return
          }
          
@@ -489,45 +510,6 @@ const handleSettingClick = (originItem) => {
          userStore.togglePrivacyLock(false)
          uni.showToast({ title: '伪装层已卸载', icon: 'none' })
      }
-     return
-  }
-
-  if (id === 'theme') {
-    showThemeSheet.value = true
-  } else if (id === 'logs') {
-    uni.showToast({ title: '日志网络节点未接通', icon: 'none' })
-  } else if (id === 'wipe') {
-    // 本地数据焚毁
-    showDialog({
-        title: '警告：自毁协议',
-        content: '这将抹除本地所有神经连接痕迹，断开总服务器，并将你强制踢回登录舱。',
-        confirmText: '确认焚毁',
-        showCancel: true,
-        color: '#ef4444',
-        success: (res) => {
-            if (res.confirm) {
-                uni.clearStorageSync()
-                uni.reLaunch({ url: '/pages/login/index' })
-            }
-        }
-    })
-  }
-}
-
-// 确认修改 PIN 码
-const confirmPinChange = () => {
-   if (!tempPin.value || tempPin.value.length < 4) {
-      pinError.value = '密码不能少于 4 位数字'
-      return
-   }
-   if (!/^\d+$/.test(tempPin.value)) {
-      pinError.value = '量子协议仅支持纯数字组合'
-      return
-   }
-   
-   userStore.togglePrivacyLock(true, tempPin.value)
-   showPinModal.value = false
-   uni.showToast({ title: '隐私重构完成', icon: 'success' })
 }
 
 // 发起云端流放销毁

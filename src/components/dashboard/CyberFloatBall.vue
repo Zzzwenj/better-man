@@ -43,7 +43,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, defineProps } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { useUserStore } from '../../store/user.js'
+import { serverTime } from '@/utils/serverTime.js'
 
 const props = defineProps({
   show: { type: Boolean, default: true }
@@ -57,6 +59,7 @@ const posY = ref(sysInfo.windowHeight - 160)
 
 const hudVisible = ref(false)
 const isPanicActive = ref(false)
+const isDragging = ref(false)
 
 // 动态计算气泡弹出位置，防止边缘截断
 const bubblePlacement = computed(() => {
@@ -91,16 +94,17 @@ const stopIdleTimer = () => {
   }
 }
 
-const handleTouchStart = (e) => {
-  touchStartTime = Date.now()
+const onTouchStart = (e) => {
+  touchStartTime = serverTime.now()
   const touch = e.touches[0]
   touchStartX = touch.clientX
   touchStartY = touch.clientY
   stopIdleTimer()
 }
 
-const handleTouchEnd = (e) => {
-  const duration = Date.now() - touchStartTime
+const onTouchEnd = (e) => {
+  isDragging.value = false
+  const duration = serverTime.now() - touchStartTime
   const touch = e.changedTouches[0]
   const dist = Math.sqrt(
     Math.pow(touch.clientX - touchStartX, 2) + 

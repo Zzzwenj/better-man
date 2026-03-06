@@ -89,7 +89,7 @@
 <script setup>
 import { ref, defineProps, defineEmits, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
-import { getRealTime } from '@/utils/timeGuard.js'
+import { serverTime } from '@/utils/serverTime.js'
 import CyberDialog from '@/components/common/CyberDialog.vue'
 
 const props = defineProps({
@@ -114,7 +114,7 @@ onMounted(() => {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
   }
   const lastStr = lastAdReviveTime.value ? fmtDate(lastAdReviveTime.value) : ''
-  const todayStr = fmtDate(getRealTime())
+  const todayStr = fmtDate(serverTime.now())
   if (lastStr === todayStr) {
     adReviveCountToday.value = Number(uni.getStorageSync('neuro_ad_revive_cnt')) || 0
   } else {

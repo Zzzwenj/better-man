@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import { getRealTime } from '@/utils/timeGuard.js'
+import { serverTime } from '@/utils/serverTime.js'
 import { debouncedSetStorage } from '@/utils/storageDebounce.js'
 
 // 判定黑金通行证 (VIP) 是否生效
 // 使用校准后的服务端时间判定 VIP 状态，防本地时间篡改
 const checkVipActive = (expireTimestamp) => {
     if (!expireTimestamp) return false
-    return getRealTime() < expireTimestamp
+    return serverTime.now() < expireTimestamp
 }
 
 export const useUserStore = defineStore('user', {
@@ -46,7 +46,7 @@ export const useUserStore = defineStore('user', {
                 // 兼容老版本数组数据结构，将数组转为具有 30 天试用期的字典
                 if (Array.isArray(stored)) {
                     const newObj = {}
-                    const defaultExp = Date.now() + 30 * 24 * 60 * 60 * 1000
+                    const defaultExp = serverTime.now() + 30 * 24 * 60 * 60 * 1000
                     stored.forEach(id => { newObj[id] = defaultExp })
                     uni.setStorageSync('neuro_owned_items', newObj)
                     return newObj
@@ -85,7 +85,7 @@ export const useUserStore = defineStore('user', {
             if (!checkVipActive(state.vipExpireTime)) return false
 
             // 检查跨月重置
-            const currentMonth = new Date().toISOString().slice(0, 7)
+            const currentMonth = new Date(serverTime.now()).toISOString().slice(0, 7)
             if (state.lastReviveMonth !== currentMonth) return true // 跨月未用过，自然有剩
 
             return state.monthlyFreeReviveCount < 3
@@ -93,7 +93,7 @@ export const useUserStore = defineStore('user', {
         // 距离 VIP 到期还有多少天 (保留 1 位小数)
         vipDaysLeft: (state) => {
             if (!state.vipExpireTime) return 0
-            const now = getRealTime() // 校准时间
+            const now = serverTime.now() // 校准时间
             if (now >= state.vipExpireTime) return 0
 
             const diffDays = (state.vipExpireTime - now) / (1000 * 60 * 60 * 24)
@@ -144,7 +144,7 @@ export const useUserStore = defineStore('user', {
         // 穿戴/卸下 装备
         equipItem(itemId, silent = false) {
             const exp = this.ownedItems[itemId]
-            if (!exp || exp < getRealTime()) {
+            if (!exp || exp < serverTime.now()) {
                 if (!silent) uni.showToast({ title: '该数据资产已过期或未获取', icon: 'none' })
                 return
             }
@@ -173,7 +173,7 @@ export const useUserStore = defineStore('user', {
         // 在系统关键节点（例如每次打开战区）检验是否过期并自动扒下过期衣服
         verifyEquipmentExpiry() {
             let changed = false
-            const now = getRealTime()
+            const now = serverTime.now()
             const frames = ['avatarFrame', 'title']
 
             frames.forEach(key => {
@@ -245,7 +245,7 @@ export const useUserStore = defineStore('user', {
         // --- [黑金通行证] 开通与续费 ---
         // 模拟/实际接入 IAP 的充值逻辑，durationDays 为开通天数 (30表示包月，365表示年度，36500表示终身)
         purchaseVip(durationDays, reason = '订阅黑金通行证') {
-            const now = getRealTime()
+            const now = serverTime.now()
             const durationMs = durationDays * 24 * 60 * 60 * 1000
 
             if (this.vipExpireTime > now) { // 校准时间判断
@@ -268,7 +268,8 @@ export const useUserStore = defineStore('user', {
             const isVip = checkVipActive(this.vipExpireTime)
             if (isVip) {
                 // VIP 每日限量 50 次
-                const today = getRealDateString()
+                const realDate = new Date(serverTime.now())
+                const today = `${realDate.getFullYear()}-${String(realDate.getMonth() + 1).padStart(2, '0')}-${String(realDate.getDate()).padStart(2, '0')}`
                 if (this.vipAiLastReset !== today) {
                     this.vipAiQuota = 50 // 每日重置
                     this.vipAiLastReset = today
@@ -299,13 +300,13 @@ export const useUserStore = defineStore('user', {
             if (!this.isVipActive) return false
 
             // 使用校准后的服务端时间防刷（统一 YYYY-MM-DD 格式）
-            const d1 = new Date(getRealTime())
+            const d1 = new Date(serverTime.now())
             const nowStr = `${d1.getFullYear()}-${String(d1.getMonth() + 1).padStart(2, '0')}-${String(d1.getDate()).padStart(2, '0')}`
             const d2 = this.lastVipGiftTime ? new Date(this.lastVipGiftTime) : null
             const lastStr = d2 ? `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, '0')}-${String(d2.getDate()).padStart(2, '0')}` : ''
 
             if (nowStr !== lastStr) {
-                this.lastVipGiftTime = getRealTime()
+                this.lastVipGiftTime = serverTime.now()
                 debouncedSetStorage('neuro_vip_last_gift', this.lastVipGiftTime)
                 this.earnCoins(50, '黑金数据链：每日例行算力拨付')
                 return true
@@ -317,7 +318,7 @@ export const useUserStore = defineStore('user', {
         consumeFreeRevive() {
             if (!this.hasFreeRevive) return false
 
-            const currentMonth = new Date().toISOString().slice(0, 7)
+            const currentMonth = new Date(serverTime.now()).toISOString().slice(0, 7)
 
             // 跨月重置判定
             if (this.lastReviveMonth !== currentMonth) {
@@ -367,7 +368,7 @@ export const useUserStore = defineStore('user', {
         // 处理广告奖励发放
         earnAdReward() {
             // 使用校准时间防止改系统日期刷广告（统一 YYYY-MM-DD 格式）
-            const now = new Date(getRealTime())
+            const now = new Date(serverTime.now())
             const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
             const d3 = new Date(this.lastAdTime)
             const lastDate = `${d3.getFullYear()}-${String(d3.getMonth() + 1).padStart(2, '0')}-${String(d3.getDate()).padStart(2, '0')}`
@@ -387,7 +388,7 @@ export const useUserStore = defineStore('user', {
             const reward = 20
             this.earnCoins(reward, '外网神经算力注入(看广告)')
             this.dailyAdCount++
-            this.lastAdTime = getRealTime()
+            this.lastAdTime = serverTime.now()
 
             debouncedSetStorage('neuro_daily_ad_count', this.dailyAdCount)
             debouncedSetStorage('neuro_last_ad_time', this.lastAdTime)

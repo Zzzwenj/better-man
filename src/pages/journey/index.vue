@@ -123,6 +123,8 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import NeuroBadge from '../../components/journey/NeuroBadge.vue'
 import NeuroRadarChart from '../../components/profile/NeuroRadarChart.vue' /* 借用已有的组件路径 */
 import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
+import CyberDialog from '../../components/common/CyberDialog.vue'
+import { serverTime } from '@/utils/serverTime.js'
 import { useThemeStore } from '../../store/theme.js'
 
 const themeStore = useThemeStore()
@@ -159,7 +161,7 @@ onMounted(() => {
     // 无记录则默认 0 天，不主动写入假数据（防止与 Dashboard 竞争）
     daysClean.value = 0
   } else {
-    const diffTime = Date.now() - startTimestamp
+    const diffTime = serverTime.now() - startTimestamp
     daysClean.value = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)))
   }
   
@@ -228,7 +230,7 @@ const getGoalProgress = (badgeDay) => {
 const heatmapCols = computed(() => {
   const historyFlags = uni.getStorageSync('neuro_checkins') || ''
   const WEEKS = 12
-  const today = new Date()
+  const today = new Date(serverTime.now())
   const todayDow = today.getDay() // 0=日,1=一,...,6=六
 
   // 第 0 列(最左)首格距今天多少天

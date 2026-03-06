@@ -168,6 +168,7 @@ import { useThemeStore } from '../../store/theme.js'
 import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
+import { serverTime } from '@/utils/serverTime.js'
 
 const themeStore = useThemeStore()
 import { useUserStore } from '../../store/user.js'
@@ -499,7 +500,7 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
   const avatar = profile.avatar || ''
 
   // 乐观更新，使用随机长效 ID 保证不重影
-  const randomLocalId = 'local_' + Date.now().toString() + '_' + Math.random().toString(36).substring(2, 6)
+  const randomLocalId = 'local_' + serverTime.now().toString() + '_' + Math.random().toString(36).substring(2, 6)
 
   chatStore.pushMessage({
     _id: randomLocalId,
@@ -512,7 +513,7 @@ const executeSend = async (content, isBroadcast = false, payloadContent = null) 
     is_emp: isEMP,
     equipped_title: userStore.equipped.title,
     equipped_avatar: userStore.equipped.avatarFrame,
-    created_date: Date.now()
+    created_date: serverTime.now()
   })
   
   try {
@@ -570,7 +571,7 @@ const onRenameConfirm = (newName) => {
  */
 const formatTimeAgo = (timestamp) => {
   if (!timestamp) return ''
-  const now = Date.now()
+  const now = serverTime.now()
   const diff = now - timestamp
 
   if (diff < 60000) return '刚刚' // 1 分钟内

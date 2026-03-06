@@ -98,9 +98,10 @@
 <script setup>
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { useThemeStore } from '../../store/theme.js'
-import { useUserStore } from '../../store/user.js'
-import CyberDialog from '../../components/common/CyberDialog.vue'
+import { useUserStore } from '@/store/user'
+import { useThemeStore } from '@/store/theme'
+import { serverTime } from '@/utils/serverTime.js'
+import CyberDialog from '@/components/common/CyberDialog.vue'
 
 const themeStore = useThemeStore()
 const userStore = useUserStore()
@@ -139,7 +140,7 @@ const quotaDisplay = computed(() => {
     if (userStore.isVipActive) {
         // VIP 每日限量 50
         const todayReset = uni.getStorageSync('neuro_vip_ai_last_reset') || ''
-        const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') // 简易校准获取今天
+        const today = new Date(serverTime.now()).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') // 强防篡改校准
         if (todayReset !== today) {
             return '今日算力: 50/50'
         }

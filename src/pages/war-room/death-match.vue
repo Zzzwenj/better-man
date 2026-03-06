@@ -163,7 +163,9 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { useThemeStore } from '../../store/theme.js'
+import { useUserStore } from '../../store/user.js'
 import { useWarzoneStore } from '../../store/warzone.js'
+import { serverTime } from '@/utils/serverTime.js'
 import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
@@ -244,7 +246,7 @@ const startCountdown = () => {
       countdownText.value = '计算中...'
       return
     }
-    const now = Date.now()
+    const now = serverTime.now()
     const diff = dmRoom.value.expiryTime - now
     if (diff <= 0) {
       clearInterval(timer)

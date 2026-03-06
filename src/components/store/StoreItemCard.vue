@@ -42,7 +42,9 @@
  */
 
 import { computed } from 'vue'
-import { useUserStore } from '@/store/user'
+import { useUserStore } from '../../store/user.js'
+import { useThemeStore } from '../../store/theme.js'
+import { serverTime } from '@/utils/serverTime.js'
 import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
 
 const props = defineProps({
@@ -61,21 +63,21 @@ const userStore = useUserStore()
 const canAfford = computed(() => userStore.neuroCoins >= props.price)
 
 // 鉴别对象 dict 而不是 includes 数组
-const isOwned = computed(() => {
+const isActivating = computed(() => {
   const exp = userStore.ownedItems[props.id]
-  return exp && exp > Date.now()
+  return exp && exp > serverTime.now()
 })
 
 // 计算剩余天数 (供 UI 炫耀或警告)
 const daysLeft = computed(() => {
-  if (!isOwned.value) return 0
   const exp = userStore.ownedItems[props.id]
-  return Math.ceil((exp - Date.now()) / (1000 * 60 * 60 * 24))
+  if (!exp) return 0
+  return Math.ceil((exp - serverTime.now()) / (1000 * 60 * 60 * 24))
 })
 
 // 检查该物品是否正处于装备状态
 const isEquipped = computed(() => {
-  if (!isOwned.value && props.typeTag !== '消耗品(单次)') return false
+  if (!isActivating.value && props.typeTag !== '消耗品(单次)') return false
   const eq = userStore.equipped
   return eq.avatarFrame === props.id || eq.title === props.id || eq.empActive && props.id === 'w_01'
 })

@@ -54,6 +54,8 @@
         <view class="btn-accept flex justify-center items-center" :class="{ 'disabled': !bothAgreed }" @click="handleAccept" :hover-class="bothAgreed ? 'btn-pressed' : ''">
            <text class="accept-text">我已阅读并签署契约</text>
         </view>
+        
+        <CyberFooter />
     </view>
   </view>
 </template>
@@ -61,6 +63,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
+import CyberFooter from '@/components/common/CyberFooter.vue'
 
 const themeStore = useThemeStore()
 
@@ -265,7 +268,7 @@ const handleAccept = () => {
 }
 .accept-text { font-size: 16px; color: #000; font-weight: 900; letter-spacing: 1.5px;}
 
-.btn-pressed:not(.disabled) { transform: scale(0.97); opacity: 0.9; }
+.btn-pressed:not(.disabled) { transform: scale(0.96); opacity: 0.9; box-shadow: 0 4px 15px rgba(0, 229, 255, 0.4); }
 
 /* 极其平滑的入场动画 */
 .fade-up {

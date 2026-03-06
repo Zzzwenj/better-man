@@ -43,12 +43,14 @@
       </view>
     </view>
     <text class="disclaimer block text-center pb-4 pt-2">所有数据均经端对端加密处理，仅用于神经算法推理与云端安全备份。</text>
+    <CyberFooter />
   </view>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
+import CyberFooter from '@/components/common/CyberFooter.vue'
 
 const themeStore = useThemeStore()
 const currentStep = ref(0)

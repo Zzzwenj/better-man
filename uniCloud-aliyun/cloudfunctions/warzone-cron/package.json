@@ -1,0 +1,14 @@
+{
+    "name": "warzone-cron",
+    "dependencies": {},
+    "extension": {
+        "log": true
+    },
+    "triggers": [
+        {
+            "name": "ThePurgerTrigger",
+            "type": "timer",
+            "config": "0 0 * * * * *"
+        }
+    ]
+}

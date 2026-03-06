@@ -8,7 +8,7 @@
 import { useChatStore } from './store/chat.js'
 import { useThemeStore } from './store/theme.js'
 import { useUserStore } from './store/user.js'
-import { initTimeGuard, getRealTime, getRealDateString } from './utils/timeGuard.js'
+import { serverTime } from './utils/serverTime.js'
 import { flushPendingStorage } from './utils/storageDebounce.js'
 
 export default {
@@ -34,7 +34,7 @@ export default {
     // 【安全加固】启动时初始化时间防篡改校准
     const token = uni.getStorageSync('uni_id_token')
     if (token) {
-        initTimeGuard(token)
+        serverTime.sync()
     }
     
     // 全局凭证静默校验守卫 (冷启动路由分发)
@@ -59,7 +59,8 @@ export default {
 
     // 每日打卡热力图计算 —— 使用校准后的服务端时间，防本地时间篡改
     const lastCheckin = uni.getStorageSync('last_checkin_date')
-    const todayStr = getRealDateString() // YYYY-MM-DD 格式
+    const realDate = new Date(serverTime.now())
+    const todayStr = `${realDate.getFullYear()}-${String(realDate.getMonth()+1).padStart(2,'0')}-${String(realDate.getDate()).padStart(2,'0')}`
 
     // ✅ 去重：同一天多次 onShow 不重复写入
     if (lastCheckin !== todayStr) {
