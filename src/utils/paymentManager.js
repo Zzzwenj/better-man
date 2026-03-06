@@ -18,7 +18,7 @@ class PaymentManager {
             plus.payment.getChannels((channels) => {
                 this.iapChannel = channels.find(c => c.id === 'appleiap');
                 if (this.iapChannel) {
-                    this.iapChannel.requestOrder(['recharge_6', 'recharge_68', 'vip_1month'], (res) => {
+                    this.iapChannel.requestOrder(['vip_month', 'vip_quarter', 'vip_forever'], (res) => {
                         console.log('[IAP] 商品列表已就绪', res);
                     }, (err) => {
                         console.error('[IAP] 获取商品失败', err);

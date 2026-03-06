@@ -344,36 +344,9 @@ const showVipInfo = () => {
     })
 }
 
-// Android/H5 处理第三方支付分流
-const handleAndroidPay = ({ price, type }) => {
-    showDialog({
-        title: '建立黑金特权通讯网',
-        content: '订阅费：15 元/31天。\n解锁每月 3 次“免代价无损折跃（除颤防坠落）”，专属高级称号与主理人直通频道信标。',
-        confirmText: '微信支付',
-        cancelText: '支付宝支付',
-        showCancel: true,
-        color: '#10b981', // 琥珀/金色色调 -> 改为微信绿以作引导
-        success: async (res) => {
-            const provider = res.confirm ? 'wxpay' : 'alipay'
-            
-            uni.showLoading({ title: '接驳加密网关...' })
-            try {
-                await paymentManager.requestPayment({
-                    productId: type,
-                    provider: provider,
-                    price: price
-                })
-                uni.hideLoading()
-                // 本地假造赋权，线上需配合回调
-                userStore.purchaseVip(31, '包月黑金开通')
-                userStore.claimDailyVipGift()
-                uni.showToast({ title: '特权链已接通', icon: 'success' })
-            } catch (err) {
-                uni.hideLoading()
-                uni.showToast({ title: err.message || '支付通道阻断', icon: 'error' })
-            }
-        }
-    })
+// Android/H5 处理第三方支付分流 → 统一跳转到 Premium 页走统一支付流程
+const handleAndroidPay = () => {
+    uni.navigateTo({ url: '/pages/premium/index' })
 }
 
 // 真实的拉取并等待激励广告播完体验一天
@@ -485,15 +458,9 @@ const handlePrivacyToggle = (val) => {
                  showCancel: true,
                  color: '#f59e0b',
                  success: (res) => {
-                     // 非 VIP 前往支付面板触发
                      if (res.confirm) {
-                         if (uni.getSystemInfoSync().platform === 'ios') {
-                             // iOS 无需选微信支付宝，直接调用苹果
-                             paymentManager.requestPayment({ productId: 'vip_1month', provider: 'appleiap', price: 1500 })
-                               .then(() => userStore.purchaseVip(31, '包月黑金开通'))
-                         } else {
-                             handleAndroidPay({ price: 1500, type: 'vip_1month' })
-                         }
+                         // 统一跳转到 Premium 页走支付流程
+                         uni.navigateTo({ url: '/pages/premium/index' })
                     }
                  }
              })

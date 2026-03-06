@@ -7,6 +7,12 @@
         "nodemailer": "^6.9.13",
         "crypto-js": "^4.2.0"
     },
-    "author": "",
-    "license": "ISC"
+    "cloudfunction-config": {
+        "memorySize": 256,
+        "timeout": 15,
+        "env": {
+            "SMTP_PASS": "nzewlqqilalmejab",
+            "SMS_PASS": "你的短信宝密码"
+        }
+    }
 }

@@ -59,36 +59,50 @@
 
       <!-- 支付通道选择 -->
       <view class="pay-method mx-4 mt-8 flex-col">
-        <text class="section-title mb-4">支付终端拦截网关</text>
-        <view 
+        <text class="section-title mb-4">支付方式</text>
+        
+        <!-- iOS: 仅 Apple 内购（苹果审核要求，不得展示第三方支付） -->
+        <view v-if="isIOS"
           class="pay-item flex items-center justify-between"
-          :class="{ active: currentPayMethod === 'wechat' }"
-          @click="currentPayMethod = 'wechat'"
+          :class="{ active: true }"
         >
           <view class="flex items-center">
-            <image src="/static/icons/wechat-pay.svg" class="pay-icon mr-3" mode="aspectFit" v-if="false" />
-            <text class="pay-icon-fallback wechat mr-3">W</text>
-            <text class="pay-name">微信支付</text>
+            <text class="pay-icon-fallback apple mr-3">🍎</text>
+            <text class="pay-name">Apple 内购</text>
           </view>
           <view class="radio-circle"></view>
         </view>
 
-        <view 
-          class="pay-item flex items-center justify-between mt-3"
-          :class="{ active: currentPayMethod === 'alipay' }"
-          @click="currentPayMethod = 'alipay'"
-        >
-          <view class="flex items-center">
-            <image src="/static/icons/alipay.svg" class="pay-icon mr-3" mode="aspectFit" v-if="false" />
-            <text class="pay-icon-fallback alipay mr-3">A</text>
-            <text class="pay-name">支付宝</text>
+        <!-- Android: 微信 / 支付宝 -->
+        <template v-else>
+          <view 
+            class="pay-item flex items-center justify-between"
+            :class="{ active: currentPayMethod === 'wechat' }"
+            @click="currentPayMethod = 'wechat'"
+          >
+            <view class="flex items-center">
+              <text class="pay-icon-fallback wechat mr-3">W</text>
+              <text class="pay-name">微信支付</text>
+            </view>
+            <view class="radio-circle"></view>
           </view>
-          <view class="radio-circle"></view>
-        </view>
+
+          <view 
+            class="pay-item flex items-center justify-between mt-3"
+            :class="{ active: currentPayMethod === 'alipay' }"
+            @click="currentPayMethod = 'alipay'"
+          >
+            <view class="flex items-center">
+              <text class="pay-icon-fallback alipay mr-3">A</text>
+              <text class="pay-name">支付宝</text>
+            </view>
+            <view class="radio-circle"></view>
+          </view>
+        </template>
       </view>
       
       <!-- 底部安全保障声明 -->
-      <view class="security-notice mx-4 mt-6 mb-24 flex items-center justify-center">
+      <view class="security-notice mx-4 mt-6 mb-40 flex items-center justify-center">
         <text class="sec-icon mr-2">🔒</text>
         <text class="sec-text">端到端加密结算 · 虚拟服务概不退款</text>
       </view>
@@ -113,17 +127,16 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
+import { paymentManager } from '@/utils/paymentManager'
 import CyberNavBar from '@/components/common/CyberNavBar.vue'
 
 const userStore = useUserStore()
+// 获取平台信息，用于 iOS/Android 支付分流
+const platform = uni.getSystemInfoSync().platform
 
 // 状态获取
-const isVip = computed(() => userStore.isVip)
-const daysLeft = computed(() => {
-  if (!isVip.value) return 0
-  const diff = userStore.vipExpireTime - Date.now()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
-})
+const isVip = computed(() => userStore.isVipActive)
+const daysLeft = computed(() => userStore.vipDaysLeft)
 
 // 特权说明对比（用于向上销售 Upsell）
 const privileges = [
@@ -133,11 +146,11 @@ const privileges = [
   { icon: '🛡️', name: '极客集市专属商品', base: '上锁', vip: '无限购买权' }
 ]
 
-// 真实法币价格体系
+// 真实法币价格体系（id 与云函数 PRODUCT_MAP 对齐）
 const plans = [
-  { id: 'month', name: '30 天', price: '18', originalPrice: '25' },
-  { id: 'quarter', name: '90 天', price: '45', originalPrice: '75', tag: '最常开通' },
-  { id: 'forever', name: '永久重塑', price: '168', originalPrice: '298', tag: '限时 5 折' }
+  { id: 'vip_month', name: '30 天', price: '18', originalPrice: '25', days: 30, priceFen: 1800 },
+  { id: 'vip_quarter', name: '90 天', price: '45', originalPrice: '75', tag: '最常开通', days: 90, priceFen: 4500 },
+  { id: 'vip_forever', name: '永久重塑', price: '168', originalPrice: '298', tag: '限时 5 折', days: 36500, priceFen: 16800 }
 ]
 
 const currentPlan = ref(plans[1])
@@ -147,23 +160,48 @@ const selectPlan = (plan) => {
   uni.vibrateShort()
 }
 
-// 支付方式假数据拦截
-const currentPayMethod = ref('wechat')
+// 支付方式（iOS 下仅展示 Apple IAP，Android 展示微信/支付宝）
+const currentPayMethod = ref(platform === 'ios' ? 'appleiap' : 'wechat')
+// 是否为 iOS 平台（模板中用于条件渲染）
+const isIOS = platform === 'ios'
 
-const handleRealPay = () => {
+/**
+ * 核心支付方法 —— 对接真实支付管线
+ * iOS: Apple IAP 内购
+ * Android: 微信/支付宝（通过 paymentManager）
+ */
+const handleRealPay = async () => {
   uni.vibrateShort()
-  uni.showLoading({ title: '加载支付网关...' })
-  
-  setTimeout(() => {
-    uni.hideLoading()
-    // 此处预留对接真实微信/支付宝支付逻辑（如 uni.requestPayment 或 uni-pay）
-    uni.showModal({
-      title: '系统级拦截',
-      content: `由于当前环境未接通真实结算物理层，你的【${currentPlan.value.name}】/【${currentPayMethod.value === 'wechat' ? '微信' : '支付宝'}】付款请求已被暂时挂起。`,
-      showCancel: false,
-      confirmText: '退出支付'
+  const plan = currentPlan.value
+  const provider = currentPayMethod.value
+
+  uni.showLoading({ title: '接驳加密支付网关...' })
+
+  try {
+    // 调用 paymentManager 统一支付接口
+    await paymentManager.requestPayment({
+      productId: plan.id,
+      provider: provider,
+      price: plan.priceFen
     })
-  }, 1000)
+
+    // 支付成功 → 本地激活 VIP
+    userStore.purchaseVip(plan.days, `订阅黑金通行证 - ${plan.name}`)
+    userStore.claimDailyVipGift() // 立即发放当日特权
+
+    uni.hideLoading()
+    uni.showToast({ title: '黑金特权已激活', icon: 'success', duration: 2000 })
+
+    // 延迟返回上一页
+    setTimeout(() => uni.navigateBack(), 1500)
+
+  } catch (err) {
+    uni.hideLoading()
+    console.error('[Premium] 支付失败:', err)
+    // 用户主动取消不弹错误提示
+    if (err && err.errMsg && err.errMsg.includes('cancel')) return
+    uni.showToast({ title: err.message || '支付通道中断', icon: 'none' })
+  }
 }
 </script>
 
@@ -187,6 +225,7 @@ const handleRealPay = () => {
 .mb-4 { margin-bottom: 16px; }
 .mb-1 { margin-bottom: 4px; }
 .mb-24 { margin-bottom: 96px; }
+.mb-40 { margin-bottom: 160px; }
 .mr-2 { margin-right: 8px; }
 .mr-3 { margin-right: 12px; }
 .flex { display: flex; }

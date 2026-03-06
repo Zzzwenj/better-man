@@ -47,6 +47,9 @@ exports.main = async (event, context) => {
         case 'deleteAccount':
             // 云端档案销毁（含7天冷静期）
             return await deleteAccount(usersCollection, uid)
+        case 'cancelDeleteAccount':
+            // 撤回注销指令（冷静期内恢复账号）
+            return await cancelDeleteAccount(usersCollection, uid)
         case 'getServerTime':
             // 返回服务端可信时间戳（防本地时间篡改）
             return { code: 0, serverTime: Date.now() }
@@ -128,6 +131,32 @@ async function deleteAccount(collection, uid) {
         return { code: 201, msg: '已进入7天冷静期。7天后系统将自动执行不可逆的深渊销毁。如后悔请在冷静期内重新登录取消。' }
     } catch (e) {
         return { code: 500, msg: '深渊抹除失败: ' + e.message }
+    }
+}
+
+// 撤回注销指令（冷静期内恢复账号）
+async function cancelDeleteAccount(collection, uid) {
+    try {
+        const userRes = await collection.where({ _id: uid }).get()
+        if (userRes.data.length === 0) {
+            return { code: 404, msg: '账号不存在' }
+        }
+
+        const user = userRes.data[0]
+        if (user.status !== 'pending_delete') {
+            return { code: 400, msg: '账号未处于流放状态，无需撤回' }
+        }
+
+        // 清除流放标记，恢复正常状态
+        await collection.doc(uid).update({
+            status: dbCmd.remove(),
+            delete_requested_at: dbCmd.remove(),
+            updated_at: Date.now()
+        })
+
+        return { code: 0, msg: '注销指令已撤回，账号已恢复正常' }
+    } catch (e) {
+        return { code: 500, msg: '撤回失败: ' + e.message }
     }
 }
 

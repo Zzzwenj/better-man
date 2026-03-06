@@ -444,9 +444,26 @@
 - **代码除草与安全加固 (Code Cleanup)**:
   - 清理了 `login/index.vue` 中遗留的测试专用免密拦截块，确保生产环境绝对鉴权安全。
   - 为设置项增加了“退出（切断连接）”与“注销（粉碎档案）”的明确中文语义标注。
-  
+
 ### 2026-03-06 更新 2：登录链路对齐与初始路由防御 (Login Guard & Auth Sync)
 - **401令牌拒签修复 (Token Auth Fix)**：废除 `user-center` 残留的硬编码假 token 拦截机制，全面启用真实 JWT 在 `uni-id-users` 库中的查验核销与过期拦截，畅通底层云函数的调用。
 - **孤岛重塑兜底 (Fallback Baseline)**：在登录页获取资料时增加柔性挂载。若云端无完整问卷基线档案，自动捕捉并本地存根独立修改过的小名/签名/头像等信息，破除后续组件因找不到名字变为空白的死局。
 - **变量越权阻断 (Ref Initialization)**：定点修复了 `profile` 页 `userSignature` 未定义就修改的 JS 穿透宕机崩溃 Bug。以及异常拦截模块写死的配对失灵警告。
 - **启动防闪验活 (Launch Flash Fix)**：修补了由于未使用在 `App.vue` 载体里导入的 `serverTime` 模块，以及在免密守门员 `calculator` 的 `onLoad` 中未校验 token 存在性就强行转到基线的超时逻辑崩盘 Bug。现已严格遵守冷启动下的绝对拦截逻辑：无凭证一律踢回登录、有凭证才放行核验主控/问卷。
+
+### 2026-03-06 更新 3：P0+P1 系统级全量修复与商业化闭环 (Payment, Security & Lifecycle)
+- **绝对法币屏障 (Payment Gateway)**：
+  - 构建 `payment-center` 云函数，提供订单生成、IAP票据校验、支付确认底层基建。
+  - `Premium` 页面完成三端异构对接（`paymentManager`）：iOS 遵守 Apple 审核协议独享 IAP（`vip_month/quarter/forever`），Android 丝滑拉起微信/支付宝收银台。
+- **VIP 护城河闭环 (VIP Access Control)**：
+  - 极客集市（Store）商品矩阵接入 `vipOnly` 强校验标签，平民级与特权级资产（如专属护盾 t_03）界限分明，阻断非 VIP 的越权购买并直接导流进件。
+  - 废除 24 小时硬编码标识，接入 Server 级 `trialExpireTime`，完成体验卡从激活到失效的时空闭环。 
+- **零信任环境隔离 (Zero-Trust Env)**：
+  - 核心大模型链路（`ai-shield` / `ai-cron-job`）敏感私钥（`DeepSeek API Key`）全数撤除前端与云函数明文硬编码，全面迁移至 uniCloud 环境变量（`process.env`）注入，阻断源码流失反查风险。
+- **暗网战区死神降临 (Warzone Grim Reaper)**：
+  - `warzone-cron` 挂载 `active` 战局打卡扫描器。死线倒计时结束未报到者，触发系统级抹杀淘汰；存活低于 2 人，触发协议熔断并执行神经币押金全量原路退回。
+- **特工身份粉碎与转世 (Identity Wipeout & Rebirth)**：
+  - 注销流程引入更人性的 **7 天时空冷静期**：提供 `cancelDeleteAccount` 云端后悔药，支持冷却期内登录重置销毁倒计时。
+  - 结合 `warzone-cron`，对熬过 7 天的滞留档案执行真正意义上的物理硬盘级删除 (`dbCmd.remove()`)。
+- **量子叠加态防串联 (Quantum State Segregation)**：
+  - 补齐了全局 `Store` 的 `resetAllData` 安全指令。在用户断开连接（退出登录或账户重登）的刹那，全量抹除所有 `neuro_` 域前缀存储基线，根治不同账号共享设备时的属性灵异串包 Bug。
