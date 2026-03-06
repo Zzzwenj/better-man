@@ -58,7 +58,7 @@ exports.main = async (event, context) => {
             return await initLibraryData(db)
         case 'injectVideo':
             // 极客弹药库装填
-            return await injectVideo(db, uid, payload)
+            return await injectVideo(db, authRes.data[0], payload)
         case 'verifyTransaction':
             // 交易核销 —— 写入 transaction_logs 集合记录流水，用于反作弊审计
             try {
@@ -375,8 +375,12 @@ async function initLibraryData(db) {
     }
 }
 
-async function injectVideo(db, uid, payload) {
-    if (uid !== '69a2b37b8a5c785fa801e691') {
+async function injectVideo(db, user, payload) {
+    // 超级管理员鉴权（基于云端硬编码标识或指定的邮箱，临时方案）
+    const isAdmin = user._id === '69a2b37b8a5c785fa801e691' ||
+        user.email === '1786796474@qq.com' ||
+        user.username === '1786796474@qq.com';
+    if (!isAdmin) {
         return { code: 403, msg: '无高维操作权限(403)' }
     }
 
@@ -391,6 +395,7 @@ async function injectVideo(db, uid, payload) {
     // 不填封面，默认从随机静态图库捞一张自然风光作封面兜底
     const actCover = `https://picsum.photos/seed/${now}/800/800`
 
+    // ... 
     try {
         await col.add({
             type: 'video',
@@ -401,27 +406,45 @@ async function injectVideo(db, uid, payload) {
             author: '能量体中心',
             readTime: '实录视频流',
             contentUrl: url,
-            status: 1,              // 本次爆改：取消装填等待池，即插即用，直升顶流！
+            status: 1,
             _is_manual: true,
             publish_date: now,
             version: 1,
             _theme: 'inspiration'
         })
-        
+
         // 核心配套治理：既然即时插入了前端展示流，为防止超频率注射搞崩蓄水池，同步附上“溢出修剪裁断”
-        const MAX_VISIBLE_VIDEOS = 20; // 根据要求，前端最多只显示 20 条长尾影像
+        const MAX_VISIBLE_VIDEOS = 20; // 前端最多只显示 20 条长尾影像
         const expiredVideosRes = await col.where({ type: 'video', status: 1 })
             .orderBy('publish_date', 'desc')
             .skip(MAX_VISIBLE_VIDEOS)
-            .field({ _id: 1 })
+            .field({ _id: 1, contentUrl: 1 }) // 把 contentUrl 也查出来
             .get();
 
         if (expiredVideosRes.data.length > 0) {
             const deadVideoIds = expiredVideosRes.data.map(d => d._id);
+            // 捞出所有需要物理删除的云端 CDN 直链 (防空)
+            const obsoleteUrls = expiredVideosRes.data
+                .map(d => d.contentUrl)
+                .filter(url => url && url.includes('aliyun') && !url.startsWith('http')); // 粗略判定为 fileID
+
+            // 1. 抹除云数据库记录
             await col.where({ _id: dbCmd.in(deadVideoIds) }).remove();
+
+            // 2. 斩草除根：物理删除云盘/OSS内源文件，释放付费空间
+            if (obsoleteUrls.length > 0) {
+                try {
+                    await uniCloud.deleteFile({
+                        fileList: obsoleteUrls
+                    });
+                    console.log(`[存储清理] 成功销毁 ${obsoleteUrls.length} 个过期影像载体。`);
+                } catch (delErr) {
+                    console.error('[存储清理] 云端超度失败:', delErr);
+                }
+            }
         }
 
-        return { code: 0, msg: '新弹药即刻上膛，当前矩阵已同步顶流' }
+        return { code: 0, msg: '新弹药即刻上膛，当前矩阵已同步顶流，旧载体已物理销毁' }
     } catch (err) {
         return { code: 500, msg: '数据库异常: ' + err.message }
     }

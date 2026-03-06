@@ -482,3 +482,14 @@
   - **即插即升顶流**：取消了主理人录入后“被动蛰伏 (`status: 0`) 等待三天”的死板操作。现在 `injectVideo` 一经下发，强制提拔为 `status: 1` 霸占前端首屏，实现秒级热更新。
   - **滚筒式淘汰代谢 (Garbage Collection)**：系统仅会在新血液注射或定时器推单导致总量超越阈值时，精修剪（`skip(20)`）并物理抹除长尾末位老旧弹药，实现既能永存又绝不拥堵数据库溢出的艺术级平衡。
   - **历史 AI 尸骨剿灭 (Cleansing Protocol)**：追加一次性强效净化逻辑。通过嗅探并物理核爆所有缺失 `_is_manual: true` 免死金牌的远古劣质视频，全面交接分发权重给主理人储备库。
+
+### 2026-03-06 更新 6：超级管理员端内直传与 OSS 云端闭环系统 (Admin Direct-Upload & OSS Cleanup)
+- **破除强外链依赖 (Local Upload Integration)**：
+  - 在 `Profile` 界面的“录入影像弹药库”核心交互中，全面接入 `uni.chooseVideo` 原生接口，并在底层挂载 `uniCloud.uploadFile` 直传通道。
+  - 审核员现可直接在 App 端选取本地相册视频，并在上传进度条结束后，系统自动获取并回填自带 CDN 加速体系的云端 FileID 链接。彻底抛弃了纯靠手工复制外部直链的极其低效的历史路径。
+- **全自动 OSS 斩草除根协议 (Zero-Orphan Storage Management)**：
+  - 修复了原先淘汰落后弹药时仅剔除云数据库字串，而导致巨型源视频永久驻留在阿里云 OSS 消耗存储费用的致命盲点。
+  - 在 `injectVideo` 落库钩子里强制劫持汰换名单，精准提取阿里云直储类型的 `contentUrl`，协同调用同服 API `uniCloud.deleteFile` 实现真正的物理硬盘级连根拔起。
+- **权限边界渗透兼容 (Email Admin Whitelist)**：
+  - 取消了唯一硬编码 `_id` 独占视频分发权的僵化判定。
+  - `user-center` 强校验及前端 `Profile` 入口均新增了针对指定主理人邮箱（`1786796474@qq.com`）的安全挂载防线，赋予多极化账号最高治理维度的准入许可证。

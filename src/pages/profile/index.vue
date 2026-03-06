@@ -113,9 +113,13 @@
             <text class="dialog-title text-white font-bold" style="font-size: 15px;">录入影像弹药库 [-SYS-]</text>
          </view>
          
-         <text class="text-xs text-gray-400 mb-2 mt-2">直链输入 (仅限 .mp4 无水印链):</text>
-         <!-- 使用最高的层叠和不透明包裹保证系统键盘探测 -->
-         <input class="native-input mb-4" type="text" v-model="injectForm.url" placeholder="https://..." cursor-spacing="20" maxlength="-1" />
+         <text class="text-xs text-gray-400 mb-2 mt-2">影像来源 (直链或本地直传):</text>
+         <view class="flex items-center mb-4 w-full">
+            <input class="native-input flex-1" type="text" v-model="injectForm.url" placeholder="https://..." cursor-spacing="20" maxlength="-1" />
+            <view class="upload-btn flex items-center justify-center ml-2" @click="handleChooseVideo">
+               <text class="text-white text-xs">本地选取</text>
+            </view>
+         </view>
          
          <text class="text-xs text-gray-400 mb-2">影像标题 (极简):</text>
          <input class="native-input mb-4" type="text" v-model="injectForm.title" placeholder="破晓时刻，自律即自由" cursor-spacing="20" maxlength="50" />
@@ -296,8 +300,10 @@ const fetchCloudProfile = async () => {
             localProfileData.signature = cloudUser.signature || localProfileData.signature
             uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
             
-            // 超级管理员鉴权（基于云端硬编码标识或特殊称号）
-            if (cloudUser._id === '69a2b37b8a5c785fa801e691') {
+            // 超级管理员鉴权（基于云端硬编码标识或指定的邮箱，临时方案）
+            if (cloudUser._id === '69a2b37b8a5c785fa801e691' || 
+                cloudUser.email === '1786796474@qq.com' || 
+                cloudUser.username === '1786796474@qq.com') {
                 isSuperAdmin.value = true
             }
 
@@ -486,6 +492,61 @@ const confirmInjectVideo = async () => {
     } finally {
         uni.hideLoading()
     }
+}
+
+// 唤起本地相册/相机，选取视频并直传阿里云存储获取 CDN 链接
+const handleChooseVideo = () => {
+    uni.chooseVideo({
+        sourceType: ['album', 'camera'],
+        compressed: true,
+        maxDuration: 60, // 视业务需求可调整
+        success: async (res) => {
+            const tempFilePath = res.tempFilePath;
+            if (!tempFilePath) return;
+
+            // 获取文件扩展名
+            let ext = 'mp4';
+            if (res.name) {
+                const parts = res.name.split('.');
+                if (parts.length > 1) {
+                    ext = parts.pop();
+                }
+            }
+            const cloudPath = `neuro-videos/${Date.now()}-${Math.floor(Math.random() * 1000)}.${ext}`;
+
+            uni.showLoading({ title: '上行链路全开中...', mask: true });
+
+            try {
+                // 使用 uniCloud.uploadFile 客户端直传至云存储
+                const uploadResult = await uniCloud.uploadFile({
+                    filePath: tempFilePath,
+                    cloudPath: cloudPath,
+                    onUploadProgress: function(progressEvent) {
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        uni.showLoading({ title: `传输 ${percentCompleted}%...`, mask: true });
+                    }
+                });
+
+                if (uploadResult.fileID) {
+                    uni.showToast({ title: '影像中转成功', icon: 'success' });
+                    // UNI-CLOUD 阿里云会自动转为 CDN 的 HTTPS URL 填入直链框
+                    injectForm.value.url = uploadResult.fileID; 
+                } else {
+                    uni.showToast({ title: '云端节点拒收', icon: 'none' });
+                }
+            } catch (err) {
+                console.error('上传失败', err);
+                uni.showToast({ title: '通信通道拥堵', icon: 'none' });
+            } finally {
+                uni.hideLoading();
+            }
+        },
+        fail: (err) => {
+            console.log('取消或选视失败:', err);
+        }
+    });
 }
 
 const closeInjectVideo = () => {
@@ -798,6 +859,25 @@ page {
   border-radius: 8px;
   padding: 10px 14px;
   color: #fff;
+}
+
+.upload-btn {
+  background: rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  border-radius: 8px;
+  height: 42px; /* 匹配 input 高度 */
+  padding: 0 12px;
+  white-space: nowrap;
+}
+.upload-btn:active {
+  background: rgba(139, 92, 246, 0.6);
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 0;
   width: auto;
   font-size: 14px;
 }
