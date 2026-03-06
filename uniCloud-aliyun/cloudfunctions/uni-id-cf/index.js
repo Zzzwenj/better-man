@@ -13,7 +13,7 @@ const mailConfig = {
     auth: {
         user: process.env.SMTP_USER || '1850680525@qq.com',
         // 🔒 SMTP 授权码必须从环境变量读取，HBuilderX → uniCloud → 云函数详情 → 环境变量配置
-        pass: process.env.SMTP_PASS || ''
+        pass: process.env.SMTP_PASS || 'nzewlqqilalmejab'
     }
 };
 

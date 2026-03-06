@@ -61,7 +61,6 @@ const switchTab = (index, url) => {
   
   // 立即触发点击动画类
   isAnimating.value = index
-  uni.vibrateShort()
   
   // 无延迟立刻抛出跳转，避免卡顿。动画将由 Vue 在卸载前/新页面挂载后依靠 CSS 弥补
   uni.switchTab({ url })
@@ -81,9 +80,7 @@ const switchTab = (index, url) => {
   right: 0;
   height: calc(56px + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(9, 9, 11, 0.85); /* 极度深渊黑带微透明 */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(9, 9, 11, 0.95); /* Deepen background instead of using heavy blur */
   display: flex;
   justify-content: space-around;
   align-items: center;

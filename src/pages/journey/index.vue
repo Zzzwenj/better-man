@@ -111,7 +111,6 @@
     <!-- 全屏高光分享卡片组件 -->
     <MilestoneShareCard :show="showShareOverlay" :milestone="selectedMilestone" @close="closeShareOverlay" />
     
-    <CyberFloatBall />
     <CustomTabBar :current="1" />
   </view>
 </template>
@@ -122,7 +121,6 @@ import MilestoneShareCard from '../../components/journey/MilestoneShareCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import NeuroBadge from '../../components/journey/NeuroBadge.vue'
 import NeuroRadarChart from '../../components/profile/NeuroRadarChart.vue' /* 借用已有的组件路径 */
-import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import { serverTime } from '@/utils/serverTime.js'
 import { useThemeStore } from '../../store/theme.js'

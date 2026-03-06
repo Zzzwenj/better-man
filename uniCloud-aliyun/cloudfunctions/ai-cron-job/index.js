@@ -3,7 +3,8 @@ const db = uniCloud.database()
 const dbCmd = db.command
 
 // ================= 全局核心配置 =================
-const DEEPSEEK_API_KEY = 'sk-961f7bfc38ed422a9ca9648deec15941' // DeepSeek 大模型访问密钥
+// 🔐 从环境变量读取（在 uniCloud 控制台 → 云函数详情 → 环境变量中配置 DEEPSEEK_API_KEY）
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || ''
 
 // ================= 静态高品质素材池 (分类匹配，避免“牛头不对马嘴”和 Error 1033) =================
 // 彻底放弃不稳定的第三方生图 API，改用类别强绑定的高品质 Picsum 恒定精选 ID 集合

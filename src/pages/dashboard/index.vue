@@ -406,7 +406,7 @@ page {
 
 /* 顶部状态栏 */
 .header {
-  padding: calc(var(--status-bar-height) + 16px) 20px 8px 20px;
+  padding: calc(var(--status-bar-height) + 24px) 20px 12px 20px;
   background: rgba(9, 9, 11, 0.7);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);

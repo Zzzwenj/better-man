@@ -4,8 +4,8 @@ exports.main = async (event, context) => {
     // event 接收前端携带的参数
     const { messages, userMsg } = event
 
-    // 🎯 请在此处填入真实的 DeepSeek API Key
-    const API_KEY = 'sk-961f7bfc38ed422a9ca9648deec15941' // FIXME: 此处需要填入真实有效的 DeepSeek API Key
+    // 🔐 从环境变量读取 DeepSeek API Key（在 uniCloud 控制台 → 云函数详情 → 环境变量中配置 DEEPSEEK_API_KEY）
+    const API_KEY = process.env.DEEPSEEK_API_KEY || ''
 
     if (!API_KEY) {
         return {

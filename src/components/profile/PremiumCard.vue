@@ -12,14 +12,10 @@
         </view>
       </view>
       <view class="flex items-center">
-         <view class="cyber-coin-badge flex items-center mr-3" hover-class="badge-hover" @click="$emit('openStore')">
-           <text class="coin-icon">⎔</text>
-           <text class="coin-num">{{ userCoins }}</text>
-         </view>
-         <view v-if="!isVip" class="btn-upgrade flex items-center justify-center" hover-class="btn-hover" @click="$emit('openStore')">
+         <view v-if="!isVip" class="btn-upgrade flex items-center justify-center" hover-class="btn-hover" @click="$emit('openPremium')">
            <text class="btn-text">神经溯源</text>
          </view>
-         <view v-else class="btn-renew flex items-center justify-center" hover-class="btn-hover" @click="$emit('openStore')">
+         <view v-else class="btn-renew flex items-center justify-center" hover-class="btn-hover" @click="$emit('openPremium')">
            <text class="btn-text">时空续接</text>
          </view>
       </view>

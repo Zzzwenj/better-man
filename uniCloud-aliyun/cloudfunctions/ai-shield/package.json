@@ -3,5 +3,12 @@
     "version": "1.0.0",
     "description": "DeepSeek API Proxy Handler",
     "main": "index.js",
-    "dependencies": {}
+    "dependencies": {},
+    "cloudfunction-config": {
+        "memorySize": 512,
+        "timeout": 30,
+        "env": {
+            "DEEPSEEK_API_KEY": "sk-961f7bfc38ed422a9ca9648deec15941"
+        }
+    }
 }

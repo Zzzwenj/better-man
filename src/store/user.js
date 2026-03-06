@@ -38,6 +38,8 @@ export const useUserStore = defineStore('user', {
             // --- 短期体验权限 ---
             // 是否领取过一次性的 24 小时越权体验药剂
             hasUsedTrial: uni.getStorageSync('neuro_has_used_trial') === 'true',
+            // 24小时体验的到期时间戳（0 表示未激活或已过期）
+            trialExpireTime: Number(uni.getStorageSync('neuro_trial_expire')) || 0,
 
             // --- 极客集市购买与装备状态 ---
             // 采用 Dict { 'f_01': 1735689600000 } 记录每个物品的过期时间戳
@@ -72,13 +74,24 @@ export const useUserStore = defineStore('user', {
         }
     },
     getters: {
-        // 当前是否拥有生效的黑金通行证
+        // 当前是否拥有生效的黑金通行证（正式 VIP 或 24h 体验期）
         isVipActive: (state) => {
-            return checkVipActive(state.vipExpireTime)
+            // 正式 VIP 生效
+            if (checkVipActive(state.vipExpireTime)) return true
+            // 24小时体验期未过期
+            if (state.trialExpireTime && serverTime.now() < state.trialExpireTime) return true
+            return false
         },
-        // profile 页所用别名（与 isVipActive 等价，防 prop 哑火）
+        // profile 页所用别名（与 isVipActive 等价）
         isProActive: (state) => {
-            return checkVipActive(state.vipExpireTime)
+            if (checkVipActive(state.vipExpireTime)) return true
+            if (state.trialExpireTime && serverTime.now() < state.trialExpireTime) return true
+            return false
+        },
+        // 是否处于 24h 体验期（非正式 VIP）
+        isTrialActive: (state) => {
+            if (checkVipActive(state.vipExpireTime)) return false // 正式 VIP 不算体验
+            return state.trialExpireTime && serverTime.now() < state.trialExpireTime
         },
         // 本月是否还有剩余的【免单除颤】特权 (仅黑金会员拥有)
         hasFreeRevive: (state) => {
@@ -361,8 +374,11 @@ export const useUserStore = defineStore('user', {
         // 领取一次性 24 小时越权体验 (看广告后调用)
         claimTrialPermission() {
             this.hasUsedTrial = true
+            // 设置 24 小时后过期的时间戳
+            this.trialExpireTime = serverTime.now() + 24 * 60 * 60 * 1000
             uni.setStorageSync('neuro_has_used_trial', 'true')
-            console.log('[Store] 已发放一次性临时越权体验。')
+            uni.setStorageSync('neuro_trial_expire', this.trialExpireTime)
+            console.log('[Store] 已发放 24 小时临时越权体验，到期时间:', new Date(this.trialExpireTime).toLocaleString())
         },
 
         // 处理广告奖励发放
@@ -475,6 +491,26 @@ export const useUserStore = defineStore('user', {
             } catch (err) {
                 console.error('[Store] 云端资产对账失败', err)
             }
+        },
+
+        // 登出/切换账号时清理所有用户本地数据，防止账号数据串号
+        resetAllData() {
+            // 清除所有 neuro_ 前缀的用户数据
+            const keysToRemove = [
+                'neuro_uuid', 'neuro_coins', 'neuro_vip_expire', 'neuro_vip_last_gift',
+                'neuro_privacy_lock', 'neuro_has_used_trial', 'neuro_trial_expire',
+                'neuro_owned_items', 'neuro_equipped', 'neuro_last_ad_time', 'neuro_daily_ad_count',
+                'neuro_free_ai_quota', 'neuro_vip_ai_quota', 'neuro_vip_ai_last_reset',
+                'neuro_start_date', 'neuro_checkins', 'neuro_baseline',
+                'neuro_monthly_free_revive', 'neuro_last_revive_month',
+                'last_checkin_date', 'uni_id_token', 'uni_id_token_expired',
+                'user_account_status', 'account_delete_at', 'saved_account'
+            ]
+            keysToRemove.forEach(key => uni.removeStorageSync(key))
+
+            // 重置 store 内存状态
+            this.$reset()
+            console.log('[Store] 用户数据已全量清除')
         }
     }
 })

@@ -215,8 +215,7 @@ onUnmounted(() => {
   position: absolute;
   width: 100%; height: 100%;
   border-radius: 50%;
-  background: rgba(10, 10, 15, 0.95);
-  backdrop-filter: blur(20px);
+  background: rgba(10, 10, 15, 0.98); /* Deepen alpha channel to simulate glass without actual blur */
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 
     0 15px 45px rgba(0, 0, 0, 0.9), 
@@ -224,6 +223,8 @@ onUnmounted(() => {
     inset 0 0 15px rgba(255, 255, 255, 0.05);
   animation: fab-pulse 3s infinite;
   z-index: 1;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* 核心图标重构：神盾脉冲 (视觉放大) */
@@ -272,9 +273,9 @@ onUnmounted(() => {
 }
 
 @keyframes fab-pulse {
-  0% { transform: scale(1); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
-  50% { transform: scale(1.05); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 229, 255, 0.3); }
-  100% { transform: scale(1); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7); }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .panic-glow {
@@ -295,6 +296,8 @@ onUnmounted(() => {
   border-radius: 50%;
   animation: rotate-shield 12s linear infinite;
   z-index: 0;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 @keyframes shake {
@@ -309,7 +312,6 @@ onUnmounted(() => {
   position: absolute;
   bottom: 85px;
   background: rgba(18, 18, 23, 0.98);
-  backdrop-filter: blur(15px);
   padding: 14px 24px;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 1), 0 0 0 1px rgba(255, 255, 255, 0.15);

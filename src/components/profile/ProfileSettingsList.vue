@@ -1,12 +1,5 @@
 <template>
-  <view class="settings-list mt-2 px-4">
-    <!-- 视觉分界线 -->
-    <view class="divider my-4 flex items-center justify-center">
-      <view class="line flex-1"></view>
-      <text class="divider-text mx-3">SYSTEM CONTROLS</text>
-      <view class="line flex-1"></view>
-    </view>
-    
+  <view class="settings-list mt-6 px-4">
     <view class="list-group flex-col">
        <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'lock')">
           <view class="flex items-center">
@@ -17,6 +10,14 @@
              <text class="item-status mr-2" :class="{ 'active': privacyLockEnabled }">{{ privacyLockEnabled ? 'ACTIVE' : 'OFF' }}</text>
              <switch :checked="privacyLockEnabled" color="#00e5ff" style="transform:scale(0.7)" @change="e => $emit('togglePrivacyLock', e.detail.value)" @click.stop/>
           </view>
+       </view>
+
+       <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'store')">
+          <view class="flex items-center">
+             <view class="item-icon-wrap store-icon"><text class="icon">🛒</text></view>
+             <text class="item-title ml-3">极客集市</text>
+          </view>
+          <text class="item-arrow">></text>
        </view>
 
        <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'theme')">
@@ -52,27 +53,25 @@
        </view>
     </view>
 
-    <!-- 协议区 -->
-    <view class="legal-links flex justify-center mt-6 mb-8">
+    <!-- 退出/注销操作区（弱化视觉存在感） -->
+    <view class="exit-zone flex-col items-center mt-4">
+       <text class="exit-text" @click="$emit('handleSettingClick', 'logout')">切断当前连接序列（退出）</text>
+       <text class="exit-text mt-2" @click="$emit('handleSettingClick', 'delete_account')">申请粉碎档案记录（注销）</text>
+    </view>
+
+    <!-- 协议区（位于退出/注销下方，留安全距离避免贴tabbar） -->
+    <view class="legal-links flex justify-center mt-4 mb-8 pb-safe">
        <text class="legal-text" @click="$emit('goToAgreement', 'terms')">服务协议</text>
        <text class="legal-divider mx-3">|</text>
        <text class="legal-text" @click="$emit('goToAgreement', 'privacy')">防线政策</text>
     </view>
-
-    <!-- 危险操作区 -->
-    <view class="danger-zone flex-col items-center mt-8 pb-8">
-       <view class="btn-logout flex items-center justify-center mb-4" hover-class="btn-pressed" @click="$emit('handleSettingClick', 'logout')">
-          <text class="logout-text">切断当前连接序列</text>
-       </view>
-       <text class="delete-account-text" @click="$emit('handleSettingClick', 'delete_account')">申请粉碎档案记录</text>
-       
+    <!-- 极客隐秘通道与元数据 (弱化展示) -->
+    <view class="flex-col items-center mt-2 pb-8">
        <!-- 开发者后门清除入口：未来云端开关审查 -->
-       <text class="mt-4" style="font-size: 10px; color: #3f3f46; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'clear_cache')">SYS.CLEAR_CACHE()</text>
-       
+       <text style="font-size: 10px; color: #3f3f46; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'clear_cache')">SYS.CLEAR_CACHE()</text>
        <!-- 主理人绝密通道：视频弹药库手动装填 -->
        <text v-if="isSuperAdmin" class="mt-2" style="font-size: 10px; color: #10b981; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'inject_video')">[+] SYS.INJECT_VIDEO()</text>
-
-       <text class="mt-1" style="font-size: 10px; color: #3f3f46; font-family: monospace;">UUID: {{ deviceId }}</text>
+       <text class="mt-2" style="font-size: 10px; color: #3f3f46; font-family: monospace;">UUID: {{ deviceId }}</text>
     </view>
   </view>
 </template>
@@ -149,23 +148,16 @@ defineEmits(['handleSettingClick', 'togglePrivacyLock', 'goToAgreement'])
 .item-status { font-size: 11px; font-family: monospace; color: #52525b; font-weight: bold;}
 .item-status.active { color: var(--theme-primary, #00e5ff); text-shadow: 0 0 8px rgba(0,229,255,0.4);}
 
-.legal-links { opacity: 0.8; }
-.legal-text { font-size: 12px; color: #71717a; text-decoration: underline; text-underline-offset: 2px; }
+/* 退出/注销区：极度弱化，仅纯文字 */
+.exit-zone { width: 100%; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 20px; }
+.exit-text { font-size: 12px; color: #52525b; letter-spacing: 0.5px; transition: color 0.2s; }
+.exit-text:active { color: #71717a; }
+.mt-2 { margin-top: 8px; }
+
+/* 协议链接：提亮确保可读 */
+.legal-text { font-size: 11px; color: #71717a; }
 .legal-text:active { color: var(--theme-primary, #00e5ff); }
-.legal-divider { color: #3f3f46; font-size: 12px; }
-
-.danger-zone { width: 100%; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 32px;}
-.btn-logout {
-  width: 80%;
-  height: 48px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 24px;
-  transition: all 0.2s;
-}
-.logout-text { font-size: 15px; color: #a1a1aa; font-weight: bold; letter-spacing: 1px; }
-.btn-pressed { transform: scale(0.96); background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2);}
-
-.delete-account-text { font-size: 13px; color: #ef4444; font-weight: bold; opacity: 0.8; transition: opacity 0.2s;}
-.delete-account-text:active { opacity: 1; text-decoration: underline; }
+.legal-divider { color: #52525b; font-size: 11px; }
+/* 底部安全距离 */
+.pb-safe { padding-bottom: 20px; }
 </style>

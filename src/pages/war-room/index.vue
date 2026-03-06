@@ -90,7 +90,6 @@
       :color="dialog.color"
     />
 
-    <CyberFloatBall />
     <CustomTabBar :current="2" />
   </view>
 </template>
@@ -103,7 +102,6 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import RoomCard from '../../components/war-room/RoomCard.vue'
 import ContractModal from '../../components/war-room/ContractModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
-import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
@@ -312,13 +310,19 @@ page { height: 100%; }
   background-image: 
     radial-gradient(circle at 100% 0%, rgba(239, 68, 68, 0.15) 0%, transparent 60%),
     radial-gradient(circle at 0% 100%, rgba(185, 28, 28, 0.1) 0%, transparent 60%);
-  
-  .room-title {
-    color: #ef4444 !important;
-    text-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
-    animation: textFlicker 2s infinite;
-  }
 }
+
+.war-mode .room-title {
+  color: #ef4444 !important;
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.6) !important;
+  animation: textFlicker 2s infinite;
+}
+
+/* 联通红化小组件 */
+.war-mode .tab-item.active { background: #ef4444 !important; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important; }
+.war-mode .online-chip { background: rgba(239, 68, 68, 0.1) !important; border-color: rgba(239, 68, 68, 0.3) !important; }
+.war-mode .dot-live { background-color: #ef4444 !important; box-shadow: 0 0 5px #ef4444 !important; }
+.war-mode .online-text { color: #ef4444 !important; }
 
 @keyframes textFlicker {
   0%, 100% { opacity: 1; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }

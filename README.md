@@ -430,13 +430,52 @@
 - **绝对时空防卫 (Security)**：部署 serverTime.js，全面清缴 Date.now() 与 ew Date() 的本地系统时间调用漏洞，死磕设备调表作弊。
 - **云端大清洗引擎 (Cron)**：新增 warzone-cron 定时器，每小时无人值守扫描废弃死局，闭环处理房间流产退款与契约打卡过渡。
 
+## 阶段 37：黑金特权中枢集成与入口解耦重构 (Premium Center & Entry Decoupling)
+- **黑金特权中枢 (Premium Center)**:
+  - 新增独立充值结算页 `pages/premium/index.vue`。采用黑金高亮视觉，内置特权对比矩阵（核心算力差异/专属商品/绝密频道）。
+  - **收银台分流**: 预留微信/支付宝双支付网关拦截位，实现从虚拟币购买向法币定价协议的商业化转型预留。
+- **个人中心入口大手术 (Profile Restructuring)**:
+  - **移除冗余展示**: 响应“少即是多”原则，彻底流放了展示拥有的 `HonorCarousel`（荣誉资产长廊）模块，净化视觉空间。
+  - **入口权重对调**: 取消点击神经币余额跳转商城的逻辑，将其改为纯展示属性。将系统设置项中的“极客集市”设为由隐私视界锁下方进入的唯一合法入口。
+  - **特权直通车**: 更新 `PremiumCard` 按钮触点，从跳转商城改为定向导流至全新的“黑金特权中心”。
+- **集市货架精修 (Store Optimization)**:
+  - **去冗余分类**: 剔除了无商品的“特效彩蛋”空分组。
+  - **宽屏适配**: 针对剩余的“装扮/武装”核心分类，将 Tab 导航重构为 `flex-1` 等分布满屏幕，消除了右侧视觉留白。
+- **代码除草与安全加固 (Code Cleanup)**:
+  - 清理了 `login/index.vue` 中遗留的测试专用免密拦截块，确保生产环境绝对鉴权安全。
+  - 为设置项增加了“退出（切断连接）”与“注销（粉碎档案）”的明确中文语义标注。
+
 ### 2026-03-06 更新 2：登录链路对齐与初始路由防御 (Login Guard & Auth Sync)
 - **401令牌拒签修复 (Token Auth Fix)**：废除 `user-center` 残留的硬编码假 token 拦截机制，全面启用真实 JWT 在 `uni-id-users` 库中的查验核销与过期拦截，畅通底层云函数的调用。
 - **孤岛重塑兜底 (Fallback Baseline)**：在登录页获取资料时增加柔性挂载。若云端无完整问卷基线档案，自动捕捉并本地存根独立修改过的小名/签名/头像等信息，破除后续组件因找不到名字变为空白的死局。
 - **变量越权阻断 (Ref Initialization)**：定点修复了 `profile` 页 `userSignature` 未定义就修改的 JS 穿透宕机崩溃 Bug。以及异常拦截模块写死的配对失灵警告。
 - **启动防闪验活 (Launch Flash Fix)**：修补了由于未使用在 `App.vue` 载体里导入的 `serverTime` 模块，以及在免密守门员 `calculator` 的 `onLoad` 中未校验 token 存在性就强行转到基线的超时逻辑崩盘 Bug。现已严格遵守冷启动下的绝对拦截逻辑：无凭证一律踢回登录、有凭证才放行核验主控/问卷。
 
-### 2026-03-06 更新 3：影像库 FIFO 滑动窗口机制重构 (Video Matrix Sliding Window)
+### 2026-03-06 更新 3：P0+P1 系统级全量修复与商业化闭环 (Payment, Security & Lifecycle)
+- **绝对法币屏障 (Payment Gateway)**：
+  - 构建 `payment-center` 云函数，提供订单生成、IAP票据校验、支付确认底层基建。
+  - `Premium` 页面完成三端异构对接（`paymentManager`）：iOS 遵守 Apple 审核协议独享 IAP（`vip_month/quarter/forever`），Android 丝滑拉起微信/支付宝收银台。
+- **VIP 护城河闭环 (VIP Access Control)**：
+  - 极客集市（Store）商品矩阵接入 `vipOnly` 强校验标签，平民级与特权级资产（如专属护盾 t_03）界限分明，阻断非 VIP 的越权购买并直接导流进件。
+  - 废除 24 小时硬编码标识，接入 Server 级 `trialExpireTime`，完成体验卡从激活到失效的时空闭环。 
+- **零信任环境隔离 (Zero-Trust Env)**：
+  - 核心大模型链路（`ai-shield` / `ai-cron-job`）敏感私钥（`DeepSeek API Key`）全数撤除前端与云函数明文硬编码，全面迁移至 uniCloud 环境变量（`process.env`）注入，阻断源码流失反查风险。
+- **暗网战区死神降临 (Warzone Grim Reaper)**：
+  - `warzone-cron` 挂载 `active` 战局打卡扫描器。死线倒计时结束未报到者，触发系统级抹杀淘汰；存活低于 2 人，触发协议熔断并执行神经币押金全量原路退回。
+- **特工身份粉碎与转世 (Identity Wipeout & Rebirth)**：
+  - 注销流程引入更人性的 **7 天时空冷静期**：提供 `cancelDeleteAccount` 云端后悔药，支持冷却期内登录重置销毁倒计时。
+  - 结合 `warzone-cron`，对熬过 7 天的滞留档案执行真正意义上的物理硬盘级删除 (`dbCmd.remove()`)。
+- **量子叠加态防串联 (Quantum State Segregation)**：
+  - 补齐了全局 `Store` 的 `resetAllData` 安全指令。在用户断开连接（退出登录或账户重登）的刹那，全量抹除所有 `neuro_` 域前缀存储基线，根治不同账号共享设备时的属性灵异串包 Bug。
+
+### 2026-03-06 更新 4：极致顺滑过渡优化与原生端兼容性修补 (Lag Elimination & Native Fixes)
+- **全局毛玻璃剥离 (Backdrop-filter Removal)**：彻底移除了 `CustomTabBar`、`CyberFloatBall`、`ProfileUserCard` 等高频渲染组件上的 `backdrop-filter: blur` 属性，根治了移动端 Webview 页面过渡和动画过程中的 GPU 掉帧与异常卡顿。
+- **页面物理底盘防颤 (Scroll Bounce Fix)**：针对滑动触发原生容器弹性回弹导致 Fixed TabBar 跳动的问题，深度重构 dashboard、journey、war-room、profile 四大主舱布局。使用 absolute outer wrapper 强制锁定底层高度，彻底覆盖掉原生系统的滚动纠缠，实现原教旨主义的顺滑感。
+- **战区红化原生兼容 (War-Room CSS Flattening)**：修复 iOS/Android 低版本 Webview CSS 嵌套语法识别失败导致的主题变色失效 Bug。通过将 `.war-mode` 展平化输出，完美支持【斯巴达小队】暴血红主题在所有底层平台的接管覆盖。
+- **悬浮球全局收纳 (Float Ball Refactor)**：移除了图谱、战区和个人主页中的 AI 紧急干预悬浮球，仅在“核心中枢”做强制保留，大幅净化用户操作视线空间。
+- **视觉重心对齐 (Golden Padding Align)**：修复了主页面切换时顶部断层掉落问题，统一三大核心舱（图谱、战区、核心中枢）顶部的 `--status-bar-height` 补偿常量，抹除侧滑与冷启动过程中的高低错位刺破感。
+
+### 2026-03-06 更新 5：影像库 FIFO 滑动窗口机制重构 (Video Matrix Sliding Window)
 - **废除全盘清扫 (Non-Destructive Reload)**：革除了 `ai-cron-job` 在每次触发换弹时，将所有线上可见短视频无脑物理删除的暴力缺陷。全面启用先进先出（FIFO）的“流媒体控制阈值”体系。
 - **精准展示池锁死 (`MAX_VISIBLE_VIDEOS`)**：
   - 无论主理人后台一次性灌入多少直链弹药，前后端协同锁死最高 **20条** 展示水位的上限机制。

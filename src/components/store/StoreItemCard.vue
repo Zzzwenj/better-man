@@ -63,9 +63,9 @@ const userStore = useUserStore()
 const canAfford = computed(() => userStore.neuroCoins >= props.price)
 
 // 鉴别对象 dict 而不是 includes 数组
-const isActivating = computed(() => {
+const isOwned = computed(() => {
   const exp = userStore.ownedItems[props.id]
-  return exp && exp > serverTime.now()
+  return !!(exp && exp > serverTime.now())
 })
 
 // 计算剩余天数 (供 UI 炫耀或警告)
@@ -77,9 +77,9 @@ const daysLeft = computed(() => {
 
 // 检查该物品是否正处于装备状态
 const isEquipped = computed(() => {
-  if (!isActivating.value && props.typeTag !== '消耗品(单次)') return false
+  if (!isOwned.value && props.typeTag !== '消耗品(单次)') return false
   const eq = userStore.equipped
-  return eq.avatarFrame === props.id || eq.title === props.id || eq.empActive && props.id === 'w_01'
+  return eq.avatarFrame === props.id || eq.title === props.id || (eq.empActive && props.id === 'w_01')
 })
 
 // 根据不同状态渲染按钮文案

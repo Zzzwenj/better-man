@@ -39,18 +39,12 @@
         :vipExpireTime="userStore.formattedVipExpire"
         :vipDaysLeft="userStore.vipDaysLeft"
         :userCoins="userStore.coins"
-        @openStore="handleSettingClick({url: '/pages/store/index'})"
+        @openPremium="handleSettingClick({url: '/pages/premium/index'})"
         @watchAd="watchAdForTrial"
       />
     </view>
     
-    <!-- 3. 荣誉资产长廊 (资产化展示) -->
-    <HonorCarousel 
-      :currentThemeName="currentThemeName"
-      :ownedItems="userStore.ownedItems"
-      :equippedItems="userStore.equippedItems"
-      @navigateToStore="handleSettingClick({url: '/pages/store/index'})"
-    />
+    <!-- 3. 荣誉资产长廊 (资产化展示) 已被流放删除 -->
     
     <!-- 4. 系统控制区 -->
     <ProfileSettingsList 
@@ -62,7 +56,6 @@
       @goToAgreement="goAgreement"
     />
     
-    <CyberFloatBall />
     <CustomTabBar :current="3" />
     
     <!-- 全局主题色选择弹窗 -->
@@ -152,12 +145,10 @@ import { useUserStore } from '../../store/user.js'
 import { useRewardAd } from '../../composables/useRewardAd.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
-import HonorCarousel from '../../components/profile/HonorCarousel.vue'
 import PremiumCard from '../../components/profile/PremiumCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
-import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
 import { onShow, onLoad, onUnload } from '@dcloudio/uni-app'
 import { paymentManager } from '@/utils/paymentManager.js'
@@ -391,36 +382,9 @@ const showVipInfo = () => {
     })
 }
 
-// Android/H5 处理第三方支付分流
-const handleAndroidPay = ({ price, type }) => {
-    showDialog({
-        title: '建立黑金特权通讯网',
-        content: '订阅费：15 元/31天。\n解锁每月 3 次“免代价无损折跃（除颤防坠落）”，专属高级称号与主理人直通频道信标。',
-        confirmText: '微信支付',
-        cancelText: '支付宝支付',
-        showCancel: true,
-        color: '#10b981', // 琥珀/金色色调 -> 改为微信绿以作引导
-        success: async (res) => {
-            const provider = res.confirm ? 'wxpay' : 'alipay'
-            
-            uni.showLoading({ title: '接驳加密网关...' })
-            try {
-                await paymentManager.requestPayment({
-                    productId: type,
-                    provider: provider,
-                    price: price
-                })
-                uni.hideLoading()
-                // 本地假造赋权，线上需配合回调
-                userStore.purchaseVip(31, '包月黑金开通')
-                userStore.claimDailyVipGift()
-                uni.showToast({ title: '特权链已接通', icon: 'success' })
-            } catch (err) {
-                uni.hideLoading()
-                uni.showToast({ title: err.message || '支付通道阻断', icon: 'error' })
-            }
-        }
-    })
+// Android/H5 处理第三方支付分流 → 统一跳转到 Premium 页走统一支付流程
+const handleAndroidPay = () => {
+    uni.navigateTo({ url: '/pages/premium/index' })
 }
 
 // 真实的拉取并等待激励广告播完体验一天
@@ -457,6 +421,9 @@ const handleUnifiedSettingClick = (type) => {
   switch (type) {
     case 'theme':
       showThemeSheet.value = true
+      break
+    case 'store':
+      uni.navigateTo({ url: '/pages/store/index' })
       break
     case 'article':
       uni.navigateTo({ url: '/pages/article/index?type=article' })
@@ -556,15 +523,9 @@ const handlePrivacyToggle = (val) => {
                  showCancel: true,
                  color: '#f59e0b',
                  success: (res) => {
-                     // 非 VIP 前往支付面板触发
                      if (res.confirm) {
-                         if (uni.getSystemInfoSync().platform === 'ios') {
-                             // iOS 无需选微信支付宝，直接调用苹果
-                             paymentManager.requestPayment({ productId: 'vip_1month', provider: 'appleiap', price: 1500 })
-                               .then(() => userStore.purchaseVip(31, '包月黑金开通'))
-                         } else {
-                             handleAndroidPay({ price: 1500, type: 'vip_1month' })
-                         }
+                         // 统一跳转到 Premium 页走支付流程
+                         uni.navigateTo({ url: '/pages/premium/index' })
                     }
                  }
              })
@@ -773,6 +734,8 @@ page {
   border: 2px solid #8b5cf6;
   border-radius: 12px;
   animation: pulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  transform: translateZ(0);
+  will-change: transform, opacity;
 }
 
 @keyframes pulse {
@@ -796,11 +759,10 @@ page {
 }
 
 .ai-btn {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.4); /* Enhance alpha to supplement missing glass effect */
   border: 1px solid rgba(139, 92, 246, 0.4);
   padding: 6px 12px;
   border-radius: 10px;
-  backdrop-filter: blur(4px);
 }
 
 .ai-btn-text {

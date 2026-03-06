@@ -26,8 +26,8 @@
         <view class="tab-list flex mx-4">
           <view 
             v-for="(tab, index) in tabs" :key="index"
-            class="tab-item flex items-center justify-center mr-3"
-            :class="{ active: currentTab === index }"
+            class="tab-item flex items-center justify-center flex-1"
+            :class="[{ active: currentTab === index }, index !== tabs.length - 1 ? 'mr-3' : '']"
             @click="switchTab(index)"
           >
             <text class="tab-text">{{ tab.name }}</text>
@@ -47,6 +47,8 @@
           :icon="item.icon"
           :typeTag="item.typeTag"
           :duration="item.duration"
+          :vipOnly="item.vipOnly || false"
+          :isVip="userStore.isVipActive"
           @purchase="handlePurchaseClick"
         />
         
@@ -109,24 +111,23 @@ const goBack = () => {
 
 // 模拟数据库商品
 const allProducts = ref([
-  // 赛博装扮
-  // 赛博装扮 - 30天周期
+  // 赛博装扮（普通用户可购买）
   { id: 'f_01', category: 0, title: '深空等离子边框', description: '装配后你的头像将被高温等离子射线环绕。', price: 500, icon: '🌌', typeTag: '视觉系', duration: '30天有效' },
   { id: 'f_02', category: 0, title: '故障干扰线边框', description: '模拟信号被强制截断的红色雪花屏幕效果。', price: 500, icon: '📺', typeTag: '视觉系', duration: '30天有效' },
   { id: 't_01', category: 0, title: '称号：深渊行者', description: '在所有的战区聊天显示，象征极限承压能力。', price: 300, icon: '🦇', typeTag: '社交展示', duration: '15天有效' },
   { id: 't_02', category: 0, title: '称号：破釜沉舟', description: '只有签署过决心契约的探员才配佩戴。', price: 300, icon: '🃏', typeTag: '社交展示', duration: '15天有效' },
-  { id: 't_03', category: 0, title: '称号：赛博精神病', description: '精神承载力过载的象征，极度危险。', price: 800, icon: '🧠', typeTag: '社交展示', duration: '30天有效' },
+  // VIP 专属称号（黑金通行证限定）
+  { id: 't_03', category: 0, title: '称号：赛博精神病', description: '精神承载力过载的象征，极度危险。仅黑金会员可解锁。', price: 800, icon: '🧠', typeTag: '黑金限定', duration: '30天有效', vipOnly: true },
   
   // 战区武装
   { id: 'w_01', category: 1, title: '全频 EMP 脉冲电报', description: '在公共频道发出的消息附带血红色EMP边框，并高亮悬置 15 分钟，全服瞩目。', price: 150, icon: '📢', typeTag: '消耗品(单次)', duration: '15分钟 / 发送1次' },
-  { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带并在战区激活后，你的破戒将不会导致战区解散和队友连坐，仅你自己出局并扣除等量押金。', price: 1280, icon: '🛡️', typeTag: '战略保障', duration: '消耗品(单次)' }
-  // 特效彩蛋分类暂无商品（数据流雨彩蛋待实现效果后上架）
+  // VIP 专属武装（黑金通行证限定）
+  { id: 'shield_01', category: 1, title: '静音防护罩', description: '战区连坐免死金牌。携带后破戒不连坐队友，仅自己出局。仅黑金会员可解锁。', price: 1280, icon: '🛡️', typeTag: '黑金限定', duration: '消耗品(单次)', vipOnly: true }
 ])
 
 const tabs = ref([
   { name: '赛博装扮' },
-  { name: '战区武装' },
-  { name: '特效彩蛋' }
+  { name: '战区武装' }
 ])
 const currentTab = ref(0)
 
@@ -139,11 +140,27 @@ const switchTab = (index) => {
   uni.vibrateShort()
 }
 
+
 // 交易逻辑
 const showModal = ref(false)
 const selectedProduct = ref(null)
 
 const handlePurchaseClick = (productPayload) => {
+  // VIP 专属商品权限检查
+  const product = allProducts.value.find(p => p.id === productPayload.id)
+  if (product && product.vipOnly && !userStore.isVipActive) {
+    uni.vibrateShort()
+    uni.showModal({
+      title: '🔒 黑金限定',
+      content: '该商品为黑金通行证专属，需先激活黑金特权后方可解锁购买。',
+      confirmText: '前往激活',
+      cancelText: '返回',
+      success: (res) => {
+        if (res.confirm) uni.navigateTo({ url: '/pages/premium/index' })
+      }
+    })
+    return
+  }
   selectedProduct.value = productPayload
   showModal.value = true
   uni.vibrateShort()
@@ -203,8 +220,9 @@ const executeTransaction = async (product) => {
 .asset-dashboard::before {
   content: ''; top: -50%; left: -50%; width: 200%; height: 200%; position: absolute;
   background: conic-gradient(from 0deg, transparent 0%, rgba(0, 229, 255, 0.05) 25%, transparent 50%, rgba(139, 92, 246, 0.05) 75%, transparent 100%);
-  animation: rotate 20s linear infinite; /* 减慢速度减少渲染压力 */
+  /* animation: rotate 20s linear infinite; 减慢速度减少渲染压力依然卡顿，彻底移除提升移动端流畅度 */
   pointer-events: none;
+  transform: translateZ(0);
 }
 @keyframes rotate { 100% { transform: rotate(360deg); } }
 
@@ -240,17 +258,14 @@ const executeTransaction = async (product) => {
 
 .tab-scroll {
   width: 100%;
-  white-space: nowrap;
 }
-.tab-list { display: flex; flex-wrap: nowrap; padding-bottom: 4px; }
+.tab-list { display: flex; padding-bottom: 4px; }
 .tab-item {
-  padding: 10px 20px;
+  padding: 10px 0;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
   transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 .tab-item.active {
   background: rgba(0, 229, 255, 0.15);
