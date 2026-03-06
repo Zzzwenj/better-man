@@ -5,8 +5,16 @@
       <text class="radar-subtitle">近 7 天突触性能评估</text>
     </view>
     <view class="radar-svg-wrapper flex items-center justify-center">
-      <!-- 采用 renderjs 渲染多边形雷达图，完美适配 App 真机视图层原生限制 -->
-      <view class="render-container" :prop="renderData" :change:prop="radarUI.updateRadar" @touchstart="radarUI.handleTouch" @click="radarUI.handleTouch" id="radar-chart"></view>
+      <!-- 采用 renderjs 渲染多边形雷达图，纯展示层 -->
+      <view class="render-container" :prop="renderData" :change:prop="radarUI.updateRadar" id="radar-chart"></view>
+      
+      <!-- Vue 原生物理触摸隔离层，绝对定位覆盖于 300x300 画布之上，兼容所有移动端 -->
+      <view class="overlay-touch-layer">
+          <view v-for="(p, i) in hotzones" :key="i" class="touch-hotzone"
+            :style="{ left: p.x + 'px', top: p.y + 'px' }"
+            @click.stop="handleStatClick(i)">
+          </view>
+      </view>
     </view>
     
     <!-- 交互式中文含义解析容器 -->
@@ -49,11 +57,18 @@ const renderData = computed(() => {
     }
 })
 
-// 被 renderjs 调用的点击回调
+// 预先计算好的 5 个外围数据节点的像素物理坐标 (基于 300x300 画布，r=105)
+// 让热区稍微偏外侧，更容易点中
+const hotzones = [
+    { x: 150, y: 45 },       // 上
+    { x: 250, y: 117 },      // 右上
+    { x: 212, y: 235 },      // 右下
+    { x: 88, y: 235 },       // 左下
+    { x: 50, y: 117 }        // 左上
+]
+
 const handleStatClick = (index) => {
-    uni.vibrateShort({
-        success() { }
-    })
+    uni.vibrateShort({ success() {} })
     activeIndex.value = index
 }
 </script>
@@ -138,53 +153,9 @@ export default {
 
             svg += `</svg>`;
 
-            const container = instance.$el || document.getElementById('radar-chart');
+            const container = document.getElementById('radar-chart');
             if (container) {
                 container.innerHTML = svg;
-            }
-        },
-        // 通过数学坐标系直接计算点击位置，彻底无视 SVG DOM 原生事件传递的黑盒 BUG
-        handleTouch(e, ownerInstance) {
-            // 获取触摸点的屏幕坐标
-            let touch = e.touches ? e.touches[0] : e;
-            if (!touch) return;
-            
-            // 获取容器的边界信息
-            const container = e.currentTarget || e.target;
-            if (!container) return;
-            
-            // 由于 renderjs 无法直接调用 uni.createSelectorQuery，必须直接操作 DOM API
-            const rect = container.getBoundingClientRect();
-            
-            // 计算在 300x300 画布内的相对坐标
-            // 考虑外层可能存在的缩放比例 (CSS Transform 等)，做比例尺换算
-            const scaleX = 300 / rect.width;
-            const scaleY = 300 / rect.height;
-            
-            const x = (touch.clientX - rect.left) * scaleX;
-            const y = (touch.clientY - rect.top) * scaleY;
-            
-            const size = 300;
-            const center = size / 2;
-            const radius = 90;
-            
-            // 遍历所有5个数据点，用勾股定理算距离
-            for (let i = 0; i < 5; i++) {
-                const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
-                // 注意：这里用的是 100% 半径的坐标点用于点击判定，还是依据当前真实数据的点？
-                // 按照此前的逻辑，点击外围的文字和内部真实数据应该都能触发。
-                // 统一只算该维度在外圈的最大理论半径（文本热区），让点击更容易触发
-                const px = center + (radius + 15) * Math.cos(angle);
-                const py = center + (radius + 15) * Math.sin(angle);
-                
-                // 给一个极大的容错半径 45px，因为去掉了文字，纯靠盲点
-                if (Math.hypot(x - px, y - py) < 45) {
-                    ownerInstance.callMethod('handleStatClick', i);
-                    return;
-                }
-                
-                // 额外检查具体数据点位置 (处理如果真实点离外圈太远的情况)
-                // 取个近似值，假设 values 暂时拿不到，只按固定 100/100 半径区域检测
             }
         }
     }
@@ -217,6 +188,29 @@ export default {
 .radar-subtitle {
   font-size: 12px;
   color: #a1a1aa;
+}
+
+.radar-svg-wrapper {
+  position: relative;
+}
+
+.overlay-touch-layer {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.touch-hotzone {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  /* background: rgba(255, 0, 0, 0.2); 测试时打开 */
 }
 
 

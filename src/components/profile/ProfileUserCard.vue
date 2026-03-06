@@ -191,12 +191,9 @@ const saveProfile = () => {
 .justify-between { justify-content: space-between; }
 .tracking-wider { letter-spacing: 2px; }
 
-/* 头部卡片本身 */
 .header {
   padding: calc(var(--status-bar-height) + 24px) 20px 16px 20px;
-  background: rgba(9, 9, 11, 0.65);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: rgba(9, 9, 11, 0.95); /* Deepen background color to compensate for removed blur */
   position: sticky;
   top: 0;
   z-index: 50;

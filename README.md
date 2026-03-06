@@ -467,3 +467,10 @@
   - 结合 `warzone-cron`，对熬过 7 天的滞留档案执行真正意义上的物理硬盘级删除 (`dbCmd.remove()`)。
 - **量子叠加态防串联 (Quantum State Segregation)**：
   - 补齐了全局 `Store` 的 `resetAllData` 安全指令。在用户断开连接（退出登录或账户重登）的刹那，全量抹除所有 `neuro_` 域前缀存储基线，根治不同账号共享设备时的属性灵异串包 Bug。
+
+### 2026-03-06 更新 4：极致顺滑过渡优化与原生端兼容性修补 (Lag Elimination & Native Fixes)
+- **全局毛玻璃剥离 (Backdrop-filter Removal)**：彻底移除了 `CustomTabBar`、`CyberFloatBall`、`ProfileUserCard` 等高频渲染组件上的 `backdrop-filter: blur` 属性，根治了移动端 Webview 页面过渡和动画过程中的 GPU 掉帧与异常卡顿。
+- **页面物理底盘防颤 (Scroll Bounce Fix)**：针对滑动触发原生容器弹性回弹导致 Fixed TabBar 跳动的问题，深度重构 dashboard、journey、war-room、profile 四大主舱布局。使用 absolute outer wrapper 强制锁定底层高度，彻底覆盖掉原生系统的滚动纠缠，实现原教旨主义的顺滑感。
+- **战区红化原生兼容 (War-Room CSS Flattening)**：修复 iOS/Android 低版本 Webview CSS 嵌套语法识别失败导致的主题变色失效 Bug。通过将 `.war-mode` 展平化输出，完美支持【斯巴达小队】暴血红主题在所有底层平台的接管覆盖。
+- **悬浮球全局收纳 (Float Ball Refactor)**：移除了图谱、战区和个人主页中的 AI 紧急干预悬浮球，仅在“核心中枢”做强制保留，大幅净化用户操作视线空间。
+- **视觉重心对齐 (Golden Padding Align)**：修复了主页面切换时顶部断层掉落问题，统一三大核心舱（图谱、战区、核心中枢）顶部的 `--status-bar-height` 补偿常量，抹除侧滑与冷启动过程中的高低错位刺破感。

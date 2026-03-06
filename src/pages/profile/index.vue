@@ -55,7 +55,6 @@
       @goToAgreement="goAgreement"
     />
     
-    <CyberFloatBall />
     <CustomTabBar :current="3" />
     
     <!-- 全局主题色选择弹窗 -->
@@ -119,7 +118,6 @@ import PremiumCard from '../../components/profile/PremiumCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
-import CyberFloatBall from '../../components/dashboard/CyberFloatBall.vue'
 import SecretBeacon from '../../components/profile/SecretBeacon.vue'
 import { onShow, onLoad, onUnload } from '@dcloudio/uni-app'
 import { paymentManager } from '@/utils/paymentManager.js'
@@ -669,6 +667,8 @@ page {
   border: 2px solid #8b5cf6;
   border-radius: 12px;
   animation: pulse 2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  transform: translateZ(0);
+  will-change: transform, opacity;
 }
 
 @keyframes pulse {
@@ -692,11 +692,10 @@ page {
 }
 
 .ai-btn {
-  background: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.4); /* Enhance alpha to supplement missing glass effect */
   border: 1px solid rgba(139, 92, 246, 0.4);
   padding: 6px 12px;
   border-radius: 10px;
-  backdrop-filter: blur(4px);
 }
 
 .ai-btn-text {
