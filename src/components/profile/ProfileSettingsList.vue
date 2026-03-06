@@ -19,6 +19,14 @@
           </view>
        </view>
 
+       <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'store')">
+          <view class="flex items-center">
+             <view class="item-icon-wrap store-icon"><text class="icon">🛒</text></view>
+             <text class="item-title ml-3">极客集市</text>
+          </view>
+          <text class="item-arrow">></text>
+       </view>
+
        <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'theme')">
           <view class="flex items-center">
              <view class="item-icon-wrap theme-icon"><text class="icon">⌬</text></view>
@@ -62,9 +70,9 @@
     <!-- 危险操作区 -->
     <view class="danger-zone flex-col items-center mt-8 pb-8">
        <view class="btn-logout flex items-center justify-center mb-4" hover-class="btn-pressed" @click="$emit('handleSettingClick', 'logout')">
-          <text class="logout-text">切断当前连接序列</text>
+          <text class="logout-text">切断当前连接序列（退出）</text>
        </view>
-       <text class="delete-account-text" @click="$emit('handleSettingClick', 'delete_account')">申请粉碎档案记录</text>
+       <text class="delete-account-text" @click="$emit('handleSettingClick', 'delete_account')">申请粉碎档案记录（注销）</text>
        
        <!-- 开发者后门清除入口：未来云端开关审查 -->
        <text class="mt-4" style="font-size: 10px; color: #3f3f46; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'clear_cache')">SYS.CLEAR_CACHE()</text>

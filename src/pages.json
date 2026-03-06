@@ -42,6 +42,14 @@
             }
         },
         {
+            "path": "pages/premium/index",
+            "style": {
+                "navigationBarTitleText": "黑金特权中心",
+                "navigationStyle": "custom",
+                "disableScroll": true
+            }
+        },
+        {
             "path": "pages/war-room/index",
             "style": {
                 "navigationBarTitleText": "战区大厅",

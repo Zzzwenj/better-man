@@ -26,8 +26,8 @@
         <view class="tab-list flex mx-4">
           <view 
             v-for="(tab, index) in tabs" :key="index"
-            class="tab-item flex items-center justify-center mr-3"
-            :class="{ active: currentTab === index }"
+            class="tab-item flex items-center justify-center flex-1"
+            :class="[{ active: currentTab === index }, index !== tabs.length - 1 ? 'mr-3' : '']"
             @click="switchTab(index)"
           >
             <text class="tab-text">{{ tab.name }}</text>
@@ -125,8 +125,7 @@ const allProducts = ref([
 
 const tabs = ref([
   { name: '赛博装扮' },
-  { name: '战区武装' },
-  { name: '特效彩蛋' }
+  { name: '战区武装' }
 ])
 const currentTab = ref(0)
 
@@ -138,6 +137,7 @@ const switchTab = (index) => {
   currentTab.value = index
   uni.vibrateShort()
 }
+
 
 // 交易逻辑
 const showModal = ref(false)
@@ -240,17 +240,14 @@ const executeTransaction = async (product) => {
 
 .tab-scroll {
   width: 100%;
-  white-space: nowrap;
 }
-.tab-list { display: flex; flex-wrap: nowrap; padding-bottom: 4px; }
+.tab-list { display: flex; padding-bottom: 4px; }
 .tab-item {
-  padding: 10px 20px;
+  padding: 10px 0;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
   transition: all 0.3s;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 .tab-item.active {
   background: rgba(0, 229, 255, 0.15);

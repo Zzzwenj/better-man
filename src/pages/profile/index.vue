@@ -39,18 +39,12 @@
         :vipExpireTime="userStore.formattedVipExpire"
         :vipDaysLeft="userStore.vipDaysLeft"
         :userCoins="userStore.coins"
-        @openStore="handleSettingClick({url: '/pages/store/index'})"
+        @openPremium="handleSettingClick({url: '/pages/premium/index'})"
         @watchAd="watchAdForTrial"
       />
     </view>
     
-    <!-- 3. 荣誉资产长廊 (资产化展示) -->
-    <HonorCarousel 
-      :currentThemeName="currentThemeName"
-      :ownedItems="userStore.ownedItems"
-      :equippedItems="userStore.equippedItems"
-      @navigateToStore="handleSettingClick({url: '/pages/store/index'})"
-    />
+    <!-- 3. 荣誉资产长廊 (资产化展示) 已被流放删除 -->
     
     <!-- 4. 系统控制区 -->
     <ProfileSettingsList 
@@ -121,7 +115,6 @@ import { useUserStore } from '../../store/user.js'
 import { useRewardAd } from '../../composables/useRewardAd.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
-import HonorCarousel from '../../components/profile/HonorCarousel.vue'
 import PremiumCard from '../../components/profile/PremiumCard.vue'
 import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import ThemeActionSheet from '../../components/common/ThemeActionSheet.vue'
@@ -411,6 +404,9 @@ const handleUnifiedSettingClick = (type) => {
   switch (type) {
     case 'theme':
       showThemeSheet.value = true
+      break
+    case 'store':
+      uni.navigateTo({ url: '/pages/store/index' })
       break
     case 'article':
       uni.navigateTo({ url: '/pages/article/index?type=article' })
