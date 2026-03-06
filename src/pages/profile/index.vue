@@ -56,6 +56,7 @@
     <ProfileSettingsList 
       :privacyLockEnabled="userStore.privacyLock.enabled"
       :deviceId="deviceId"
+      :isSuperAdmin="isSuperAdmin"
       @handleSettingClick="handleUnifiedSettingClick"
       @togglePrivacyLock="handlePrivacyToggle"
       @goToAgreement="goAgreement"
@@ -111,6 +112,36 @@
       @confirm="handleDialogConfirm"
       @cancel="handleDialogCancel"
     />
+    
+    <!-- [纯净原生层] 最底层的独立原生 View 防止 WebView 焦点阻断 -->
+    <view class="native-inject-mask" v-if="showInjectModal" @click="showInjectModal = false">
+      <view class="native-popup-content flex-col" @click.stop>
+         <view class="flex justify-between items-center pb-3 mb-2" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+            <text class="dialog-title text-white font-bold" style="font-size: 15px;">录入影像弹药库 [-SYS-]</text>
+         </view>
+         
+         <text class="text-xs text-gray-400 mb-2 mt-2">直链输入 (仅限 .mp4 无水印链):</text>
+         <!-- 使用最高的层叠和不透明包裹保证系统键盘探测 -->
+         <input class="native-input mb-4" type="text" v-model="injectForm.url" placeholder="https://..." cursor-spacing="20" maxlength="-1" />
+         
+         <text class="text-xs text-gray-400 mb-2">影像标题 (极简):</text>
+         <input class="native-input mb-4" type="text" v-model="injectForm.title" placeholder="破晓时刻，自律即自由" cursor-spacing="20" maxlength="50" />
+
+         <text class="text-xs text-gray-400 mb-2">核心摘要 (可选):</text>
+         <input class="native-input mb-4" type="text" v-model="injectForm.desc" placeholder="一句话解析精神特质..." cursor-spacing="20" maxlength="-1" />
+         
+         <text class="text-xs text-gray-400 mt-2 mb-4 text-center" style="color:#00e5ff">数据将直接压入核心地位</text>
+
+         <view class="flex justify-between mt-4">
+            <view class="btn cancel-btn flex items-center justify-center flex-1 mr-2" @click="closeInjectVideo">
+               <text class="text-gray-300 font-bold" style="font-size: 14px;">撤销装填</text>
+            </view>
+            <view class="btn confirm-btn flex items-center justify-center flex-1 ml-2" @click="confirmInjectVideo">
+               <text class="text-white font-bold" style="font-size: 14px;">执行灌入</text>
+            </view>
+         </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -138,6 +169,10 @@ const showBeacon = ref(false)
 const showPinModal = ref(false)
 const tempPin = ref('')
 const pinError = ref('')
+
+const isSuperAdmin = ref(false)
+const showInjectModal = ref(false)
+const injectForm = ref({ url: '', title: '', desc: '' })
 
 const isPendingDelete = ref(false)
 const deleteAt = ref(0)
@@ -270,6 +305,11 @@ const fetchCloudProfile = async () => {
             localProfileData.signature = cloudUser.signature || localProfileData.signature
             uni.setStorageSync('neuro_baseline', JSON.stringify(localProfileData))
             
+            // 超级管理员鉴权（基于云端硬编码标识或特殊称号）
+            if (cloudUser._id === '69a2b37b8a5c785fa801e691') {
+                isSuperAdmin.value = true
+            }
+
             // 同步资产到前端（覆盖合并本地）
             userStore.initAssetsFromCloud({
                 neuro_coins: cloudUser.neuro_coins,
@@ -433,6 +473,9 @@ const handleUnifiedSettingClick = (type) => {
     case 'delete_account':
       confirmDeleteAccount()
       break
+    case 'inject_video':
+      showInjectModal.value = true
+      break
     case 'clear_cache':
       uni.clearStorageSync()
       uni.reLaunch({ url: '/pages/login/index' })
@@ -449,14 +492,38 @@ const goAgreement = (type) => {
 }
 
 const checkBeaconAccess = () => {
-    // 简版校验
-    const startTimestamp = uni.getStorageSync('neuro_start_date') || Date.now()
-    const diffDays = (Date.now() - startTimestamp) / (1000 * 60 * 60 * 24)
-    if (userStore.isVipActive || diffDays >= 21) {
-        showBeacon.value = true
-    } else {
-        uni.showToast({ title: '突触连接天数未达 21 天，拒绝接通', icon: 'none' })
+    // ...
+}
+
+const confirmInjectVideo = async () => {
+    if (!injectForm.value.url) {
+        uni.showToast({ title: '拒绝：影像直链为空', icon: 'none' })
+        return
     }
+    uni.showLoading({ title: '封装冷藏库弹药...' })
+    try {
+        const token = uni.getStorageSync('uni_id_token')
+        const r = await uniCloud.callFunction({
+            name: 'user-center',
+            data: { action: 'injectVideo', token, payload: injectForm.value }
+        })
+        if (r.result.code === 0) {
+            showInjectModal.value = false
+            uni.showToast({ title: '弹药装填成功', icon: 'success' })
+            injectForm.value = { url: '', title: '', desc: '' }
+        } else {
+            uni.showToast({ title: r.result.msg || '写入失败', icon: 'none' })
+        }
+    } catch (e) {
+        uni.showToast({ title: '终端拦截', icon: 'none' })
+    } finally {
+        uni.hideLoading()
+    }
+}
+
+const closeInjectVideo = () => {
+    showInjectModal.value = false
+    injectForm.value = { url: '', title: '', desc: '' }
 }
 
 const confirmLogout = () => {
@@ -742,5 +809,41 @@ page {
   font-weight: bold;
 }
 
+.native-inject-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.native-popup-content {
+  width: 85vw;
+  max-width: 340px;
+  background: linear-gradient(145deg, #18181b 0%, #09090b 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(239, 68, 68, 0.05);
+}
+
+.native-input {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #fff;
+  width: auto;
+  font-size: 14px;
+}
+.native-input:focus { border-color: #ef4444; }
+
+.btn { height: 44px; border-radius: 8px; transition: all 0.2s; }
+.btn:active { transform: scale(0.96); opacity: 0.8; }
+.cancel-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); }
+.confirm-btn { background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
 </style>
+```

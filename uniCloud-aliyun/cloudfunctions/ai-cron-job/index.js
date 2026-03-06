@@ -212,24 +212,9 @@ async function generateBatchArticles(batchSize, categoryCode, categoryWords) {
     return await askDeepSeek(prompt);
 }
 
-// ================= 有源影像工坊分集 (短视频) =================
-async function generateBatchVideos(uniqueVideosList, categoryCode) {
-    const materialJson = JSON.stringify(uniqueVideosList.map((m, idx) => ({ id: idx, desc: m.desc })));
-
-    const prompt = `你是《觉醒空间》App的激励重塑核心。
-当前视频思想的【大类】为：${STATIC_ASSETS[categoryCode].themeStr}。
-我已经为你分配了绝对不重复的 ${uniqueVideosList.length} 段系统原生视频截取：
-${materialJson}
-
-请你严格为以上每一段画面，【仅1对1】地输出定制化高能文案！一定不要随意发散，必须高度吻合客观内容（desc）。
-语言要求：标题极简克制，像手术刀一般；50字科学解析画面神经学。
-严格返回纯净序列化 JSON 数组：
-[
-  { "m_id": 0, "t": "冷峻文案标题", "d": "基于第0个录像的一句话摘要", "author": "能量体" },
-  { "m_id": 1, ... }
-]`;
-    return await askDeepSeek(prompt);
-}
+// ===========================================
+// [2026 架构更新] 彻底拔掉旧版有源影像工坊分集（不再依赖AI随机拼凑低质第三方视频）
+// ===========================================
 
 // ================= 主控守护进程 =================
 exports.main = async (event, context) => {
@@ -298,74 +283,78 @@ exports.main = async (event, context) => {
             console.log(`✅ 第 ${i + 1} 轮大模型长文神经树 (${currentCat}) 组装完毕`);
         }
 
-        console.log("🎬 [AI-Cron-Job] 影像挂载：开始根据视觉素材池铸造精准匹配的视频流...");
+        console.log("🎬 [AI-Cron-Job] 影像挂载：启动【异步弹药库换弹机制】...");
 
-        for (let i = 0; i < 4; i++) { // 4轮 x 5条 = 20条
-            const currentCat = categories[i % categories.length];
-            const targetCount = 5;
-            const pureVideos = await getUniqueVideosForBatch(col, currentCat, targetCount);
-            if (pureVideos.length === 0) continue;
+        console.log("🎬 [AI-Cron-Job] 影像挂载：启动【异步弹药库滑动窗口换弹机制】...");
 
-            let batch = [];
-            try {
-                batch = await generateBatchVideos(pureVideos, currentCat);
-            } catch (err) {
-                console.warn(`⚠️ 第 ${i + 1} 轮影像核心引擎超时断连跳过...`);
-                continue;
+        // 1. 从【隐形储备池(status:0)】中捞起排队最久的最多 20 条主理人弹药
+        const draftVideosRes = await col.where({ type: 'video', status: 0 }).orderBy('publish_date', 'asc').limit(20).get();
+
+        if (draftVideosRes.data.length > 0) {
+            const draftVideos = draftVideosRes.data;
+            const draftVideoIds = draftVideos.map(d => d._id);
+
+            // 批量将它们提拔为 status:1，并刷新发布时间为当下，使其顶流
+            await col.where({ _id: dbCmd.in(draftVideoIds) }).update({
+                status: 1,
+                publish_date: Date.now(),
+                updated_at: Date.now()
+            });
+            console.log(`✅ 成功将 ${draftVideos.length} 条手动影像弹药上膛并接入前端流动池。`);
+        } else {
+            console.log("⚠️ 警告：系统隐形储备池(status:0)中的手动影像弹药已耗尽！本轮换弹轮空。");
+        }
+
+        // 2. 修剪展示池：全局仅保留最新的 20 条 (type: video, status: 1)，干掉由于上膛被挤出前列的老旧视频
+        const MAX_VISIBLE_VIDEOS = 20; // 维持前端健康的动态体量
+        const expiredVideosRes = await col.where({ type: 'video', status: 1 })
+            .orderBy('publish_date', 'desc')
+            .skip(MAX_VISIBLE_VIDEOS)
+            .field({ _id: 1 })
+            .get();
+
+        if (expiredVideosRes.data.length > 0) {
+            const deadVideoIds = expiredVideosRes.data.map(d => d._id);
+            await col.where({ _id: dbCmd.in(deadVideoIds) }).remove();
+            console.log(`🧹 成功扫荡并退役了 ${deadVideoIds.length} 条被挤出前 ${MAX_VISIBLE_VIDEOS} 名的老旧影像（防堆积机制）`);
+        }
+
+        // 3. 终极断舍离：由于历史遗留，可能早期存在大量 "status: 1 且并不是管理员录入(_is_manual!=true)" 的低端废旧 AI 视频
+        // 这个逻辑能把服务器里残留的早期垃圾视频在一声令下全数推平，同时完全不伤害您手动上传的直链（它们都有 _is_manual: true）
+        const leftoverAiVideosRes = await col.where({ type: 'video', _is_manual: dbCmd.neq(true) }).field({ _id: 1 }).get();
+        if (leftoverAiVideosRes.data.length > 0) {
+            const trashVideoIds = leftoverAiVideosRes.data.map(d => d._id);
+            await col.where({ _id: dbCmd.in(trashVideoIds) }).remove();
+            console.log(`💥 执行终极净化：成功荡平 ${trashVideoIds.length} 条远古时期残存的低频 AI 视频！`);
+        }
+
+        console.log("🧹 [AI-Cron-Job] 启动文章冗余抹除协议...");
+        try {
+            let hasMoreObj = true;
+            let deadBodiesCount = 0;
+            while (hasMoreObj) {
+                // 现在只清理【长文(article)】，因为视频已经通过专门的换弹机清理过了
+                const targetDocsRes = await col.where({ type: 'article' }).limit(500).field({ _id: 1 }).get();
+
+                if (targetDocsRes.data.length > 0) {
+                    const deadIds = targetDocsRes.data.map(d => d._id);
+                    await col.where({ _id: dbCmd.in(deadIds) }).remove();
+                    deadBodiesCount += deadIds.length;
+                } else {
+                    hasMoreObj = false;
+                }
             }
-
-            for (let j = 0; j < batch.length; j++) {
-                const item = batch[j] || { m_id: 0, t: '神经链路觉醒', d: '重塑认知的底层协议', author: '系统' };
-                const matchedMaterial = pureVideos.find((v, idx) => idx === item.m_id) || pureVideos[0];
-                const currentVideo = matchedMaterial.url;
-                const actCover = await getUniqueCoverUrl(col, currentCat);
-
-                allData.push({
-                    type: 'video', icon: '🎥', title: item.t,
-                    desc: item.d,
-                    cover: actCover,
-                    author: item.author || '能量体', readTime: '实录视频流',
-                    contentUrl: currentVideo,
-                    status: 1,
-                    publish_date: now + (20 - (i * 5 + j)) * 1000 + 500,
-                    version: 1,
-                    _theme: currentCat
-                });
-            }
-            console.log(`✅ 第 ${i + 1} 轮大模型影像节点挂载完毕`);
+            console.log(`✅ 成功扫荡 ${deadBodiesCount} 篇长文残影！`);
+        } catch (clearErr) {
+            console.error("⚠️ 本次粉碎协议遇阻流控断开", clearErr);
         }
 
         if (allData.length > 0) {
-            console.log("🧹 [AI-Cron-Job] 启动彻底抹除协议以避免冗余...");
-            try {
-                let hasMoreObj = true;
-                let deadBodiesCount = 0;
-                while (hasMoreObj) {
-                    const targetDocsRes = await col.where(
-                        dbCmd.or([
-                            { type: 'article' },
-                            { type: 'video' }
-                        ])
-                    ).limit(500).field({ _id: 1 }).get();
-
-                    if (targetDocsRes.data.length > 0) {
-                        const deadIds = targetDocsRes.data.map(d => d._id);
-                        await col.where({ _id: dbCmd.in(deadIds) }).remove();
-                        deadBodiesCount += deadIds.length;
-                    } else {
-                        hasMoreObj = false;
-                    }
-                }
-                console.log(`✅ 成功扫荡 ${deadBodiesCount} 条动态残影！`);
-            } catch (clearErr) {
-                console.error("⚠️ 本次粉碎协议遇阻流控断开", clearErr);
-            }
-
             await col.add(allData);
-            console.log(`✅ 成功将本次流水线产能打入数据库：共 ${allData.length} 份心流资产取代了全部旧档案`);
+            console.log(`✅ 成功将本次流水线产能打入数据库：共 ${allData.length} 份长文资产`);
         }
 
-        return { code: 0, msg: '全量内容（分类映射防崩版）撰写并发放完毕！视频、封面不会再出现错乱和失效。' };
+        return { code: 0, msg: '全量内容（分类映射长文 + 异步视频弹药库上膛）发放完毕！' };
 
     } catch (err) {
         console.error("❌ 致命异常：AI 引擎抛出内核错误:", err);

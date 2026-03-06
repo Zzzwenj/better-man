@@ -68,6 +68,10 @@
        
        <!-- 开发者后门清除入口：未来云端开关审查 -->
        <text class="mt-4" style="font-size: 10px; color: #3f3f46; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'clear_cache')">SYS.CLEAR_CACHE()</text>
+       
+       <!-- 主理人绝密通道：视频弹药库手动装填 -->
+       <text v-if="isSuperAdmin" class="mt-2" style="font-size: 10px; color: #10b981; font-family: monospace;" @click.stop="$emit('handleSettingClick', 'inject_video')">[+] SYS.INJECT_VIDEO()</text>
+
        <text class="mt-1" style="font-size: 10px; color: #3f3f46; font-family: monospace;">UUID: {{ deviceId }}</text>
     </view>
   </view>
@@ -76,7 +80,8 @@
 <script setup>
 defineProps({
   privacyLockEnabled: { type: Boolean, default: false },
-  deviceId: { type: String, default: 'UNKNOWN' }
+  deviceId: { type: String, default: 'UNKNOWN' },
+  isSuperAdmin: { type: Boolean, default: false } // 新增超级管理员标识传入
 })
 
 defineEmits(['handleSettingClick', 'togglePrivacyLock', 'goToAgreement'])

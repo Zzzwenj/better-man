@@ -1,30 +1,40 @@
 <template>
-  <view class="dialog-mask flex items-center justify-center fade-in" v-if="show" @click.stop="handleCancel">
+  <view class="dialog-wrapper" v-if="show" catchtouchmove="true">
+    <!-- 独立的蒙层处理点击关闭，完全分离不嵌套 -->
+    <view class="dialog-mask fade-in" @click.stop="handleCancel"></view>
+    
+    <!-- 内容层直接被 wrapper 的 flex 居中，用 z-index 保证在蒙层上方 -->
     <view class="dialog-content pop-in flex-col" @click.stop>
       <!-- 装饰性顶部光条 -->
       <view class="glow-bar" :style="{ background: color }"></view>
       
       <view class="dialog-header flex justify-between items-center pb-3">
-        <text class="dialog-title">{{ title || '💀 系统警告' }}</text>
-      </view>
-      
-      <view class="dialog-body py-6">
-        <text class="dialog-text">{{ content }}</text>
-        <!-- 装饰性边角 -->
-        <view class="corner top-left" :style="{ borderColor: color }"></view>
-        <view class="corner top-right" :style="{ borderColor: color }"></view>
-        <view class="corner bottom-left" :style="{ borderColor: color }"></view>
-        <view class="corner bottom-right" :style="{ borderColor: color }"></view>
-      </view>
+          <text class="dialog-title">{{ title || '💀 系统警告' }}</text>
+        </view>
+        
+        <view class="dialog-body py-6">
+          <text class="dialog-text" v-if="content">{{ content }}</text>
+          
+          <!-- 核心隔离区：为外部传入的 input 绝对开辟点击捕获隔离带 -->
+          <view class="slot-container" @click.stop>
+            <slot></slot>
+          </view>
+          
+          <!-- 装饰性边角 -->
+          <view class="corner top-left" :style="{ borderColor: color }"></view>
+          <view class="corner top-right" :style="{ borderColor: color }"></view>
+          <view class="corner bottom-left" :style="{ borderColor: color }"></view>
+          <view class="corner bottom-right" :style="{ borderColor: color }"></view>
+        </view>
 
-      <view class="dialog-footer pt-3 flex gap-4">
-        <view v-if="showCancel" class="btn cancel-btn flex-1 flex justify-center items-center" @click="handleCancel">
-          <text class="btn-text-cancel">{{ cancelText || '取消' }}</text>
+        <view class="dialog-footer pt-3 flex gap-4">
+          <view v-if="showCancel" class="btn cancel-btn flex-1 flex justify-center items-center" @click="handleCancel">
+            <text class="btn-text-cancel">{{ cancelText || '取消' }}</text>
+          </view>
+          <view class="btn confirm-btn flex-1 flex justify-center items-center" :style="{ background: color }" @click="handleConfirm">
+            <text class="btn-text-confirm">{{ confirmText || '确认接收' }}</text>
+          </view>
         </view>
-        <view class="btn confirm-btn flex-1 flex justify-center items-center" :style="{ background: color }" @click="handleConfirm">
-          <text class="btn-text-confirm">{{ confirmText || '确认接收' }}</text>
-        </view>
-      </view>
     </view>
   </view>
 </template>
@@ -58,12 +68,19 @@ const handleConfirm = () => {
 </script>
 
 <style scoped>
-.dialog-mask {
+.dialog-wrapper {
   position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dialog-mask {
+  position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(12px);
-  z-index: 2000;
 }
 .dialog-content {
   width: 85%;
@@ -74,7 +91,13 @@ const handleConfirm = () => {
   padding: 24px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(239, 68, 68, 0.05);
   position: relative;
-  overflow: hidden;
+  z-index: 10; /* 提升自身层级 */
+  overflow: visible; /* 改为 visible 防止 clip 掉原生组件的虚拟层 */
+}
+.slot-container {
+  position: relative;
+  z-index: 999;
+  width: 100%;
 }
 .glow-bar {
   position: absolute;
