@@ -6,13 +6,18 @@ exports.main = async (event, context) => {
     // 简单的鉴权拦截，实际项目中应使用 uniID 封装的方法
     const { token, action, payload } = event
 
-    if (!token || !token.startsWith('fake_token_for_dev_')) {
-        return { code: 401, msg: '未授权或 Token 已过期' }
-    }
-    // 由于是测试/个人项目，我们用 token 模拟一个唯一的用户 ID，实际应从 token 中解析 uid
-    const uid = token.split('_').pop()
-
     const usersCollection = db.collection('uni-id-users')
+
+    if (!token) {
+        return { code: 401, msg: '未授权或 Token 缺失' }
+    }
+
+    // 从数据库基于 token 换取 uid 
+    const authRes = await usersCollection.where({ token: token }).get()
+    if (authRes.data.length === 0 || authRes.data[0].token_expired < Date.now()) {
+        return { code: 401, msg: '身份凭证失效，请重新连接终端' }
+    }
+    const uid = authRes.data[0]._id
 
     switch (action) {
         case 'syncBaseline':

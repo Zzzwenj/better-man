@@ -178,10 +178,14 @@ const handleDialogCancel = () => {
   dialogState.value.show = false
 }
 
+// --- 数据挂载池 ---
+let localProfileData = {}
+
 // --- 用户状态 ---
 const userName = ref('探索者_8972')
 const userDesc = ref('系统干预：已停用')
 const userAvatar = ref('')
+const userSignature = ref('')
 // --- 动态数据 (传给组件) ---
 const currentThemeName = computed(() => {
     return themeStore.themes.find(t => t.id === themeStore.currentTheme)?.name || '未知系统'
@@ -317,7 +321,9 @@ const onUpdateProfile = async ({ newName, newAvatar, newSignature }) => {
           fetchCloudProfile() // 回滚
       }
   } catch(err) {
-      uni.hideLoading()
+      // 若非业务报错而是代码报错(如ReferenceError)，确保Loading被关闭，但不再写死 hideLoading 导致重复
+      // 这里增加防御性检测或简单包抄
+      try { uni.hideLoading() } catch(e){} 
       console.error('覆写异常', err)
       uni.showToast({ title: '总控终端未连接', icon: 'none' })
   }
