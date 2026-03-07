@@ -47,6 +47,9 @@ export default {
     const userStore = useUserStore()
     userStore.checkAndAutoUnlock()
 
+    // --- 装备过期全域自动回收防线 ---
+    userStore.verifyEquipmentExpiry()
+
     // --- 切后台隐私锁防绕过 ---
     const userLock = uni.getStorageSync('neuro_privacy_lock')
     if (userLock && userLock.enabled) {

@@ -103,10 +103,30 @@ const copyInviteCode = () => {
 }
 
 const submitBindCode = async () => {
+    // --- 【设备级防刷防猜】单设备单日频次锁 ---
+    const attemptDate = uni.getStorageSync('neuro_bind_date')
+    const today = new Date().toISOString().split('T')[0]
+    let bindAttempts = uni.getStorageSync('neuro_bind_attempts') || 0
+
+    if (attemptDate !== today) {
+        bindAttempts = 0
+        uni.setStorageSync('neuro_bind_date', today)
+    }
+
+    if (bindAttempts >= 5) {
+        uni.showToast({ title: '单日探针频次过多，该设备信标通道已暂时冻结', icon: 'none' })
+        return
+    }
+
     if (!bindCode.value.trim()) {
         uni.showToast({ title: '信标代号不可为空', icon: 'none' })
         return
     }
+
+    // 累计防刷次数
+    bindAttempts++
+    uni.setStorageSync('neuro_bind_attempts', bindAttempts)
+
     uni.showLoading({ title: '核验链路中...' })
     const res = await userStore.submitInviteCode(bindCode.value.trim().toUpperCase())
     uni.hideLoading()

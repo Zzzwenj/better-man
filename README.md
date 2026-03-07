@@ -506,3 +506,8 @@
   - **赛博级视觉重塑**：引入了更沉浸的深网光晕背景、极客风等宽大字距动态邀请码（`text-3xl font-mono`）、故障字剥落动效（Glitch Text）及自动折行（wrap-text）补偿。极大排遣了视觉截断与字串溢流等页面畸变。
   - **商业悬赏展示外显**：页面头部高透析展示新商业机制（每成功指引 1 员各获 `100 神经币`，满 3 员直接解锁强效 `1天黑金VIP`）。
   - **云端强心跳对账 (Token Ping)**：补强了因静态加载导致邀请码卡死在"获取中..."的顽疾，强制在进入裂变页的毫秒瞬间并发调用 `fetchUserProfile` 拉取最新唯一信标，重塑用户传播链条。
+
+### 2026-03-07 更新 2：冗余清理与防刷维保重构 (Redundancy Cleanup & Anti-Cheat Logic)
+- **残余剥离 (Component Eradication)**：物理粉碎了已被归档的 `HonorCarousel.vue` 等荣誉资产展示遗留件。
+- **全局被动核销 (Global Expiry Hook)**：在应用级心脏底座 `App.vue` (`onShow`) 强行挂载生命周期过载保护 `verifyEquipmentExpiry`，任何切回前台的动作都将接受过期装扮的自动卸除。
+- **终端级探针锁 (Device-Level Rate Limit)**：针对裂变系统的引路人信标验证 `fission.vue` 增设原生拦截，将单设备每日试探上限锁死至 5 次，彻底瓦解字典盲扫防攻与虚假拉新风暴。
