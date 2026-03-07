@@ -74,7 +74,7 @@
             <view class="flex items-center" v-if="msg.is_vanguard || msg.equipped_title">
               <text class="vanguard-crown mr-1" v-if="msg.is_vanguard">👑</text>
               <text class="title-tag ellipsis">
-                {{ msg.equipped_title === 't_01' ? '[深渊行者]' : (msg.equipped_title === 't_02' ? '[破釜沉舟]' : (msg.equipped_title === 't_03' ? '[赛博精神病]' : '')) }}
+                {{ getTitleName(msg.equipped_title) }}
               </text>
             </view>
             <view class="flex items-center">
@@ -169,6 +169,8 @@ import SloganEditModal from '../../components/war-room/SloganEditModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
 import CyberActionSheet from '../../components/common/CyberActionSheet.vue'
 import { serverTime } from '@/utils/serverTime.js'
+import { checkMessage } from '@/utils/contentFilter.js'
+import { getTitleName } from '@/utils/itemDict.js'
 
 const themeStore = useThemeStore()
 import { useUserStore } from '../../store/user.js'
@@ -265,7 +267,7 @@ onMounted(async () => {
         if (userStore.isVipActive) {
             // 利用 setTimeout 稍微错开渲染
             setTimeout(() => {
-                const titleStr = userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[破釜沉舟]' : '高级特权者')
+            const titleStr = getTitleName(userStore.equipped.title) || '高级特权者'
                 executeSend(`🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`, true, `🚨 [系统警报] ${titleStr} 已突破防火墙，空降本战区。`)
             }, 800)
         }
@@ -462,7 +464,15 @@ const sendEmo = (emoType) => {
 
 const sendText = () => {
   if (!inputVal.value.trim()) return
-  const txt = inputVal.value
+  const txt = inputVal.value.trim()
+
+  // 前端合规预审核，拦截敏感内容
+  const check = checkMessage(txt)
+  if (!check.safe) {
+    uni.showToast({ title: '消息包含违规内容，已拦截', icon: 'none' })
+    return
+  }
+
   inputVal.value = ''
   executeSend(txt)
 }

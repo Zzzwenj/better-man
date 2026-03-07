@@ -1,6 +1,16 @@
 <template>
   <view class="settings-list mt-6 px-4">
     <view class="list-group flex-col">
+       
+       <!-- 主理人信标通道 (彩蛋转正式特权)：需满足 7天 或 VIP -->
+       <view class="list-item" hover-class="item-hover" @click.stop="$emit('handleSettingClick', 'beacon')" v-if="canViewBeacon">
+          <view class="flex items-center">
+             <view class="item-icon-wrap" style="background: rgba(16, 185, 129, 0.1);"><text class="icon" style="color: #10b981; filter: drop-shadow(0 0 5px #10b981);">🌍</text></view>
+             <text class="item-title ml-3" style="color: #10b981; font-weight: bold; text-shadow: 0 0 10px rgba(16, 185, 129, 0.3);">地球驻扎地信标</text>
+          </view>
+          <text class="item-arrow" style="color: #10b981;">></text>
+       </view>
+
        <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'lock')">
           <view class="flex items-center">
              <view class="item-icon-wrap lock-icon"><text class="icon">⚿</text></view>
@@ -44,11 +54,16 @@
           <text class="item-arrow">></text>
        </view>
 
-       <!-- 隐藏的信标输入（开发调试/彩蛋） -->
-       <view class="list-item" hover-class="item-hover" @click.stop="$emit('handleSettingClick', 'beacon')">
+       <!-- 合并后的裂变引流入口 -->
+       <view class="list-item" hover-class="item-hover" @click="$emit('handleSettingClick', 'fission_center')">
           <view class="flex items-center">
-             <view class="item-icon-wrap" style="background: rgba(255,255,255,0.02);"><text class="icon" style="color: #3f3f46">⌖</text></view>
-             <text class="item-title ml-3" style="color: #52525b">输入信标坐标...</text>
+             <view class="item-icon-wrap invite-icon"><text class="icon">📡</text></view>
+             <text class="item-title ml-3">裂变引流中心</text>
+          </view>
+          <view class="flex items-center">
+             <text class="item-status highlight-text mr-2" v-if="!invitedBy">领空投</text>
+             <text class="item-status text-green-500 mr-2" v-else>已连接</text>
+             <text class="item-arrow">></text>
           </view>
        </view>
     </view>
@@ -80,7 +95,10 @@
 defineProps({
   privacyLockEnabled: { type: Boolean, default: false },
   deviceId: { type: String, default: 'UNKNOWN' },
-  isSuperAdmin: { type: Boolean, default: false } // 新增超级管理员标识传入
+  isSuperAdmin: { type: Boolean, default: false }, // 新增超级管理员标识传入
+  inviteCode: { type: String, default: '' },
+  invitedBy: { type: String, default: '' },
+  canViewBeacon: { type: Boolean, default: false } // 是否有资格查看地球信标
 })
 
 defineEmits(['handleSettingClick', 'togglePrivacyLock', 'goToAgreement'])
@@ -142,11 +160,19 @@ defineEmits(['handleSettingClick', 'togglePrivacyLock', 'goToAgreement'])
 .video-icon { background: rgba(239, 68, 68, 0.1); }
 .video-icon .icon { color: #ef4444; }
 
+.invite-icon { background: rgba(59, 130, 246, 0.1); }
+.invite-icon .icon { color: #3b82f6; }
+.bind-icon { background: rgba(16, 185, 129, 0.1); }
+.bind-icon .icon { color: #10b981; }
+
 .icon { font-size: 16px; }
 .item-title { font-size: 15px; color: #e4e4e7; font-weight: 500; }
 .item-arrow { color: #52525b; font-size: 16px; font-weight: bold; }
 .item-status { font-size: 11px; font-family: monospace; color: #52525b; font-weight: bold;}
 .item-status.active { color: var(--theme-primary, #00e5ff); text-shadow: 0 0 8px rgba(0,229,255,0.4);}
+
+.text-green-500 { color: #10b981; }
+.highlight-text { color: #a78bfa; }
 
 /* 退出/注销区：极度弱化，仅纯文字 */
 .exit-zone { width: 100%; border-top: 1px dashed rgba(255,255,255,0.06); padding-top: 20px; }

@@ -23,6 +23,7 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useWarzoneStore } from '../../store/warzone.js'
+import { serverTime } from '@/utils/serverTime.js'
 
 const warzoneStore = useWarzoneStore()
 const countdownText = ref('00:00:00')
@@ -37,7 +38,8 @@ const activeBattle = computed(() => {
 const updateCountdown = () => {
   if (!activeBattle.value || !activeBattle.value.expiryTime) return
   
-  const now = Date.now()
+  // 使用服务端校准时间，防止本地调表影响战区倒计时
+  const now = serverTime.now()
   const expiry = activeBattle.value.expiryTime
   const total = 6 * 3600 * 1000 
   const diff = expiry - now

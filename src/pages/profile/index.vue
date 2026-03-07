@@ -31,7 +31,6 @@
         </view>
       </view>
     </view>
-
     <!-- 2. 黑金通行证 (Black Gold Pass) -->
     <view class="mx-4">
       <PremiumCard 
@@ -51,6 +50,9 @@
       :privacyLockEnabled="userStore.privacyLock.enabled"
       :deviceId="deviceId"
       :isSuperAdmin="isSuperAdmin"
+      :inviteCode="userStore.inviteCode"
+      :invitedBy="userStore.invitedBy"
+      :canViewBeacon="canViewBeacon"
       @handleSettingClick="handleUnifiedSettingClick"
       @togglePrivacyLock="handlePrivacyToggle"
       @goToAgreement="goAgreement"
@@ -92,6 +94,7 @@
           <text class="text-xs text-red-500 mt-2 text-center" v-if="pinError">{{pinError}}</text>
        </view>
     </CyberDialog>
+
 
     <!-- 通用赛博弹窗 -->
     <CyberDialog 
@@ -147,6 +150,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useThemeStore } from '../../store/theme.js'
 import { useUserStore } from '../../store/user.js'
 import { useRewardAd } from '../../composables/useRewardAd.js'
+import { serverTime } from '../../utils/serverTime.js'
 import ProfileUserCard from '../../components/profile/ProfileUserCard.vue'
 import ProfileSettingsList from '../../components/profile/ProfileSettingsList.vue'
 import PremiumCard from '../../components/profile/PremiumCard.vue'
@@ -168,6 +172,8 @@ const pinError = ref('')
 const isSuperAdmin = ref(false)
 const showInjectModal = ref(false)
 const injectForm = ref({ url: '', title: '', desc: '' })
+
+// 废弃旧变量，直接跳转新页面
 
 const isPendingDelete = ref(false)
 const deleteAt = ref(0)
@@ -247,7 +253,7 @@ onMounted(() => {
         userName.value = localProfileData.nickname || ('探索者_' + (localProfileData.age || '未知'))
         userAvatar.value = localProfileData.avatar || ''
         userSignature.value = localProfileData.signature || ''
-        userDesc.value = '成瘾史: ' + (localProfileData.history || '未知')
+        userDesc.value = '自律记录: ' + (localProfileData.history || '未知')
     }
     
     // 静默在后台重新握手拉取最新资料
@@ -437,6 +443,9 @@ const handleUnifiedSettingClick = (type) => {
     case 'video':
       uni.navigateTo({ url: '/pages/article/index?type=video' })
       break
+    case 'fission_center':
+      uni.navigateTo({ url: '/pages/profile/fission' })
+      break
     case 'beacon':
       checkBeaconAccess()
       break
@@ -464,8 +473,18 @@ const goAgreement = (type) => {
   uni.navigateTo({ url: `/pages/agreement/index?type=${type}` })
 }
 
+const canViewBeacon = computed(() => {
+    // 门槛 1: VIP 权限直接解锁
+    if (userStore.isVipActive) return true
+    // 门槛 2: 登录或者首建日经过 7 天 （此处使用neuro_start_date计算基建生存时间）
+    const startTimestamp = uni.getStorageSync('neuro_start_date')
+    if (!startTimestamp) return false
+    const diffDays = (serverTime.now() - startTimestamp) / (1000 * 60 * 60 * 24)
+    return diffDays >= 7
+})
+
 const checkBeaconAccess = () => {
-    // ...
+    showBeacon.value = true
 }
 
 const confirmInjectVideo = async () => {
@@ -607,6 +626,22 @@ const handlePrivacyToggle = (val) => {
      }
 }
 
+// 裂变引流复制与绑定逻辑
+const copyInviteCode = () => {
+    if (!userStore.inviteCode) {
+        uni.showToast({ title: '信标频段未就绪', icon: 'none' })
+        return
+    }
+    uni.setClipboardData({
+        data: userStore.inviteCode,
+        success: () => {
+            uni.showToast({ title: '信标代号已复制', icon: 'success' })
+        }
+    })
+}
+
+
+
 // 发起云端流放销毁
 const confirmDeleteAccount = () => {
     showDialog({
@@ -722,10 +757,12 @@ page {
 .flex-col { display: flex; flex-direction: column; }
 .justify-between { justify-content: space-between; }
 .items-center { align-items: center; }
+.justify-center { justify-content: center; }
 .block { display: block; }
 .ml-3 { margin-left: 12px; }
 .z-10 { z-index: 10; }
 .relative { position: relative; }
+
 
 /* AI 导师卡片样式 */
 .ai-mentor-card {

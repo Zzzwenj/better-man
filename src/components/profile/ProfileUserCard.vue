@@ -17,7 +17,7 @@
         <text class="crown-icon mr-1" v-if="hasBlackGoldCrown">👑</text>
         <view class="profile-title-wrapper flex-shrink-1" v-if="userStore.equipped.title">
           <text class="profile-title mr-1">
-            {{ userStore.equipped.title === 't_01' ? '[深渊行者]' : (userStore.equipped.title === 't_02' ? '[绝命赌徒]' : '') }}
+            {{ getTitleName(userStore.equipped.title) }}
           </text>
         </view>
         <text :class="['username', 'flex-1', hasBlackGoldCrown ? 'gold-text' : '']">{{ userName }}</text>
@@ -97,6 +97,8 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/store/user'
 import NeuroCoinIcon from '@/components/common/NeuroCoinIcon.vue'
+import { getTitleName } from '@/utils/itemDict.js'
+import { checkNickname, checkContent } from '@/utils/contentFilter.js'
 
 const userStore = useUserStore()
 
@@ -158,6 +160,23 @@ const saveProfile = () => {
     uni.showToast({ title: '代号不能为空', icon: 'none' })
     return
   }
+
+  // 昵称合规预审核
+  const nameCheck = checkNickname(editName.value.trim())
+  if (!nameCheck.safe) {
+    uni.showToast({ title: '昵称包含违规内容，请修改', icon: 'none' })
+    return
+  }
+
+  // 签名合规预审核
+  if (editSignature.value.trim()) {
+    const sigCheck = checkContent(editSignature.value.trim(), { maxLength: 50 })
+    if (!sigCheck.safe) {
+      uni.showToast({ title: '签名包含违规内容，请修改', icon: 'none' })
+      return
+    }
+  }
+
   emit('updateProfile', { 
     newName: editName.value.trim(),
     newAvatar: editAvatar.value,

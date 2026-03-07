@@ -20,6 +20,12 @@ exports.main = async (event, context) => {
         case 'getRooms':
             // 获取大厅分类房间列表
             return await getRooms()
+        case 'createPublicRoom':
+            // 创建公共大厅
+            return await createPublicRoom(uid, payload)
+        case 'reportMessage':
+            // 举报违规言论
+            return await reportMessage(uid, payload)
         case 'getRoomMembers':
             // 获取某房间内存活者名单
             return await getRoomMembers(payload)
@@ -140,6 +146,43 @@ async function createDeathMatch(uid, payload) {
     }
 }
 
+async function createPublicRoom(uid, payload) {
+    const { name, slogan, maxUsers = 50, category = '闲聊摸鱼' } = payload
+    if (!name) return { code: 400, msg: '大厅代号不能为空' }
+
+    const roomsCollection = db.collection('chat_rooms')
+    const usersCollection = db.collection('uni-id-users')
+
+    const shortId = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const roomId = `room_${shortId}`
+
+    const newRoom = {
+        room_id: roomId,
+        id: shortId,
+        type: 'public',
+        name: name,
+        description: slogan || `[${category}] 自由编组，抵抗多巴胺侵蚀。`,
+        slogan: slogan || '',
+        category: category,
+        onlineCount: 1,
+        member_count: 1,
+        maxUsers: maxUsers,
+        prizePool: 0,
+        status: 'active',
+        created_date: Date.now(),
+        creator_id: uid
+    }
+
+    await roomsCollection.add(newRoom)
+    await usersCollection.doc(uid).update({ current_room_id: roomId })
+
+    return {
+        code: 0,
+        msg: '公共大厅已建立',
+        data: newRoom
+    }
+}
+
 async function assignRoom(uid) {
     const usersCollection = db.collection('uni-id-users')
     const roomsCollection = db.collection('chat_rooms')
@@ -200,13 +243,32 @@ async function sendMessage(uid, payload) {
 
     if (!content || !room_id) return { code: 400, msg: '空信道' }
 
-    // [简易过滤] - 此处应接入阿里云内容安全 API
-    const blockWords = ['色情', '敏感', '/v/']
+    const messagesCollection = db.collection('chat_messages')
+
+    // [频率限制] - 防止刷屏，限制5秒内最多1条
+    const lastMsgRes = await messagesCollection.where({
+        user_id: uid
+    }).orderBy('created_date', 'desc').limit(1).get()
+
+    if (lastMsgRes.data && lastMsgRes.data.length > 0) {
+        const timeDiff = Date.now() - lastMsgRes.data[0].created_date
+        if (timeDiff < 5000) {
+            return { code: 403, msg: '发言频率过快，神经递质冷却中' }
+        }
+    }
+
+    // [违规词库扩充] 
+    const blockWords = [
+        '色情', '裸体', '做爱', '性交', '约炮', '嫖', 'av女', '福利视频',
+        '习近平', '共产党', '天安门', '六四', '法轮功', '台独', '港独',
+        '草泥马', '傻逼', '煞笔', '妈逼', '脑残', '加微信', '加QQ', '➕v',
+        '毒品', '大麻', '冰毒', '/v/', '兼职', '刷单', '日赚'
+    ]
     let safeContent = content
     let isBlocked = false
 
     for (let word of blockWords) {
-        if (content.includes(word)) {
+        if (content.toLowerCase().includes(word.toLowerCase())) {
             safeContent = '***[通讯屏蔽]***'
             isBlocked = true
             break;
@@ -229,7 +291,6 @@ async function sendMessage(uid, payload) {
     const equippedRaw = userInfo.equipped || {}
     const isVanguard = userInfo.has_black_gold === true || userInfo.has_black_gold === 'true'
 
-    const messagesCollection = db.collection('chat_messages')
     const newMsg = {
         room_id,
         user_id: uid,
@@ -354,4 +415,21 @@ async function getRoomMembers(payload) {
         code: 0,
         data: membersList.data
     }
+}
+
+async function reportMessage(uid, payload) {
+    const { msg_id, content, target_uid } = payload
+    if (!msg_id) return { code: 400, msg: '缺少消息标识' }
+
+    const reportsCollection = db.collection('chat_reports')
+    await reportsCollection.add({
+        msg_id,
+        content: content || '',
+        target_uid: target_uid || '',
+        reporter_uid: uid,
+        status: 'pending',
+        created_date: Date.now()
+    })
+
+    return { code: 0, msg: '举报指令已上传纠察庭' }
 }

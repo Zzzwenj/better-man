@@ -17,6 +17,10 @@ export const useUserStore = defineStore('user', {
             // 神经币余额
             neuroCoins: Number(uni.getStorageSync('neuro_coins')) || 0,
 
+            // 引流裂变体系
+            inviteCode: uni.getStorageSync('neuro_invite_code') || '',
+            invitedBy: uni.getStorageSync('neuro_invited_by') || '',
+
             // --- 黑金通行证 (VIP) 状态 ---
             // 订阅到期时间戳 (如果是 0 代表未开通或已过期)
             vipExpireTime: Number(uni.getStorageSync('neuro_vip_expire')) || 0,
@@ -29,8 +33,8 @@ export const useUserStore = defineStore('user', {
                 pin: '8972' // 初始隐私密码
             },
 
-            // --- 紧急除颤 (复活) 相关 ---
-            // 当月已经使用的特权免单（免广告/免币）除颤次数，黑金每月有 3 次
+            // --- 紧急脉冲修复 (复活) 相关 ---
+            // 当月已使用的特权免单修复次数，黑金每月有 3 次
             monthlyFreeReviveCount: Number(uni.getStorageSync('neuro_free_revive_cnt')) || 0,
             // 记录月份，用于每月重置免单次数 (形如 '2026-03')
             lastReviveMonth: uni.getStorageSync('neuro_last_revive_month') || '',
@@ -82,18 +86,16 @@ export const useUserStore = defineStore('user', {
             if (state.trialExpireTime && serverTime.now() < state.trialExpireTime) return true
             return false
         },
-        // profile 页所用别名（与 isVipActive 等价）
-        isProActive: (state) => {
-            if (checkVipActive(state.vipExpireTime)) return true
-            if (state.trialExpireTime && serverTime.now() < state.trialExpireTime) return true
-            return false
+        // profile 页所用别名（直接复用 isVipActive，消除重复逻辑）
+        isProActive() {
+            return this.isVipActive
         },
         // 是否处于 24h 体验期（非正式 VIP）
         isTrialActive: (state) => {
             if (checkVipActive(state.vipExpireTime)) return false // 正式 VIP 不算体验
             return state.trialExpireTime && serverTime.now() < state.trialExpireTime
         },
-        // 本月是否还有剩余的【免单除颤】特权 (仅黑金会员拥有)
+        // 本月是否还有剩余的【免单脉冲修复】特权 (仅黑金会员拥有)
         hasFreeRevive: (state) => {
             if (!checkVipActive(state.vipExpireTime)) return false
 
@@ -128,7 +130,8 @@ export const useUserStore = defineStore('user', {
                 }
                 // 彩蛋等特效 / 期限装扮类 (30 天为例)
                 else {
-                    const now = getRealTime()
+                    // 修复：getRealTime 未定义，统一使用服务端校准时间
+                    const now = serverTime.now()
                     // 默认时效，如果是从商城来，通常 item.durationDays 会有值，没有则默认 30 天
                     const days = item.durationDays || 30
                     const durationMs = days * 24 * 60 * 60 * 1000
@@ -251,11 +254,65 @@ export const useUserStore = defineStore('user', {
                 uniCloud.callFunction({
                     name: 'user-center',
                     data: { action: 'verifyTransaction', token, payload: { type: 'earn', amount, reason } }
-                }).catch(err => console.error('云端收入核销失败', err))
+                }).catch(err => console.error('云端记账失败', err))
             }
         },
 
-        // --- [黑金通行证] 开通与续费 ---
+        // --- 提交战友邀请码 ---
+        async submitInviteCode(code) {
+            const token = uni.getStorageSync('uni_id_token')
+            if (!token) return { success: false, msg: '无终端授权' }
+
+            uni.showLoading({ title: '连接信标...' })
+            try {
+                const res = await uniCloud.callFunction({
+                    name: 'user-center',
+                    data: { action: 'submitInviteCode', token, payload: { code } }
+                })
+                uni.hideLoading()
+                if (res.result.code === 0) {
+                    // 同步成功，修改本地状态并加钱
+                    this.invitedBy = 'bound'
+                    uni.setStorageSync('neuro_invited_by', 'bound')
+                    this.earnCoins(100, '接受战友引流物资空投')
+                    return { success: true, msg: res.result.msg }
+                } else {
+                    return { success: false, msg: res.result.msg }
+                }
+            } catch (err) {
+                uni.hideLoading()
+                return { success: false, msg: '网络波动，信号中断' }
+            }
+        },
+
+        // --- 拉取云端个人档案 (含裂变信标生成) ---
+        async fetchUserProfile() {
+            const token = uni.getStorageSync('uni_id_token')
+            if (!token) return false
+            try {
+                const res = await uniCloud.callFunction({
+                    name: 'user-center',
+                    data: { action: 'getUserProfile', token }
+                })
+                if (res.result.code === 0 && res.result.data) {
+                    const profile = res.result.data
+                    if (profile.invite_code) {
+                        this.inviteCode = profile.invite_code
+                        uni.setStorageSync('neuro_invite_code', this.inviteCode)
+                    }
+                    if (profile.invited_by) {
+                        this.invitedBy = profile.invited_by
+                        uni.setStorageSync('neuro_invited_by', this.invitedBy)
+                    }
+                    return true
+                }
+            } catch (err) {
+                console.error('[Store] 拉取档案失败:', err)
+            }
+            return false
+        },
+
+        // --- 每日签到并计算打卡收益 ---
         // 模拟/实际接入 IAP 的充值逻辑，durationDays 为开通天数 (30表示包月，365表示年度，36500表示终身)
         purchaseVip(durationDays, reason = '订阅黑金通行证') {
             const now = serverTime.now()
@@ -327,7 +384,7 @@ export const useUserStore = defineStore('user', {
             return false
         },
 
-        // 消耗一次免单除颤特权
+        // 消耗一次免单脉冲修复特权
         consumeFreeRevive() {
             if (!this.hasFreeRevive) return false
 
@@ -428,6 +485,17 @@ export const useUserStore = defineStore('user', {
                     this.equipped = { ...this.equipped, ...profileData.equipped }
                     uni.setStorageSync('neuro_equipped', this.equipped)
                 }
+
+                // 同步裂变信标
+                if (profileData.invite_code) {
+                    this.inviteCode = profileData.invite_code
+                    uni.setStorageSync('neuro_invite_code', this.inviteCode)
+                }
+                if (profileData.invited_by) {
+                    this.invitedBy = profileData.invited_by
+                    uni.setStorageSync('neuro_invited_by', this.invitedBy)
+                }
+
                 if (profileData.vip_expire !== undefined) {
                     this.vipExpireTime = profileData.vip_expire
                     uni.setStorageSync('neuro_vip_expire', this.vipExpireTime)

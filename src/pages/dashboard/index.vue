@@ -44,7 +44,7 @@
         @doAction="doAction"
       />
       
-      <!-- 紧急除颤抉择弹窗 -->
+      <!-- 紧急脉冲修复拉窗 -->
       <DefibrillatorModal 
         :show="showDefibModal"
         :currentHours="hoursClean"
@@ -264,12 +264,14 @@ const onGiveUp = () => {
     dopamineIndex.value = 10
     
     // 更新打卡日期以屏蔽今日后续自检
-    uni.setStorageSync('last_checkin_date', getRealDateString())
+    // 更新打卡日期以屏蔽今日后续自检
+    const _d1 = new Date(serverTime.now())
+    uni.setStorageSync('last_checkin_date', `${_d1.getFullYear()}-${String(_d1.getMonth()+1).padStart(2,'0')}-${String(_d1.getDate()).padStart(2,'0')}`)
     
     uni.showToast({ title: '参数已清零 -100币，请重新开始', icon: 'none' })
 }
 
-// 选择除颤挽救 (扣除代价，只回退 50% 时间)
+// 选择脉冲修复挽救 (扣除代价，只回退 50% 时间)
 const onReviveSuccess = () => {
     showDefibModal.value = false
     const currentStart = uni.getStorageSync('neuro_start_date') || serverTime.now()
@@ -280,14 +282,15 @@ const onReviveSuccess = () => {
     uni.setStorageSync('neuro_start_date', newStart)
     
     // 不记入破戒历史，视为成功防御，更新打卡标志
-    uni.setStorageSync('last_checkin_date', getRealDateString())
+    const _d2 = new Date(serverTime.now())
+    uni.setStorageSync('last_checkin_date', `${_d2.getFullYear()}-${String(_d2.getMonth()+1).padStart(2,'0')}-${String(_d2.getDate()).padStart(2,'0')}`)
     
     const totalHours = Math.floor((diff / 2) / (1000 * 60 * 60))
     hoursClean.value = totalHours
     hoursSaved.value = Math.floor((totalHours / 24) * 2)
 }
 
-// 被每日审计系统识别出破戒并强制执行断网(除颤前一步)
+// 被每日审计系统识别出破戒并强制执行断网(脉冲修复前一步)
 const onDailyRelapseTriggered = () => {
     showDailyAudit.value = false
     showDefibModal.value = true

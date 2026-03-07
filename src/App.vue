@@ -130,17 +130,15 @@ export default {
                         uni.removeStorageSync('uni_id_token')
                         uni.removeStorageSync('uni_id_token_expired')
                         
-                        // 【多端互斥挤占提醒】
-                        uni.showModal({
-                            title: '连接中断',
-                            content: '您的高级神经档案已在其他物理终端成功接入，当前连接已切断。如非本人操作，请立刻篡改密钥。',
-                            showCancel: false,
-                            confirmText: '重新部署',
-                            confirmColor: '#00e5ff',
-                            success: () => {
-                                uni.reLaunch({ url: '/pages/login/index' })
-                            }
+                        // 【多端互斥挤占提醒】使用全局事件触发赛博弹窗，避免原生弹窗破坏沉浸感
+                        uni.showToast({
+                            title: '您的档案已在其他终端接入，当前连接已切断。如非本人操作，请立即修改密码。',
+                            icon: 'none',
+                            duration: 3000
                         })
+                        setTimeout(() => {
+                            uni.reLaunch({ url: '/pages/login/index' })
+                        }, 2000)
                         return
                     }
                     

@@ -90,12 +90,10 @@ const handleRefuse = () => {
         
         // #ifndef APP-PLUS
         // 非 App 环境无法直接退杀进程，提示用户自行关闭网页/小程序
-        uni.showModal({
-            title: '连接已断开',
-            content: '因未签署安全契约，系统无法介入。请手动关闭当前页面或应用。',
-            showCancel: false,
-            confirmText: '明白',
-            confirmColor: '#71717a'
+        uni.showToast({
+            title: '因未签署安全契约，系统无法介入。请手动关闭当前页面。',
+            icon: 'none',
+            duration: 3000
         })
         // #endif
     }, 1500)

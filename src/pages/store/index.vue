@@ -150,15 +150,10 @@ const handlePurchaseClick = (productPayload) => {
   const product = allProducts.value.find(p => p.id === productPayload.id)
   if (product && product.vipOnly && !userStore.isVipActive) {
     uni.vibrateShort()
-    uni.showModal({
-      title: '🔒 黑金限定',
-      content: '该商品为黑金通行证专属，需先激活黑金特权后方可解锁购买。',
-      confirmText: '前往激活',
-      cancelText: '返回',
-      success: (res) => {
-        if (res.confirm) uni.navigateTo({ url: '/pages/premium/index' })
-      }
-    })
+    uni.showToast({ title: '该商品为黑金限定，需先激活黑金特权', icon: 'none', duration: 2000 })
+    setTimeout(() => {
+      uni.navigateTo({ url: '/pages/premium/index' })
+    }, 1500)
     return
   }
   selectedProduct.value = productPayload

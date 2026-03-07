@@ -82,7 +82,7 @@ const onSafe = () => {
 
 const onRelapse = () => {
     uni.vibrateLong()
-    // 发射破戒流程信号给父组件，由父组件关闭当前窗，并直接弹出“紧急除颤器”(DefibrillatorModal)
+    // 发射破戒流程信号给父组件，由父组件关闭当前窗，并直接弹出"脉冲稳压器"(DefibrillatorModal)
     emit('relapseTriggered')
 }
 </script>

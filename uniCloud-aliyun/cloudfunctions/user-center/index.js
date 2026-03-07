@@ -59,6 +59,9 @@ exports.main = async (event, context) => {
         case 'injectVideo':
             // 极客弹药库装填
             return await injectVideo(db, authRes.data[0], payload)
+        case 'submitInviteCode':
+            // 提交战友邀请码
+            return await submitInviteCode(usersCollection, db, uid, payload)
         case 'verifyTransaction':
             // 交易核销 —— 写入 transaction_logs 集合记录流水，用于反作弊审计
             try {
@@ -233,12 +236,65 @@ async function getUserProfile(collection, uid) {
     const userRes = await collection.where({ _id: uid }).get()
 
     if (userRes.data.length > 0) {
+        const user = userRes.data[0]
+
+        // [裂变系统] 如果没有邀请码，自动生成一个 6 位短码
+        if (!user.invite_code) {
+            const newCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+            await collection.doc(uid).update({ invite_code: newCode })
+            user.invite_code = newCode
+        }
+
         return {
             code: 0,
-            data: userRes.data[0]
+            data: user
         }
     }
     return { code: 404, msg: '用户信息未找到' }
+}
+
+async function submitInviteCode(collection, db, uid, payload) {
+    const { code } = payload
+    if (!code) return { code: 400, msg: '信标代号（邀请码）不能为空' }
+
+    // 1. 获取当前用户
+    const userRes = await collection.doc(uid).get()
+    if (userRes.data.length === 0) return { code: 404, msg: '探员档案异常' }
+    const user = userRes.data[0]
+
+    if (user.invited_by) {
+        return { code: 400, msg: '你已绑定过引路人，无法重复连接' }
+    }
+    if (user.invite_code === code) {
+        return { code: 400, msg: '无法与自身建立引流连接' }
+    }
+
+    // 2. 查找邀请码对应的主人
+    const inviterRes = await collection.where({ invite_code: code }).get()
+    if (inviterRes.data.length === 0) {
+        return { code: 404, msg: '未知的引流信标' }
+    }
+    const inviter = inviterRes.data[0]
+
+    // 3. 执行双边空投
+    await collection.doc(uid).update({
+        invited_by: inviter._id,
+        neuro_coins: dbCmd.inc(100)
+    })
+    await collection.doc(inviter._id).update({
+        neuro_coins: dbCmd.inc(100)
+    })
+
+    // 4. 写流水
+    try {
+        const txLogs = db.collection('transaction_logs')
+        await txLogs.add([
+            { user_id: uid, type: 'earn', amount: 100, reason: '接受战友引流物资空投', created_at: Date.now() },
+            { user_id: inviter._id, type: 'earn', amount: 100, reason: `成功引流唤醒新战友`, created_at: Date.now() }
+        ])
+    } catch (e) { }
+
+    return { code: 0, msg: '链路建立成功！双方各获 100 储备金' }
 }
 
 // --- 违禁词、敏感词拦截字典 (可根据业务扩充) ---

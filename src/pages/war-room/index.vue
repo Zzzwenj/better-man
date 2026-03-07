@@ -39,6 +39,12 @@
       </view>
 
       <view v-if="currentTab === 0" class="fade-in-up">
+        <!-- 新增: 创建公共大厅按钮 -->
+        <view class="create-btn public-create-btn flex justify-center items-center mb-4" @click="handleCreatePublicRoom">
+          <text class="btn-icon">📡</text>
+          <text class="btn-text ml-2">建立新的公共通讯频段</text>
+        </view>
+
         <RoomCard 
           v-for="room in filteredPublicRooms" :key="room.id"
           :roomId="room.id"
@@ -83,6 +89,58 @@
       @confirm="onContractCreated"
     />
 
+    <!-- 新增：公共大厅建房弹窗 -->
+    <CyberDialog 
+      :show="showPublicRoomModal"
+      title="📡 建立公共信号塔"
+      confirmText="申请建立 (消耗 200 神经币)"
+      :showCancel="true"
+      color="#10b981"
+      @update:show="showPublicRoomModal = $event"
+      @confirm="doCreatePublicRoom"
+      @cancel="showPublicRoomModal = false"
+    >
+      <view class="flex-col pb-2">
+        <text class="text-xs text-gray-500 mb-2">黑金 VIP 探员可免除建塔费用</text>
+        <input 
+          v-model="publicRoomForm.name" 
+          class="cyber-input mb-3" 
+          placeholder="代号 (必填) 如：斯巴达300" 
+          placeholder-style="color: #52525b; font-size: 13px;"
+        />
+        <input 
+          v-model="publicRoomForm.slogan" 
+          class="cyber-input mb-3" 
+          placeholder="阵列精神纲领 (可选)" 
+          placeholder-style="color: #52525b; font-size: 13px;"
+        />
+        
+        <text class="text-xs text-gray-500 mb-2 mt-1">频段容载量 (最大接入节点):</text>
+        <view class="flex gap-2 mb-3">
+          <view 
+            v-for="size in [50, 100, 500]" :key="size" 
+            class="tag-btn flex-1 flex justify-center items-center py-1.5"
+            :class="{ 'active-tag': publicRoomForm.maxUsers === size }"
+            @click="publicRoomForm.maxUsers = size"
+          >
+            <text class="text-xs">{{size}} 节点</text>
+          </view>
+        </view>
+
+        <text class="text-xs text-gray-500 mb-2">阵列倾向 (环境设定):</text>
+        <view class="flex gap-2 mb-2">
+          <view 
+            v-for="cat in ['极客共修', '深度潜航', '闲聊摸鱼']" :key="cat" 
+            class="tag-btn flex-1 flex justify-center items-center py-1.5"
+            :class="{ 'active-tag': publicRoomForm.category === cat }"
+            @click="publicRoomForm.category = cat"
+          >
+            <text class="text-xs">{{cat}}</text>
+          </view>
+        </view>
+      </view>
+    </CyberDialog>
+
     <CyberDialog
       v-model:show="dialog.show"
       :title="dialog.title"
@@ -102,13 +160,17 @@ import CustomTabBar from '../../components/common/CustomTabBar.vue'
 import RoomCard from '../../components/war-room/RoomCard.vue'
 import ContractModal from '../../components/war-room/ContractModal.vue'
 import CyberDialog from '../../components/common/CyberDialog.vue'
+import { useUserStore } from '../../store/user.js'
 import { onShow, onHide } from '@dcloudio/uni-app'
 
 const themeStore = useThemeStore()
 const warzoneStore = useWarzoneStore()
+const userStore = useUserStore()
 
 const currentTab = ref(0)
 const showContractModal = ref(false)
+const showPublicRoomModal = ref(false)
+const publicRoomForm = ref({ name: '', slogan: '', maxUsers: 50, category: '闲聊摸鱼' })
 const searchQuery = ref('')
 
 const dialog = ref({
@@ -194,6 +256,41 @@ const handleCreateDeathMatch = () => {
      return
   }
   showContractModal.value = true
+}
+
+const handleCreatePublicRoom = () => {
+  showPublicRoomModal.value = true
+}
+
+const doCreatePublicRoom = async () => {
+  if (!publicRoomForm.value.name.trim()) {
+    uni.showToast({ title: '大厅代号不能为空', icon: 'none' })
+    return
+  }
+  
+  if (!userStore.isVipActive) {
+      const success = userStore.spendCoins(200, '申请建立公共通讯阵列')
+      if (!success) {
+          uni.showToast({ title: '神经币不足，无法建立通道', icon: 'none' })
+          return
+      }
+  }
+
+  uni.showLoading({ title: '信号塔架设中...' })
+  // 这里有可能是因为 store 没热更新，加上 ?. 调用防崩溃，或者通过获取实例确保加载
+  const res = await warzoneStore.createPublicRoom({
+      name: publicRoomForm.value.name.trim(),
+      slogan: publicRoomForm.value.slogan.trim(),
+      maxUsers: publicRoomForm.value.maxUsers,
+      category: publicRoomForm.value.category
+  })
+  uni.hideLoading()
+  
+  if (res) {
+      showPublicRoomModal.value = false
+      uni.showToast({ title: '大厅部署成功', icon: 'success' })
+      publicRoomForm.value = { name: '', slogan: '', maxUsers: 50, category: '闲聊摸鱼' }
+  }
 }
 
 const enterRoom = (room) => {
@@ -284,8 +381,53 @@ page { height: 100%; }
   transition: all 0.2s;
 }
 .create-btn:active { transform: scale(0.98); background: rgba(239, 68, 68, 0.3); }
+
+/* 公共大厅新建按钮改色 */
+.public-create-btn {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.3) 100%);
+  border: 1px dashed rgba(16, 185, 129, 0.4);
+}
+.public-create-btn:active { background: rgba(16, 185, 129, 0.3); }
+.public-create-btn .btn-text { color: #10b981; }
+
 .btn-icon { font-size: 20px; }
 .btn-text { font-size: 16px; font-weight: bold; color: #ef4444; letter-spacing: 1px; }
+
+/* 赛博风输入框 */
+.cyber-input {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  height: 44px;
+  padding: 0 12px;
+  color: #e4e4e7;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.cyber-input:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+.text-xs { font-size: 12px; }
+.text-gray-500 { color: #71717a; }
+
+/* 标签选择按钮 */
+.gap-2 { gap: 8px; }
+.py-1\.5 { padding-top: 6px; padding-bottom: 6px; }
+.tag-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #a1a1aa;
+  transition: all 0.2s;
+}
+.tag-btn:active { transform: scale(0.95); }
+.tag-btn.active-tag {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #10b981;
+  font-weight: bold;
+}
 
 .fade-in-up { opacity: 0; transform: translateY(10px); animation: fadeInUp 0.4s forwards; }
 @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }

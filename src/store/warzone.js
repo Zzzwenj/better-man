@@ -142,6 +142,36 @@ export const useWarzoneStore = defineStore('warzone', {
                 return false
             }
         },
+
+        async createPublicRoom(payload) {
+            try {
+                const token = uni.getStorageSync('uni_id_token')
+                const res = await uniCloud.callFunction({
+                    name: 'chat-hub',
+                    data: {
+                        action: 'createPublicRoom',
+                        token,
+                        payload
+                    }
+                })
+
+                if (res.result.code === 0) {
+                    const newRoom = {
+                        ...res.result.data,
+                        onlineCount: res.result.data.member_count || 1
+                    }
+                    this.publicRooms.unshift(newRoom)
+                    this.setActivePublicRoom(newRoom.id)
+                    return newRoom
+                } else {
+                    uni.showToast({ title: res.result.msg, icon: 'none' })
+                    return false
+                }
+            } catch (error) {
+                console.error('建立大厅失败:', error)
+                return false
+            }
+        },
         setActivePublicRoom(id) {
             this.activePublicRoomId = id
             uni.setStorageSync('neuro_active_public_room', id)

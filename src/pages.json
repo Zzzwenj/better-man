@@ -142,6 +142,13 @@
                 "navigationBarTitleText": "协议与政策",
                 "navigationStyle": "custom"
             }
+        },
+        {
+            "path": "pages/profile/fission",
+            "style": {
+                "navigationBarTitleText": "裂变引流中心",
+                "navigationStyle": "custom"
+            }
         }
     ],
     "globalStyle": {

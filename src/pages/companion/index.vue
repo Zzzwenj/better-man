@@ -73,7 +73,10 @@
           v-model="inputValue" 
           placeholder="告诉 AI 你的感受..." 
           placeholder-class="placeholder-text" 
+          adjust-position="true"
+          cursor-spacing="20"
           @confirm="sendMessage" 
+          @blur="onInputBlur"
         />
         <view class="btn-send flex items-center justify-center" :class="{ 'disabled': !inputValue }" @click="sendMessage">
           <text class="send-icon">▲</text>
@@ -120,6 +123,14 @@ const scrollToBottom = () => {
     // 通过数值微调确保 scroll-view 感知到变化并由底层引擎触发滚动
     const target = chatList.value.length * 500
     scrollTop.value = scrollTop.value === target ? target + 1 : target
+  })
+}
+
+const onInputBlur = () => {
+  // 强制页面重新布局计算，解决输入法无法回落的诡异白边问题
+  uni.pageScrollTo({
+    scrollTop: 0,
+    duration: 0
   })
 }
 
@@ -261,7 +272,7 @@ const sendMessage = async () => {
   systemPrompt += '\n1. 【当用户表达“忍不住”、“想破戒”、“受不了了”等屈服欲望的言论时】：立刻化身为冷酷严厉的军队教官！用斩钉截铁的语气、甚至带一点呵斥，一针见血地指出他现在只是多巴胺的奴隶，被原始大脑绑架了。不要给他任何借口，下达强制性的物理打断命令（比如：立刻去洗冷水脸、做50个俯卧撑）。'
   systemPrompt += '\n2. 【当用户表达“我很累”、“坚持了很久”、“我今天做到了”或者感到深深的挫败内疚时】：化身为温和包容的心理咨询师。接纳他的痛苦，告诉他这是神经重塑必经的阵痛，给予科学原理解释（例如受体恢复）和温暖的鼓励，并提供一个微小可行的建议。'
   if (userProfile) {
-    systemPrompt += `\n\n该用户生理画像：年龄段[${userProfile.age}]，成瘾史[${userProfile.history}]，目前的波动频率[${userProfile.frequency}]，高危触发场景包含：[${userProfile.triggers.join(',')}]。`
+    systemPrompt += `\n\n该用户生理画像：年龄段[${userProfile.age}]，自律挑战史[${userProfile.history}]，目前的波动频率[${userProfile.frequency}]，高危触发场景包含：[${userProfile.triggers.join(',')}]。`
   }
   systemPrompt += '\n\n无论哪种模式，回复必须都是中文，字数控制在 120 字左右，不要说你好之类的废话，直击灵魂。'
 

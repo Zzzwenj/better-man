@@ -9,12 +9,12 @@
           <text class="ecg-icon">⚡</text>
         </view>
         <text class="warning-title mt-4">检测到神经链路断开</text>
-        <text class="warning-subtitle mt-2">心智模型即将崩塌，当前累计 {{ currentHours }} 小时心血将清零。</text>
+        <text class="warning-subtitle mt-2">认知模型即将崩塌，当前累计 {{ currentHours }} 小时的重建进度将清零。</text>
       </view>
 
-      <!-- 核心除颤选项区 -->
+      <!-- 核心脉冲修复选项区 -->
       <view class="options-container w-full">
-        <text class="section-title block mb-3 text-center">启动紧急突触除颤器？(挽救50%进度)</text>
+        <text class="section-title block mb-3 text-center">启动紧急脉冲稳压器？(挽救50%进度)</text>
         
         <!-- 选项1: 黑金特权免单 (如果有且有剩余) -->
         <view class="option-card vip-card flex items-center justify-between mb-3" 
@@ -27,7 +27,7 @@
               <text class="option-desc">本月剩余 {{ 3 - userStore.monthlyFreeReviveCount }} 次免单防御</text>
             </view>
           </view>
-          <view class="action-btn vip-btn">立刻起搏</view>
+          <view class="action-btn vip-btn">立刻重连</view>
         </view>
 
         <!-- 选项2: 算力支援 (看广告) -->
@@ -49,7 +49,7 @@
           <view class="flex items-center">
             <text class="option-icon text-cyan">⎔</text>
             <view class="flex-col ml-3 text-left">
-              <text class="option-name text-cyan">军用级脉冲除颤</text>
+              <text class="option-name text-cyan">军用级脉冲稳压</text>
               <text class="option-desc">消耗 600 神经币强制修复</text>
             </view>
           </view>
@@ -59,10 +59,10 @@
         </view>
       </view>
 
-      <!-- 放弃治疗 (彻底清零) -->
+      <!-- 放弃修复 (彻底清零) -->
       <view class="give-up-area mt-4 text-center">
         <text class="give-up-text" @click="handleGiveUp" hover-class="text-hover">
-          [ 放弃抢救，任由心智归零 ]
+          [ 放弃修复，任由进度归零 ]
         </text>
       </view>
       
@@ -103,7 +103,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'reviveSuccess', 'giveUp'])
 const userStore = useUserStore()
 
-// 独立控制广告除颤的每日次数 (每天仅 1 次)
+// 独立控制广告修复的每日次数 (每天仅 1 次)
 const adReviveCountToday = ref(0)
 const lastAdReviveTime = ref(uni.getStorageSync('neuro_ad_revive_time') || 0)
 
@@ -169,7 +169,7 @@ const preventTouchMove = () => {}
 const handleGiveUp = () => {
     showDialog({
         title: '最后的警告',
-        content: '放弃除颤将导致您这段时间建立的所有神经突触链接彻底断裂 (进度清零)，确认放弃吗？',
+        content: '放弃修复将导致您这段时间建立的所有认知链接彻底断裂 (进度清零)，确认放弃吗？',
         confirmText: '含泪重开',
         cancelText: '我再想想',
         showCancel: true,
@@ -183,7 +183,7 @@ const handleGiveUp = () => {
 }
 
 const dispatchRevive = () => {
-    uni.showToast({ title: '心脏起搏成功！神经链已挽救 50%', icon: 'success' })
+    uni.showToast({ title: '脉冲重连成功！认知链已挽救 50%', icon: 'success' })
     emit('reviveSuccess')
 }
 
@@ -204,7 +204,8 @@ const handleRevive = (type) => {
         setTimeout(() => {
             uni.hideLoading()
             adReviveCountToday.value = 1
-            lastAdReviveTime.value = Date.now()
+            // 使用服务端校准时间，防止本地调表作弊
+            lastAdReviveTime.value = serverTime.now()
             uni.setStorageSync('neuro_ad_revive_cnt', 1)
             uni.setStorageSync('neuro_ad_revive_time', lastAdReviveTime.value)
             dispatchRevive()
@@ -213,7 +214,7 @@ const handleRevive = (type) => {
         if (userStore.neuroCoins < 600) {
             showDialog({
                 title: '资产枯竭限制',
-                content: '您的神经币余额不足以支付本次紧急除颤。是否立即前往极客集市进行能源补充？',
+                content: '您的神经币余额不足以支付本次紧急稳压修复。是否立即前往极客集市进行能源补充？',
                 confirmText: '立刻前往',
                 cancelText: '返回',
                 showCancel: true,
@@ -228,7 +229,7 @@ const handleRevive = (type) => {
             return
         }
         
-        userStore.spendCoins(600, '紧急突触除颤器')
+        userStore.spendCoins(600, '紧急脉冲稳压器')
         dispatchRevive()
     }
 }
